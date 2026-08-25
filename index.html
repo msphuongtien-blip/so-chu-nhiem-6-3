@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#1f2937">
+  <title>Sổ chủ nhiệm 6/3</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div id="toast-root"></div>
+
+  <section id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="brand-mark">6/3</div>
+      <div class="eyebrow">SỔ CHỦ NHIỆM</div>
+      <h1>Quản lý lớp 6/3</h1>
+      <p class="muted">Đăng nhập tài khoản GVCN để quản lý học sinh, điểm danh, học tập và nề nếp.</p>
+      <form id="login-form">
+        <label>Email
+          <input id="email" type="email" autocomplete="username" placeholder="gvcn.6-3@sochunhiem.vn" required>
+        </label>
+        <label>Mật khẩu
+          <input id="password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required>
+        </label>
+        <button class="primary full" type="submit">Đăng nhập</button>
+      </form>
+      <p id="login-error" class="error-text"></p>
+      <p class="tiny muted">Tài khoản GVCN phải được tạo trong Supabase Authentication.</p>
+    </div>
+  </section>
+
+  <section id="app-shell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark small">6/3</div>
+        <div><strong>Sổ chủ nhiệm</strong><span>Lớp 6/3</span></div>
+      </div>
+      <nav id="main-nav">
+        <button class="nav-item active" data-view="dashboard">Tổng quan</button>
+        <button class="nav-item" data-view="students">Học sinh</button>
+        <button class="nav-item" data-view="attendance">Điểm danh</button>
+        <button class="nav-item" data-view="learning">Học tập</button>
+        <button class="nav-item" data-view="discipline">Nề nếp</button>
+        <button class="nav-item" data-view="feedback">Phản hồi</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="user-name" class="user-name">GVCN</div>
+        <div id="user-email" class="tiny muted"></div>
+        <button id="logout-btn" class="ghost full">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">NĂM HỌC 2025–2026</div>
+          <h2 id="page-title">Tổng quan lớp 6/3</h2>
+        </div>
+        <button id="refresh-btn" class="icon-button" title="Tải lại dữ liệu">↻</button>
+      </header>
+      <div id="view-root"></div>
+    </main>
+  </section>
+
+  <script src="./app.js"></script>
+</body>
+</html>
