@@ -223,3 +223,8 @@ Các cảnh báo Security/Performance đã tồn tại trước Phase 2 không �
 - Đăng nhập học sinh bằng Mã HS sẽ được triển khai ở Phase 3.
 - 44 mã học sinh được đổi theo mapping `HS001 → 6301` ... `HS044 → 6344`; không tạo lại học sinh và không đổi `students.id`.
 - Form thêm/sửa học sinh ở Phase 2 dùng Mã HS và chưa cấp tài khoản Auth học sinh.
+
+
+## Phase 2 hotfix A – Student payload
+
+`strength_note` và `improve_note` đã được loại bỏ khỏi form, payload và phần hiển thị frontend. Hai field không tồn tại trong `public.students`, vì vậy frontend hiện chỉ gửi các column có thật trong database.

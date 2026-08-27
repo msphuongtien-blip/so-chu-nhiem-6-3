@@ -644,17 +644,7 @@ function openStudentForm(student) {
         '<div class="field"><label>Ghi chú đặc biệt</label>' +
         '<textarea id="sfNote" rows="3">' +
         esc(student?.special_note || '') +
-        '</textarea></div>' +
-        '<div class="grid two">' +
-        '<div class="field"><label>Điểm mạnh hiển thị cho học sinh</label>' +
-        '<textarea id="sfStrength" rows="3">' +
-        esc(student?.strength_note || '') +
-        '</textarea></div>' +
-        '<div class="field"><label>Nội dung cần cải thiện</label>' +
-        '<textarea id="sfImprove" rows="3">' +
-        esc(student?.improve_note || '') +
-        '</textarea></div>' +
-        '</div>' +
+        '</textarea></div>' + +
         '<div class="field"><label>Ghi chú tiến bộ</label>' +
         '<textarea id="sfProgress" rows="3">' +
         esc(student?.progress_note || '') +
@@ -678,8 +668,6 @@ async function saveStudent(id) {
                 ? ''
                 : $('sfSupport').value,
         special_note: $('sfNote').value.trim(),
-        strength_note: $('sfStrength').value.trim(),
-        improve_note: $('sfImprove').value.trim(),
         progress_note: $('sfProgress').value.trim()
     };
 
@@ -797,7 +785,7 @@ async function renderStudentAll() {
     const {
         data:s
     }
-    =await sb.from('students').select('*').eq('user_id',currentUser.id).single();if(!s)return;window.me=s;$('studentAvatar').textContent=s.full_name.slice(0,1).toUpperCase();$('sProfileName').textContent=s.full_name;$('sProfileMeta').textContent='Lớp '+classSettings.class_name+' · Tổ '+(s.team||'—')+' · GVCN '+classSettings.teacher_name;$('studentHomeBox').innerHTML='<div class="studenthero"><div class="bigavatar">'+esc(s.full_name.slice(0,1))+'</div><div><h2>Chào '+esc(s.full_name)+'!</h2><p class="mutedline">Mỗi ngày một tiến bộ – Mỗi tuần một thành tích!</p></div></div><div class="grid cards section"><div><div class="label">Điểm thi đua</div><div class="metric">'+Number(s.competition_score||0).toFixed(1)+'</div></div><div><div class="label">Nhóm</div><div class="metric">'+group(s.competition_score)+'</div></div><div><div class="label">Chuyên cần</div><div class="metric">'+Number(s.attendance_percent||0).toFixed(1)+'%</div></div><div><div class="label">Hỗ trợ</div><div class="metric">'+esc(s.support_level||'Tốt')+'</div></div></div>';$('studentStrengths').innerHTML='<div class="notice">🌟 '+esc(s.strength_note||'GVCN chưa cập nhật. Hãy tiếp tục phát huy những điều em làm tốt!')+'</div>';$('studentImprove').innerHTML='<div class="notice warn">🎯 '+esc(s.improve_note||s.progress_note||'Chưa có nội dung cần cải thiện được ghi nhận.')+'</div>';$('sProfileBox').innerHTML='<div class="grid two"><div><p><b>Họ tên:</b> '+esc(s.full_name)+'</p><p><b>Mã học sinh:</b> '+esc(s.student_code||'')+'</p></div><div><p><b>Tổ:</b> '+(s.team||'')+'</p><p><b>GVCN:</b> '+esc(classSettings.teacher_name)+'</p><p><b>Chuyên cần:</b> '+Number(s.attendance_percent||0).toFixed(1)+'%</p><p><b>Huy hiệu:</b> '+Number(s.badge_count||0)+'</p></div></div>';$('spScore').textContent=Number(s.competition_score||0).toFixed(1);$('spAttendance').textContent=Number(s.attendance_percent||0).toFixed(1)+'%';const [d,l]=await Promise.all([sb.from('discipline_records').select('*').eq('student_id',s.id),sb.from('learning_records').select('*').eq('student_id',s.id)]);$('spDiscipline').textContent=(d.data||[]).length?'Có '+d.data.length+' ghi nhận':'Tốt';$('spLearning').textContent=(l.data||[]).length?'Có '+l.data.length+' ghi nhận':'Tốt';if(studentChart)studentChart.destroy();studentChart=new Chart($('studentChart'), {
+    =await sb.from('students').select('*').eq('user_id',currentUser.id).single();if(!s)return;window.me=s;$('studentAvatar').textContent=s.full_name.slice(0,1).toUpperCase();$('sProfileName').textContent=s.full_name;$('sProfileMeta').textContent='Lớp '+classSettings.class_name+' · Tổ '+(s.team||'—')+' · GVCN '+classSettings.teacher_name;$('studentHomeBox').innerHTML='<div class="studenthero"><div class="bigavatar">'+esc(s.full_name.slice(0,1))+'</div><div><h2>Chào '+esc(s.full_name)+'!</h2><p class="mutedline">Mỗi ngày một tiến bộ – Mỗi tuần một thành tích!</p></div></div><div class="grid cards section"><div><div class="label">Điểm thi đua</div><div class="metric">'+Number(s.competition_score||0).toFixed(1)+'</div></div><div><div class="label">Nhóm</div><div class="metric">'+group(s.competition_score)+'</div></div><div><div class="label">Chuyên cần</div><div class="metric">'+Number(s.attendance_percent||0).toFixed(1)+'%</div></div><div><div class="label">Hỗ trợ</div><div class="metric">'+esc(s.support_level||'Tốt')+'</div></div></div>';$('sProfileBox').innerHTML='<div class="grid two"><div><p><b>Họ tên:</b> '+esc(s.full_name)+'</p><p><b>Mã học sinh:</b> '+esc(s.student_code||'')+'</p></div><div><p><b>Tổ:</b> '+(s.team||'')+'</p><p><b>GVCN:</b> '+esc(classSettings.teacher_name)+'</p><p><b>Chuyên cần:</b> '+Number(s.attendance_percent||0).toFixed(1)+'%</p><p><b>Huy hiệu:</b> '+Number(s.badge_count||0)+'</p></div></div>';$('spScore').textContent=Number(s.competition_score||0).toFixed(1);$('spAttendance').textContent=Number(s.attendance_percent||0).toFixed(1)+'%';const [d,l]=await Promise.all([sb.from('discipline_records').select('*').eq('student_id',s.id),sb.from('learning_records').select('*').eq('student_id',s.id)]);$('spDiscipline').textContent=(d.data||[]).length?'Có '+d.data.length+' ghi nhận':'Tốt';$('spLearning').textContent=(l.data||[]).length?'Có '+l.data.length+' ghi nhận':'Tốt';if(studentChart)studentChart.destroy();studentChart=new Chart($('studentChart'), {
         type:'line',data: {
             labels:['T1','T2','T3','T4'],datasets:[ {
                 label:'Điểm thi đua',data:(s.score_history||[]).slice(-4),tension:.35
