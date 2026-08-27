@@ -415,7 +415,7 @@ function openStudentForm(student) {
         '<div class="field"><label>Ghi chú đặc biệt</label>' +
         '<textarea id="sfNote" rows="3">' +
         esc(student?.special_note || '') +
-        '</textarea></div>' + +
+        '</textarea></div>' +
         '<div class="field"><label>Ghi chú tiến bộ</label>' +
         '<textarea id="sfProgress" rows="3">' +
         esc(student?.progress_note || '') +
@@ -469,9 +469,15 @@ async function saveStudent(id) {
     } else {
         // Giai đoạn 2 chỉ tạo hồ sơ học sinh.
         // Việc cấp tài khoản đăng nhập bằng Mã HS thuộc Giai đoạn 3.
+        // Học sinh mới bắt đầu với điểm thi đua 81 theo quy tắc nghiệp vụ đã chốt.
+        const newStudentPayload = {
+            ...payload,
+            competition_score: 81
+        };
+
         const { error } = await sb
             .from('students')
-            .insert(payload);
+            .insert(newStudentPayload);
 
         // Dừng nếu database trả lỗi.
         if (error) {
