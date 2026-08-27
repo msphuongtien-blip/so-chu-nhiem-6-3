@@ -605,94 +605,98 @@ async function saveClassSettings() {
     =await sb.from('class_settings').select('id').limit(1).maybeSingle();let e;if(data)e=await sb.from('class_settings').update(payload).eq('id',data.id);else e=await sb.from('class_settings').insert(payload);$('settingsMsg').textContent=e.error?e.error.message:'Đã lưu thông tin lớp.';await loadSettings()
 }
 /**
- * Sinh mã học sinh kế tiếp dựa trên mã lớp hiện tại.
- *
- * Quy tắc:
- * - Lấy phần chữ số của tên lớp. Ví dụ: 6/3 -> 63, 6/10 -> 610.
- * - Tìm các mã đã dùng có cùng prefix lớp.
- * - Lấy số thứ tự lớn nhất và cộng 1.
- * - Mã cuối cùng có dạng: mã lớp + 2 chữ số số thứ tự.
+ * Tách phần số lớp từ tên lớp để tạo tiền tố mã học sinh.
  *
  * Ví dụ:
- * 6/3 + đã có 6301..6344 -> mã mới 6345.
+ * - "6/3"  -> "63"
+ * - "6/10" -> "610"
+ * - "7/2"  -> "72"
  *
- * @returns {Promise<string>} Mã học sinh kế tiếp.
+ * @param {string} className Tên lớp đang được cấu hình.
+ * @returns {string} Tiền tố số dùng để sinh student_code.
  */
-async function getNextStudentCode() {
-    // Lấy tên lớp hiện tại từ cấu hình lớp.
-    const className = String(classSettings.class_name || '').trim();
+function getStudentCodePrefix(className) {
+    // Chuyển tên lớp thành chuỗi để xử lý an toàn.
+    const normalizedClassName = String(className || '').trim();
 
-    // Giữ lại toàn bộ chữ số trong tên lớp để tạo prefix.
-    // Ví dụ: "6/3" -> "63" và "6/10" -> "610".
-    const classPrefix = className.replace(/\D/g, '');
+    // Chỉ giữ lại các chữ số trong tên lớp.
+    return normalizedClassName.replace(/\D/g, '');
+}
 
-    // Dừng nếu tên lớp không có chữ số để tránh sinh mã sai.
+/**
+ * Tìm mã học sinh tiếp theo dựa trên các mã đang tồn tại trong database.
+ *
+ * Nguyên tắc:
+ * - Không dựa vào số lượng học sinh.
+ * - Tìm số thứ tự lớn nhất hiện có trong cùng tiền tố lớp.
+ * - Tăng số thứ tự lên 1.
+ * - Phần số thứ tự luôn được đệm thành tối thiểu 2 chữ số.
+ *
+ * Ví dụ lớp 6/3:
+ * 6301 ... 6344 -> mã tiếp theo là 6345.
+ *
+ * @returns {Promise<string>} Mã học sinh tiếp theo.
+ */
+async function generateNextStudentCode() {
+    // Lấy tiền tố từ tên lớp hiện tại.
+    const classPrefix = getStudentCodePrefix(classSettings.class_name);
+
+    // Không thể sinh mã nếu chưa có thông tin lớp.
     if (!classPrefix) {
-        throw new Error('Chưa xác định được mã lớp để sinh mã học sinh.');
+        throw new Error('Chưa xác định được mã lớp để tạo mã học sinh.');
     }
 
-    // Chỉ lấy các mã có cùng prefix và đúng thêm 2 chữ số STT.
+    // Đọc mã học sinh hiện có từ Supabase.
     const { data, error } = await sb
         .from('students')
         .select('student_code')
-        .like('student_code', `${classPrefix}__`);
+        .like('student_code', `${classPrefix}%`);
 
-    // Nếu truy vấn database lỗi, không tự sinh mã để tránh ghi sai dữ liệu.
+    // Nếu truy vấn thất bại, chuyển lỗi cho function gọi xử lý.
     if (error) {
         throw error;
     }
 
-    // Chuyển các mã hợp lệ thành số thứ tự.
-    const sequenceNumbers = (data || [])
-        .map((student) => {
-            const code = String(student.student_code || '');
+    // Tách phần số thứ tự sau tiền tố lớp và tìm số lớn nhất.
+    const maxSequence = (data || [])
+        .map(student => String(student.student_code || ''))
+        .filter(code => code.startsWith(classPrefix))
+        .map(code => Number(code.slice(classPrefix.length)))
+        .filter(sequence => Number.isInteger(sequence) && sequence >= 1)
+        .reduce((max, sequence) => Math.max(max, sequence), 0);
 
-            // Bỏ prefix để lấy 2 chữ số STT phía sau.
-            const sequencePart = code.slice(classPrefix.length);
-
-            // Chỉ nhận đúng 2 chữ số STT.
-            return /^\d{2}$/.test(sequencePart)
-                ? Number(sequencePart)
-                : null;
-        })
-        .filter((sequence) => Number.isInteger(sequence));
-
-    // Lấy STT lớn nhất hiện có. Nếu chưa có học sinh thì bắt đầu từ 1.
-    const maxSequence = sequenceNumbers.length
-        ? Math.max(...sequenceNumbers)
-        : 0;
-
-    // Sinh STT kế tiếp.
+    // Tăng số thứ tự lên 1 để tạo mã mới.
     const nextSequence = maxSequence + 1;
 
-    // Một lớp chỉ dùng tối đa 99 số thứ tự theo quy tắc 2 chữ số.
-    if (nextSequence > 99) {
-        throw new Error('Lớp đã vượt quá 99 học sinh, không thể sinh thêm mã theo format hiện tại.');
-    }
-
-    // Luôn giữ đủ 2 chữ số: 1 -> 01, 9 -> 09, 45 -> 45.
+    // Đệm số thứ tự thành tối thiểu 2 chữ số.
     return `${classPrefix}${String(nextSequence).padStart(2, '0')}`;
 }
 
+/**
+ * Mở form Thêm/Sửa học sinh.
+ *
+ * Khi thêm mới, mã học sinh được hệ thống tự sinh và chỉ hiển thị để GVCN kiểm tra.
+ * Khi chỉnh sửa, mã hiện tại chỉ được hiển thị và không cho thay đổi.
+ *
+ * @param {object|null} student Học sinh đang sửa hoặc null nếu thêm mới.
+ */
 async function openStudentForm(student) {
     // Xác định form đang dùng để thêm mới hay chỉnh sửa.
     const isEdit = Boolean(student);
 
-    // Nếu đang thêm mới, sinh mã HS tự động từ database.
-    // Mã này chỉ hiển thị để GVCN kiểm tra, không cho nhập tay.
+    // Với học sinh mới, lấy mã dự kiến trực tiếp từ database.
     let nextStudentCode = student?.student_code || '';
 
     if (!isEdit) {
         try {
-            nextStudentCode = await getNextStudentCode();
+            nextStudentCode = await generateNextStudentCode();
         } catch (error) {
-            console.error('Không thể sinh mã HS tự động:', error);
-            alert('Không thể tạo mã học sinh tự động. Vui lòng kiểm tra cấu hình lớp.');
+            alert(`Không thể tạo mã học sinh tự động: ${error.message || error}`);
             return;
         }
     }
 
-    // Tạo form chỉ chứa thông tin hồ sơ cần thiết.
+    // Hiển thị form hồ sơ tối giản.
     // Email, ngày sinh và dữ liệu phụ huynh đã được loại bỏ ở Phase 2.
     openModal(
         isEdit ? 'Chỉnh sửa học sinh' : 'Thêm học sinh',
@@ -701,11 +705,13 @@ async function openStudentForm(student) {
         '<input id="sfName" value="' +
         esc(student?.full_name || '') +
         '"></div>' +
-        '<div class="field"><label>Mã HS dự kiến</label>' +
-        '<div class="notice" style="margin:0">' +
-        (isEdit
-            ? '<b>' + esc(nextStudentCode) + '</b>'
-            : '<b id="sfCodePreview">' + esc(nextStudentCode) + '</b><div class="mini">Mã được hệ thống tự động gán; GVCN không cần nhập.</div>') +
+        '<div class="field"><label>Mã HS ' +
+        (isEdit ? '' : 'dự kiến') +
+        '</label>' +
+        '<div class="pill"><b>' +
+        esc(nextStudentCode) +
+        '</b>' +
+        (isEdit ? '' : ' · Hệ thống tự động gán khi lưu') +
         '</div></div>' +
         '</div>' +
         '<div class="grid two">' +
@@ -722,7 +728,7 @@ async function openStudentForm(student) {
         '</div>' +
         '<div class="field"><label>Mức hỗ trợ</label>' +
         '<select id="sfSupport">' +
-        '<option ' + (!student?.support_level ? 'selected' : '') + '>Không</option>' +
+        '<option ' + (student?.support_level === 'Không' || !student?.support_level ? 'selected' : '') + '>Không</option>' +
         '<option ' + (student?.support_level === 'Theo dõi' ? 'selected' : '') + '>Theo dõi</option>' +
         '<option ' + (student?.support_level === 'Cần hỗ trợ' ? 'selected' : '') + '>Cần hỗ trợ</option>' +
         '<option ' + (student?.support_level === 'Cần can thiệp' ? 'selected' : '') + '>Cần can thiệp</option>' +
@@ -737,99 +743,91 @@ async function openStudentForm(student) {
         '</textarea></div>' +
         '<button class="btn primary" onclick="saveStudent(' +
         (isEdit ? "'" + student.id + "'" : 'null') +
-        ')">Lưu học sinh</button>'
+        ')">' +
+        'Lưu học sinh</button>'
     );
 }
 
-
+/**
+ * Lưu một học sinh mới hoặc cập nhật học sinh hiện tại.
+ *
+ * Khi thêm mới:
+ * - Tự sinh student_code.
+ * - competition_score = 81.
+ * - attendance_percent = 100.
+ * - support_level = "Không".
+ *
+ * Khi chỉnh sửa:
+ * - Giữ nguyên student_code.
+ * - Chỉ cập nhật các thông tin được phép sửa.
+ *
+ * @param {string|null} id ID học sinh khi chỉnh sửa; null khi thêm mới.
+ */
 async function saveStudent(id) {
-    // Xác định mã học sinh.
-    // - Khi sửa: giữ nguyên mã hiện tại.
-    // - Khi thêm: hệ thống sinh lại mã để bảo đảm không trùng.
-    let studentCode = '';
-
-    if (id) {
-        const existingStudent = students.find((student) => student.id === id);
-
-        if (!existingStudent?.student_code) {
-            alert('Không xác định được mã học sinh hiện tại.');
-            return;
-        }
-
-        studentCode = existingStudent.student_code;
-    } else {
-        try {
-            studentCode = await getNextStudentCode();
-        } catch (error) {
-            console.error('Không thể sinh mã HS:', error);
-            alert('Không thể tạo mã học sinh tự động. Vui lòng thử lại.');
-            return;
-        }
-    }
-
-    // Thu thập dữ liệu hồ sơ từ form.
+    // Thu thập các trường được phép chỉnh sửa từ form.
     const payload = {
         full_name: $('sfName').value.trim(),
-        student_code: studentCode,
         gender: $('sfGender').value,
         team: Number($('sfTeam').value) || null,
-        support_level:
-            $('sfSupport').value === 'Không'
-                ? ''
-                : $('sfSupport').value,
+        support_level: $('sfSupport').value || 'Không',
         special_note: $('sfNote').value.trim(),
         progress_note: $('sfProgress').value.trim()
     };
 
-    // Chỉ bắt buộc họ tên; mã HS đã được hệ thống tự sinh.
+    // Họ tên là thông tin bắt buộc.
     if (!payload.full_name) {
-        alert('Vui lòng nhập họ tên học sinh.');
+        alert('Cần nhập họ tên học sinh.');
         return;
     }
 
-    // Kiểm tra mã sinh tự động vẫn đúng dạng số của hệ thống.
-    if (!/^\d{4,}$/.test(payload.student_code)) {
-        alert('Mã HS được hệ thống sinh không hợp lệ.');
-        return;
-    }
-
-    // Nếu đang chỉnh sửa, cập nhật đúng một học sinh theo id.
+    // Nếu đang chỉnh sửa, tuyệt đối không sửa student_code.
     if (id) {
         const { error } = await sb
             .from('students')
             .update(payload)
             .eq('id', id);
 
-        // Dừng nếu database trả lỗi.
+        // Hiển thị lỗi nếu database từ chối cập nhật.
         if (error) {
             alert(error.message);
             return;
         }
     } else {
-        // Giai đoạn 2 chỉ tạo hồ sơ học sinh.
-        // Việc cấp tài khoản đăng nhập bằng Mã HS thuộc Giai đoạn 3.
-        // Học sinh mới bắt đầu với điểm thi đua 81.
+        // Sinh mã mới ngay trước lúc INSERT để hạn chế mã dự kiến bị cũ.
+        let generatedStudentCode;
+
+        try {
+            generatedStudentCode = await generateNextStudentCode();
+        } catch (error) {
+            alert(`Không thể tạo mã học sinh tự động: ${error.message || error}`);
+            return;
+        }
+
+        // Dữ liệu mặc định dành cho một học sinh mới.
         const newStudentPayload = {
             ...payload,
-            competition_score: 81
+            student_code: generatedStudentCode,
+            competition_score: 81,
+            attendance_percent: 100,
+            support_level: 'Không'
         };
 
+        // Thêm học sinh mới vào database.
         const { error } = await sb
             .from('students')
             .insert(newStudentPayload);
 
-        // Nếu mã vừa sinh đã bị một thao tác đồng thời sử dụng,
-        // database UNIQUE sẽ chặn insert và báo lỗi.
+        // Hiển thị lỗi nếu insert thất bại.
         if (error) {
             alert(error.message);
             return;
         }
     }
 
-    // Đóng modal sau khi lưu thành công.
+    // Đóng form sau khi thao tác thành công.
     closeModal();
 
-    // Đọc lại dữ liệu để giao diện đồng bộ với Supabase.
+    // Tải lại dữ liệu để UI đồng bộ hoàn toàn với database.
     await loadAll();
 }
 
@@ -902,7 +900,7 @@ async function renderStudentAll() {
     const {
         data:s
     }
-    =await sb.from('students').select('*').eq('user_id',currentUser.id).single();if(!s)return;window.me=s;$('studentAvatar').textContent=s.full_name.slice(0,1).toUpperCase();$('sProfileName').textContent=s.full_name;$('sProfileMeta').textContent='Lớp '+classSettings.class_name+' · Tổ '+(s.team||'—')+' · GVCN '+classSettings.teacher_name;$('studentHomeBox').innerHTML='<div class="studenthero"><div class="bigavatar">'+esc(s.full_name.slice(0,1))+'</div><div><h2>Chào '+esc(s.full_name)+'!</h2><p class="mutedline">Mỗi ngày một tiến bộ – Mỗi tuần một thành tích!</p></div></div><div class="grid cards section"><div><div class="label">Điểm thi đua</div><div class="metric">'+Number(s.competition_score||0).toFixed(1)+'</div></div><div><div class="label">Nhóm</div><div class="metric">'+group(s.competition_score)+'</div></div><div><div class="label">Chuyên cần</div><div class="metric">'+Number(s.attendance_percent||0).toFixed(1)+'%</div></div><div><div class="label">Hỗ trợ</div><div class="metric">'+esc(s.support_level||'Tốt')+'</div></div></div>';$('sProfileBox').innerHTML='<div class="grid two"><div><p><b>Họ tên:</b> '+esc(s.full_name)+'</p><p><b>Mã học sinh:</b> '+esc(s.student_code||'')+'</p></div><div><p><b>Tổ:</b> '+(s.team||'')+'</p><p><b>GVCN:</b> '+esc(classSettings.teacher_name)+'</p><p><b>Chuyên cần:</b> '+Number(s.attendance_percent||0).toFixed(1)+'%</p><p><b>Huy hiệu:</b> '+Number(s.badge_count||0)+'</p></div></div>';$('spScore').textContent=Number(s.competition_score||0).toFixed(1);$('spAttendance').textContent=Number(s.attendance_percent||0).toFixed(1)+'%';const [d,l]=await Promise.all([sb.from('discipline_records').select('*').eq('student_id',s.id),sb.from('learning_records').select('*').eq('student_id',s.id)]);$('spDiscipline').textContent=(d.data||[]).length?'Có '+d.data.length+' ghi nhận':'Tốt';$('spLearning').textContent=(l.data||[]).length?'Có '+l.data.length+' ghi nhận':'Tốt';if(studentChart)studentChart.destroy();studentChart=new Chart($('studentChart'), {
+    =await sb.from('students').select('*').eq('user_id',currentUser.id).single();if(!s)return;window.me=s;$('studentAvatar').textContent=s.full_name.slice(0,1).toUpperCase();$('sProfileName').textContent=s.full_name;$('sProfileMeta').textContent='Lớp '+classSettings.class_name+' · Tổ '+(s.team||'—')+' · GVCN '+classSettings.teacher_name;$('studentHomeBox').innerHTML='<div class="studenthero"><div class="bigavatar">'+esc(s.full_name.slice(0,1))+'</div><div><h2>Chào '+esc(s.full_name)+'!</h2><p class="mutedline">Mỗi ngày một tiến bộ – Mỗi tuần một thành tích!</p></div></div><div class="grid cards section"><div><div class="label">Điểm thi đua</div><div class="metric">'+Number(s.competition_score||0).toFixed(1)+'</div></div><div><div class="label">Nhóm</div><div class="metric">'+group(s.competition_score)+'</div></div><div><div class="label">Chuyên cần</div><div class="metric">'+Number(s.attendance_percent||0).toFixed(1)+'%</div></div><div><div class="label">Hỗ trợ</div><div class="metric">'+esc(s.support_level||'Không')+'</div></div></div>';$('sProfileBox').innerHTML='<div class="grid two"><div><p><b>Họ tên:</b> '+esc(s.full_name)+'</p><p><b>Mã học sinh:</b> '+esc(s.student_code||'')+'</p></div><div><p><b>Tổ:</b> '+(s.team||'')+'</p><p><b>GVCN:</b> '+esc(classSettings.teacher_name)+'</p><p><b>Chuyên cần:</b> '+Number(s.attendance_percent||0).toFixed(1)+'%</p><p><b>Huy hiệu:</b> '+Number(s.badge_count||0)+'</p></div></div>';$('spScore').textContent=Number(s.competition_score||0).toFixed(1);$('spAttendance').textContent=Number(s.attendance_percent||0).toFixed(1)+'%';const [d,l]=await Promise.all([sb.from('discipline_records').select('*').eq('student_id',s.id),sb.from('learning_records').select('*').eq('student_id',s.id)]);$('spDiscipline').textContent=(d.data||[]).length?'Có '+d.data.length+' ghi nhận':'Tốt';$('spLearning').textContent=(l.data||[]).length?'Có '+l.data.length+' ghi nhận':'Tốt';if(studentChart)studentChart.destroy();studentChart=new Chart($('studentChart'), {
         type:'line',data: {
             labels:['T1','T2','T3','T4'],datasets:[ {
                 label:'Điểm thi đua',data:(s.score_history||[]).slice(-4),tension:.35
