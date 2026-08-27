@@ -2,101 +2,86 @@
  * FILE: core/utils.js
  *
  * Mục đích:
- * Chứa các utility thuần dùng chung cho nhiều module.
+ * Chứa các utility thuần và helper DOM dùng chung.
  *
- * Trách nhiệm:
- * - Truy cập DOM theo id.
- * - Escape dữ liệu trước khi đưa vào HTML string.
- * - Chuẩn hóa ngày local.
- * - Xác định ngày đầu tuần theo quy ước thứ Hai.
- *
- * Không gọi Supabase và không chứa nghiệp vụ của module riêng lẻ.
+ * Utility ở đây không được thực hiện CRUD hoặc chứa logic riêng của một
+ * module nghiệp vụ.
  */
 
 /**
- * Lấy DOM element theo id.
+ * Lấy một phần tử DOM theo id.
  *
- * @param {string} id ID của element cần tìm.
- * @returns {HTMLElement|null} Element tìm được.
+ * @param {string} id ID của phần tử cần tìm.
+ * @returns {HTMLElement|null} Phần tử hoặc null nếu không tồn tại.
  */
-function dom(id) {
-    return document.getElementById(id);
-}
+const $ = (id) => document.getElementById(id);
 
 /**
- * Escape các ký tự đặc biệt trước khi chèn dữ liệu vào HTML string.
+ * Escape text trước khi đưa vào HTML string.
  *
  * @param {*} value Giá trị cần escape.
- * @returns {string} Chuỗi HTML-safe.
+ * @returns {string} Chuỗi an toàn để chèn vào HTML.
  */
-function escapeHtml(value) {
-    return String(value ?? '').replace(
+const esc = (value) =>
+    String(value ?? '').replace(
         /[&<>"']/g,
-        (character) => ({
+        (match) => ({
             '&': '&amp;',
             '<': '&lt;',
             '>': '&gt;',
             '"': '&quot;',
             "'": '&#039;',
-        }[character]),
+        }[match]),
     );
+
+/**
+ * Trả về ngày hiện tại theo múi giờ local của trình duyệt.
+ *
+ * @returns {string} Ngày dạng YYYY-MM-DD.
+ */
+function localDate() {
+    const now = new Date();
+    const local = new Date(
+        now.getTime() - now.getTimezoneOffset() * 60000,
+    );
+
+    return local.toISOString().slice(0, 10);
 }
 
 /**
- * Lấy ngày theo local timezone dưới dạng YYYY-MM-DD.
+ * Lấy ngày thứ Hai đầu tuần hiện tại.
  *
- * @param {Date} [date] Ngày đầu vào; mặc định là hiện tại.
- * @returns {string} Ngày YYYY-MM-DD.
+ * @returns {string} Ngày bắt đầu tuần dạng YYYY-MM-DD.
  */
-function localDate(date = new Date()) {
-    const timezoneOffset = date.getTimezoneOffset();
-    const localTime = new Date(
-        date.getTime() - timezoneOffset * 60 * 1000,
-    );
+function getCurrentWeekStart() {
+    const date = new Date();
+    const day = date.getDay();
+    const difference = day === 0 ? -6 : 1 - day;
 
-    return localTime.toISOString().slice(0, 10);
-}
+    date.setDate(date.getDate() + difference);
 
-/**
- * Trả về ngày thứ Hai của tuần chứa ngày đầu vào.
- *
- * @param {Date} [date] Ngày cần xác định tuần.
- * @returns {string} Ngày thứ Hai dạng YYYY-MM-DD.
- */
-function getCurrentWeekStart(date = new Date()) {
-    const result = new Date(date);
-    const day = result.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-
-    result.setDate(result.getDate() + diff);
-
-    return localDate(result);
+    return date.toISOString().slice(0, 10);
 }
 
 /**
  * Chuẩn hóa một ngày bất kỳ về ngày thứ Hai đầu tuần.
  *
- * @param {string|Date} value Ngày đầu vào.
- * @returns {string} Ngày đầu tuần dạng YYYY-MM-DD.
+ * @param {string} value Ngày dạng YYYY-MM-DD.
+ * @returns {string} Ngày bắt đầu tuần.
  */
 function compWeekStart(value) {
-    const parsed = value instanceof Date
-        ? new Date(value)
-        : new Date(`${value}T00:00:00`);
+    const date = new Date(
+        (value || getCurrentWeekStart()) + 'T00:00:00',
+    );
 
-    if (Number.isNaN(parsed.getTime())) {
+    if (Number.isNaN(date.getTime())) {
         return getCurrentWeekStart();
     }
 
-    return getCurrentWeekStart(parsed);
+    const day = date.getDay();
+    const difference = day === 0 ? -6 : 1 - day;
+
+    date.setDate(date.getDate() + difference);
+
+    return date.toISOString().slice(0, 10);
 }
-
-const SNCoreUtils = Object.freeze({
-    dom,
-    escapeHtml,
-    localDate,
-    getCurrentWeekStart,
-    compWeekStart,
-});
-
-globalThis.SNCoreUtils = SNCoreUtils;
