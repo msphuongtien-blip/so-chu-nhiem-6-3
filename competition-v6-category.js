@@ -1,77 +1,163 @@
 /**
  * V6 Task 1 — Dynamic competition categories.
  *
- * This compatibility layer keeps the existing app.js intact while moving
- * category selection to Supabase. Category 6 (Học tập) therefore follows
- * the same path as the other categories without hard-coded 1–5 lists.
+ * Compatibility layer for the current V5 application.
+ *
+ * Responsibilities:
+ * - Load competition categories from Supabase.
+ * - Expose Category 1–6 to the existing competition UI.
+ * - Keep Category 6 (Học tập) on the same data path as the other categories.
+ *
+ * Important bootstrap rule:
+ * A failure while loading competition categories must not prevent the
+ * existing application from loading students, attendance, dashboard data,
+ * and the other modules. Category loading is therefore treated as an
+ * optional enhancement during bootstrap and the error is reported to the
+ * console instead of stopping the whole application.
  */
 
-const V6_VALID_SCORES = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5];
+const V6_VALID_SCORES = [
+    -5,
+    -4,
+    -3,
+    -2,
+    -1,
+    1,
+    2,
+    3,
+    4,
+    5,
+];
+
 let competitionCategoriesV6 = [];
 
-/** Load categories from the existing Supabase database. */
+/**
+ * Load all competition categories from the existing Supabase database.
+ *
+ * This function intentionally throws database errors so callers can decide
+ * how the error should be handled in their own context.
+ */
 async function loadCompetitionCategoriesV6() {
+    if (!sb) {
+        throw new Error('Supabase client chưa được khởi tạo.');
+    }
+
     const { data, error } = await sb
         .from('competition_categories')
         .select('id, name, active, sort_order')
-        .order('sort_order', { ascending: true })
-        .order('id', { ascending: true });
+        .order('sort_order', {
+            ascending: true,
+        })
+        .order('id', {
+            ascending: true,
+        });
 
-    if (error) throw error;
+    if (error) {
+        throw error;
+    }
 
     competitionCategoriesV6 = data || [];
     return competitionCategoriesV6;
 }
 
-/** Return categories available for new records. */
+/**
+ * Try to load categories without allowing category errors to break the app.
+ *
+ * @returns {Promise<boolean>}
+ * True when the category query succeeds, otherwise false.
+ */
+async function ensureCompetitionCategoriesV6() {
+    try {
+        await loadCompetitionCategoriesV6();
+        return true;
+    } catch (error) {
+        console.error(
+            '[Competition V6] Không thể tải competition_categories:',
+            error,
+        );
+
+        // Keep the in-memory collection empty rather than inventing data.
+        competitionCategoriesV6 = [];
+        return false;
+    }
+}
+
+/**
+ * Return categories available for creating new records.
+ */
 function getActiveCompetitionCategoriesV6() {
     return competitionCategoriesV6.filter(
-        category => category.active !== false
+        (category) => category.active !== false,
     );
 }
 
-/** Resolve a category name from the database-backed list. */
+/**
+ * Resolve a category name from the database-backed category list.
+ */
 function categoryName(id) {
     const category = competitionCategoriesV6.find(
-        item => String(item.id) === String(id)
+        (item) => String(item.id) === String(id),
     );
 
     return category?.name || 'Không xác định';
 }
 
-/** Build category options without hard-coding category IDs. */
+/**
+ * Build category options without hard-coding category IDs.
+ */
 function competitionCategoryOptionsV6(selectedId = '') {
     return getActiveCompetitionCategoriesV6()
-        .map(category => {
+        .map((category) => {
             const selected =
                 String(category.id) === String(selectedId)
                     ? ' selected'
                     : '';
 
             return (
-                '<option value="' + esc(category.id) + '"' + selected + '>' +
-                    esc(category.id) + '. ' + esc(category.name) +
+                '<option value="' +
+                esc(category.id) +
+                '"' +
+                selected +
+                '>' +
+                esc(category.id) +
+                '. ' +
+                esc(category.name) +
                 '</option>'
             );
         })
         .join('');
 }
 
-/** Build the only allowed score values. Zero is intentionally absent. */
+/**
+ * Build the only allowed score values.
+ *
+ * Zero is deliberately absent from this list.
+ */
 function scoreOptionsV6(selected = 1) {
-    return V6_VALID_SCORES.map(value => {
-        const selectedAttr = Number(selected) === value ? ' selected' : '';
+    return V6_VALID_SCORES.map((value) => {
+        const selectedAttr =
+            Number(selected) === value ? ' selected' : '';
         const label = value > 0 ? '+' + value : String(value);
 
         return (
-            '<option value="' + value + '"' + selectedAttr + '>' +
-                label +
+            '<option value="' +
+            value +
+            '"' +
+            selectedAttr +
+            '>' +
+            label +
             '</option>'
         );
     }).join('');
 }
 
-/** Support both the current legacy score fields and V6 default_score. */
+/**
+ * Read a criterion default score.
+ *
+ * V6 prefers default_score. Legacy points/type fields remain supported
+ * temporarily so existing sample data can continue to render while the
+ * database is migrated in a later task.
+ */
 function criteriaDefaultScoreV6(criteria) {
     if (criteria.default_score != null) {
         return Number(criteria.default_score);
@@ -84,25 +170,42 @@ function criteriaDefaultScoreV6(criteria) {
         : Math.abs(points);
 }
 
-/* Load categories before the existing application bootstrap runs. */
+/**
+ * Compatibility wrapper around the existing V5 application bootstrap.
+ *
+ * Category loading must never block the core application bootstrap. If the
+ * category query fails, the original V5 loadAll() still runs so students and
+ * the dashboard are loaded normally.
+ */
 const loadAllV5 = loadAll;
+
 async function loadAll() {
-    await loadCompetitionCategoriesV6();
+    await ensureCompetitionCategoriesV6();
     return loadAllV5();
 }
 
-/* Refresh categories before the existing competition renderer runs. */
+/**
+ * Compatibility wrapper around the existing competition renderer.
+ *
+ * The category query is best-effort here for the same reason as loadAll().
+ */
 const renderCompetitionV5 = renderCompetition;
+
 async function renderCompetition() {
-    await loadCompetitionCategoriesV6();
+    await ensureCompetitionCategoriesV6();
     renderCompetitionCategoryFilterV6();
     return renderCompetitionV5();
 }
 
-/** Render the competition category filter from Supabase. */
+/**
+ * Render the competition category filter from Supabase data.
+ */
 function renderCompetitionCategoryFilterV6() {
     const select = $('compGroupFilter');
-    if (!select) return;
+
+    if (!select) {
+        return;
+    }
 
     const currentValue = select.value;
 
@@ -110,65 +213,111 @@ function renderCompetitionCategoryFilterV6() {
         '<option value="">Tất cả nhóm</option>' +
         competitionCategoryOptionsV6(currentValue);
 
-    if (currentValue) select.value = currentValue;
+    if (currentValue) {
+        select.value = currentValue;
+    }
 }
 
-/** Render criteria grouped under every active category, including #6. */
+/**
+ * Render criteria grouped under every active category, including Category 6.
+ */
 async function renderCompetitionCriteria() {
     const box = $('criteriaSettings');
-    if (!box) return;
 
-    await loadCompetitionCategoriesV6();
+    if (!box) {
+        return;
+    }
+
+    // A criteria rendering error must not crash the rest of the competition UI.
+    const categoriesLoaded = await ensureCompetitionCategoriesV6();
+
+    if (!categoriesLoaded) {
+        box.innerHTML =
+            '<div class="mini">Không tải được nhóm tiêu chí từ Supabase.</div>';
+        return;
+    }
 
     const { data, error } = await sb
         .from('competition_criteria')
         .select('*')
-        .order('sort_order', { ascending: true });
+        .order('sort_order', {
+            ascending: true,
+        });
 
     if (error) {
-        box.innerHTML = '<div class="mini">Không tải được tiêu chí.</div>';
+        box.innerHTML =
+            '<div class="mini">Không tải được tiêu chí.</div>';
+        console.error(
+            '[Competition V6] Không thể tải competition_criteria:',
+            error,
+        );
         return;
     }
 
-    box.innerHTML = '<div class="criteria-grid">' +
-        getActiveCompetitionCategoriesV6().map(category => {
-            const criteria = (data || []).filter(item =>
-                String(item.category_id || item.group_name) ===
-                String(category.id)
-            );
+    box.innerHTML =
+        '<div class="criteria-grid">' +
+        getActiveCompetitionCategoriesV6()
+            .map((category) => {
+                const criteria = (data || []).filter(
+                    (item) =>
+                        String(item.category_id || item.group_name) ===
+                        String(category.id),
+                );
 
-            const cards = criteria.map(item => {
-                const score = criteriaDefaultScoreV6(item);
+                const cards = criteria
+                    .map((item) => {
+                        const score = criteriaDefaultScoreV6(item);
+
+                        return (
+                            '<div class="notice">' +
+                            '<div><b>' +
+                            esc(item.name) +
+                            '</b> <span class="mini">Mặc định ' +
+                            (score > 0 ? '+' : '') +
+                            score +
+                            '</span></div>' +
+                            '<div class="mini">' +
+                            'Thang điểm: -5,-4,-3,-2,-1,+1,+2,+3,+4,+5' +
+                            '</div>' +
+                            '<div class="actions">' +
+                            '<button class="btn small" onclick="editCriteria(\'' +
+                            item.id +
+                            '\')">Sửa</button>' +
+                            '<button class="btn small" onclick="toggleCriteria(\'' +
+                            item.id +
+                            '\',' +
+                            (item.active ? 'false' : 'true') +
+                            ')">' +
+                            (item.active ? 'Tắt' : 'Bật') +
+                            '</button>' +
+                            '</div>' +
+                            '</div>'
+                        );
+                    })
+                    .join('');
 
                 return (
-                    '<div class="notice"><div><b>' + esc(item.name) +
-                    '</b> <span class="mini">Mặc định ' +
-                    (score > 0 ? '+' : '') + score +
-                    '</span></div><div class="mini">' +
-                    'Thang điểm: -5,-4,-3,-2,-1,+1,+2,+3,+4,+5' +
-                    '</div><div class="actions">' +
-                    '<button class="btn small" onclick="editCriteria(\'' +
-                    item.id + '\')">Sửa</button>' +
-                    '<button class="btn small" onclick="toggleCriteria(\'' +
-                    item.id + '\',' + (item.active ? 'false' : 'true') +
-                    ')">' + (item.active ? 'Tắt' : 'Bật') +
-                    '</button></div></div>'
+                    '<div class="criteria-group">' +
+                    '<h4>Nhóm ' +
+                    esc(category.id) +
+                    ': ' +
+                    esc(category.name) +
+                    '</h4>' +
+                    (cards ||
+                        '<div class="mini">Chưa có tiêu chí.</div>') +
+                    '</div>'
                 );
-            }).join('');
-
-            return (
-                '<div class="criteria-group"><h4>Nhóm ' +
-                esc(category.id) + ': ' + esc(category.name) +
-                '</h4>' +
-                (cards || '<div class="mini">Chưa có tiêu chí.</div>') +
-                '</div>'
-            );
-        }).join('') +
-        '</div><button class="btn" onclick="addCriteria()">' +
-        '+ Thêm tiêu chí</button>';
+            })
+            .join('') +
+        '</div>' +
+        '<button class="btn" onclick="addCriteria()">' +
+        '+ Thêm tiêu chí' +
+        '</button>';
 }
 
-/** Edit a criterion and allow moving it to any active category. */
+/**
+ * Edit a criterion and allow moving it to any active category.
+ */
 async function editCriteria(id) {
     const { data, error } = await sb
         .from('competition_criteria')
@@ -181,28 +330,46 @@ async function editCriteria(id) {
         return;
     }
 
-    await loadCompetitionCategoriesV6();
+    const categoriesLoaded = await ensureCompetitionCategoriesV6();
+
+    if (!categoriesLoaded) {
+        alert('Không thể tải nhóm tiêu chí từ Supabase.');
+        return;
+    }
 
     openModal(
         'Điều chỉnh tiêu chí thi đua',
         '<div class="field"><label>Tên tiêu chí</label>' +
-        '<input id="crName" value="' + esc(data.name) + '"></div>' +
+        '<input id="crName" value="' +
+        esc(data.name) +
+        '"></div>' +
         '<div class="field"><label>Nhóm tiêu chí</label>' +
         '<select id="crGroup">' +
-        competitionCategoryOptionsV6(data.category_id || data.group_name) +
+        competitionCategoryOptionsV6(
+            data.category_id || data.group_name,
+        ) +
         '</select></div>' +
         '<div class="field"><label>Mức điểm mặc định</label>' +
         '<select id="crPoints">' +
         scoreOptionsV6(criteriaDefaultScoreV6(data)) +
         '</select></div>' +
         '<button class="btn primary" onclick="saveCriteria(\'' +
-        id + '\')">Lưu</button>'
+        id +
+        '\')">Lưu</button>'
     );
 }
 
-/** Add a criterion to any active category. */
+/**
+ * Add a criterion to any active category.
+ */
 async function addCriteria() {
-    await loadCompetitionCategoriesV6();
+    const categoriesLoaded = await ensureCompetitionCategoriesV6();
+
+    if (!categoriesLoaded) {
+        alert('Không thể tải nhóm tiêu chí từ Supabase.');
+        return;
+    }
+
     const categories = getActiveCompetitionCategoriesV6();
 
     if (!categories.length) {
@@ -219,12 +386,18 @@ async function addCriteria() {
         competitionCategoryOptionsV6(categories[0].id) +
         '</select></div>' +
         '<div class="field"><label>Mức điểm mặc định</label>' +
-        '<select id="crPoints">' + scoreOptionsV6(1) + '</select></div>' +
-        '<button class="btn primary" onclick="createCriteria()">Thêm</button>'
+        '<select id="crPoints">' +
+        scoreOptionsV6(1) +
+        '</select></div>' +
+        '<button class="btn primary" onclick="createCriteria()">' +
+        'Thêm' +
+        '</button>'
     );
 }
 
-/** Save criterion changes using category_id as the relationship. */
+/**
+ * Save criterion changes using category_id as the relationship.
+ */
 async function saveCriteria(id) {
     const name = $('crName').value.trim();
     const points = Number($('crPoints').value);
@@ -244,7 +417,7 @@ async function saveCriteria(id) {
             category_id: categoryId,
             group_name: String(categoryId),
             default_score: points,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
         })
         .eq('id', id);
 
@@ -257,7 +430,9 @@ async function saveCriteria(id) {
     await renderCompetitionCriteria();
 }
 
-/** Create a criterion with the selected category and score. */
+/**
+ * Create a criterion with the selected category and score.
+ */
 async function createCriteria() {
     const name = $('crName').value.trim();
     const points = Number($('crPoints').value);
@@ -271,7 +446,9 @@ async function createCriteria() {
     const { data: existing, error: existingError } = await sb
         .from('competition_criteria')
         .select('sort_order')
-        .order('sort_order', { ascending: false })
+        .order('sort_order', {
+            ascending: false,
+        })
         .limit(1);
 
     if (existingError) {
@@ -290,7 +467,7 @@ async function createCriteria() {
             category_id: categoryId,
             group_name: String(categoryId),
             default_score: points,
-            sort_order: sortOrder
+            sort_order: sortOrder,
         });
 
     if (error) {
