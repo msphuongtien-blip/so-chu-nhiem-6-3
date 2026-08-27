@@ -604,6 +604,45 @@ async function saveClassSettings() {
     }
     =await sb.from('class_settings').select('id').limit(1).maybeSingle();let e;if(data)e=await sb.from('class_settings').update(payload).eq('id',data.id);else e=await sb.from('class_settings').insert(payload);$('settingsMsg').textContent=e.error?e.error.message:'Đã lưu thông tin lớp.';await loadSettings()
 }
+
+/**
+ * Sinh mã học sinh tiếp theo dựa trên mã lớp hiện tại và các mã đang sử dụng.
+ *
+ * Quy tắc:
+ * - Lấy tên lớp, bỏ ký tự không phải số để tạo prefix mã lớp.
+ * - Mã học sinh = prefix + STT 2 chữ số.
+ * - STT mới = STT lớn nhất đang dùng trong cùng prefix + 1.
+ * - Không dựa vào số lượng học sinh vì danh sách có thể có khoảng trống.
+ *
+ * @param {string} className Tên lớp, ví dụ "6/3" hoặc "6/10".
+ * @param {Array<{student_code?: string}>} studentList Danh sách học sinh hiện tại.
+ * @returns {string} Mã học sinh tiếp theo.
+ */
+function generateNextStudentCode(className, studentList) {
+    // Chuyển tên lớp về chuỗi và giữ lại toàn bộ chữ số để tạo mã lớp.
+    const classPrefix = String(className || '')
+        .replace(/\D/g, '');
+
+    // Từ chối cấu hình lớp không có phần mã số.
+    if (!classPrefix) {
+        throw new Error('Chưa xác định được mã lớp để tạo mã học sinh.');
+    }
+
+    // Tìm STT lớn nhất của những mã học sinh thuộc đúng prefix lớp.
+    const maxSequence = (studentList || [])
+        .map((student) => String(student?.student_code || ''))
+        .filter((code) => code.startsWith(classPrefix))
+        .map((code) => code.slice(classPrefix.length))
+        .filter((sequence) => /^\d{2}$/.test(sequence))
+        .reduce((max, sequence) => Math.max(max, Number(sequence)), 0);
+
+    // Tăng STT lên một và luôn giữ ít nhất hai chữ số.
+    const nextSequence = maxSequence + 1;
+
+    // Trả về mã lớp + STT mới.
+    return `${classPrefix}${String(nextSequence).padStart(2, '0')}`;
+}
+
 function openStudentForm(student) {
     // Xác định form đang dùng để thêm mới hay chỉnh sửa.
     const isEdit = Boolean(student);
@@ -619,8 +658,14 @@ function openStudentForm(student) {
         '"></div>' +
         '<div class="field"><label>Mã HS</label>' +
         '<input id="sfCode" value="' +
-        esc(student?.student_code || '') +
-        '" inputmode="numeric" maxlength="4"></div>' +
+        esc(
+            student?.student_code ||
+            generateNextStudentCode(
+                classSettings.class_name,
+                students
+            )
+        ) +
+        '" inputmode="numeric" readonly></div>' +
         '</div>' +
         '<div class="grid two">' +
         '<div class="field"><label>Giới tính</label>' +
@@ -683,8 +728,16 @@ async function saveStudent(id) {
         return;
     }
 
-    // Nếu đang chỉnh sửa, cập nhật đúng một học sinh theo id.
+    // Nếu đang chỉnh sửa, luôn giữ nguyên mã học sinh hiện tại.
     if (id) {
+        // Tìm bản ghi hiện tại trong cache để bảo vệ mã khỏi thay đổi ngoài ý muốn.
+        const existingStudent = students.find((student) => student.id === id);
+
+        if (existingStudent?.student_code) {
+            payload.student_code = existingStudent.student_code;
+        }
+
+        // Cập nhật đúng một học sinh theo student.id.
         const { error } = await sb
             .from('students')
             .update(payload)
