@@ -8,13 +8,12 @@
  * - Category được đọc từ bảng competition_categories của Supabase.
  * - Không hard-code danh sách category 1–6 trong logic nghiệp vụ.
  * - Category 6 (Học tập) dùng cùng một luồng như các category khác.
- * - Không để lỗi của lớp Category làm dừng bootstrap của toàn website.
+ * - Lỗi của một module không được làm mất dữ liệu đã tải của module khác.
  *
  * Lưu ý kiến trúc:
- * app.js được tải trước file này. Vì vậy file này chỉ capture các function
- * V5 đã tồn tại rồi mới gắn wrapper qua window.*. Không khai báo lại function
- * global bằng cùng tên trong script riêng, vì cách đó dễ tạo recursion/hoisting
- * ngoài ý muốn và làm toàn bộ dashboard không tải dữ liệu.
+ * app.js được tải trước file này. File này capture các function V5 đã tồn tại
+ * rồi mới thay reference qua window.*. Không khai báo lại function global cùng
+ * tên trong script riêng vì dễ tạo recursion/hoisting ngoài ý muốn.
  */
 
 const V6_VALID_SCORES = [
@@ -150,21 +149,78 @@ function scoreOptionsV6(selected = 1) {
 }
 
 /**
- * Gắn category layer vào app V5 sau khi app.js đã được thực thi hoàn tất.
+ * Render một module độc lập và không để lỗi của module đó chặn module khác.
+ */
+async function safeRenderV6(name, renderer) {
+    try {
+        await renderer();
+    } catch (error) {
+        console.error('[V6 bootstrap] Module lỗi: ' + name, error);
+    }
+}
+
+/**
+ * Bootstrap an toàn cho dữ liệu cốt lõi.
  *
- * Đây là wrapper an toàn:
- * 1. Capture function cũ.
- * 2. Gắn function mới qua window.*.
- * 3. Function mới gọi function cũ thay vì tự gọi chính nó.
+ * Đây là điểm sửa trực tiếp cho lỗi giao diện hiển thị 0 học sinh:
+ * loadAll V5 dùng Promise.all nên chỉ cần một truy vấn phụ lỗi là toàn bộ
+ * hàm bị reject. V6 tải students trước, sau đó render từng module độc lập.
+ * Vì vậy lỗi competition_categories, competition_records hoặc một module
+ * phụ không thể làm mất dữ liệu students đã tải thành công.
  */
 const originalLoadAllV5 = window.loadAll;
 if (typeof originalLoadAllV5 === 'function') {
     window.loadAll = async function loadAllV6() {
         await ensureCompetitionCategoriesV6();
-        return originalLoadAllV5();
+
+        await safeRenderV6('class_settings', async () => {
+            await window.loadSettings();
+        });
+
+        if (window.role !== 'teacher') {
+            await safeRenderV6('student', async () => {
+                await window.renderStudentAll();
+            });
+            return true;
+        }
+
+        // Students là dữ liệu nền của toàn bộ hệ thống, nên tải trước.
+        await safeRenderV6('students_data', async () => {
+            await window.loadStudentsFromSupabase();
+        });
+
+        // Lịch sử thi đua là nguồn dữ liệu riêng; lỗi của nó không chặn students.
+        await safeRenderV6('competition_history', async () => {
+            await window.loadCompetitionHistoryFromSupabase();
+        });
+
+        const modules = [
+            ['students', window.renderStudents],
+            ['dashboard', window.renderDashboard],
+            ['attendance', window.renderAttendance],
+            ['competition', window.renderCompetition],
+            ['honors', window.renderHonors],
+            ['discipline', window.renderDiscipline],
+            ['learning', window.renderLearning],
+            ['teams', window.renderTeams],
+            ['alerts', window.renderAlerts],
+            ['teacher_feedback', window.renderTeacherFeedback],
+            ['teacher_messages', window.renderTeacherMessages],
+        ];
+
+        for (const [name, renderer] of modules) {
+            if (typeof renderer === 'function') {
+                await safeRenderV6(name, renderer);
+            }
+        }
+
+        return true;
     };
 }
 
+/**
+ * Capture renderCompetition V5 và thêm bước tải category.
+ */
 const originalRenderCompetitionV5 = window.renderCompetition;
 if (typeof originalRenderCompetitionV5 === 'function') {
     window.renderCompetition = async function renderCompetitionV6() {
@@ -175,7 +231,7 @@ if (typeof originalRenderCompetitionV5 === 'function') {
 }
 
 /**
- * Thay categoryName của app V5 bằng phiên bản đọc từ database.
+ * Thay categoryName của V5 bằng dữ liệu database khi category đã tải được.
  */
 const originalCategoryNameV5 = window.categoryName;
 if (typeof originalCategoryNameV5 === 'function') {
@@ -189,7 +245,7 @@ if (typeof originalCategoryNameV5 === 'function') {
 }
 
 /**
- * Thay scoreOptions của app V5 bằng tập điểm chuẩn V6.
+ * Thay scoreOptions của V5 bằng tập điểm chuẩn V6.
  */
 if (typeof window.scoreOptions === 'function') {
     window.scoreOptions = function scoreOptionsV6Wrapper(selected) {
