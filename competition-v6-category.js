@@ -43,6 +43,51 @@ const v6Supabase = window.supabase.createClient(
     V6_SUPABASE_CONFIG.anonKey,
 );
 
+/**
+ * Runtime state dùng bởi các function random picker đang tồn tại trong app.js.
+ *
+ * `var` được dùng có chủ đích ở đây vì `randomStudent()` là function global
+ * trong script app.js và hiện tham chiếu tới các identifier này trực tiếp.
+ * Khai báo global giúp giữ nguyên function cũ mà không phải rewrite toàn bộ
+ * module random ở Task hiện tại.
+ */
+var randomRunning = false;
+var randomAudioContext = null;
+
+/**
+ * Trả về nhãn xu hướng từ lịch sử điểm.
+ *
+ * Quy ước:
+ * - Chưa có ít nhất 2 giá trị: "—"
+ * - Điểm cuối tăng: "↑ Tăng"
+ * - Điểm cuối giảm: "↓ Giảm"
+ * - Không đổi: "→ Ổn định"
+ */
+function trendText(history) {
+    const values = Array.isArray(history)
+        ? history
+            .map(Number)
+            .filter(Number.isFinite)
+        : [];
+
+    if (values.length < 2) {
+        return '—';
+    }
+
+    const previous = values[values.length - 2];
+    const current = values[values.length - 1];
+
+    if (current > previous) {
+        return '↑ Tăng';
+    }
+
+    if (current < previous) {
+        return '↓ Giảm';
+    }
+
+    return '→ Ổn định';
+}
+
 let competitionCategoriesV6 = [];
 
 /**
