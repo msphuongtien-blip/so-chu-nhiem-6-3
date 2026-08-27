@@ -604,48 +604,93 @@ async function saveClassSettings() {
     }
     =await sb.from('class_settings').select('id').limit(1).maybeSingle();let e;if(data)e=await sb.from('class_settings').update(payload).eq('id',data.id);else e=await sb.from('class_settings').insert(payload);$('settingsMsg').textContent=e.error?e.error.message:'Đã lưu thông tin lớp.';await loadSettings()
 }
-
 /**
- * Sinh mã học sinh tiếp theo dựa trên mã lớp hiện tại và các mã đang sử dụng.
+ * Sinh mã học sinh kế tiếp dựa trên mã lớp hiện tại.
  *
  * Quy tắc:
- * - Lấy tên lớp, bỏ ký tự không phải số để tạo prefix mã lớp.
- * - Mã học sinh = prefix + STT 2 chữ số.
- * - STT mới = STT lớn nhất đang dùng trong cùng prefix + 1.
- * - Không dựa vào số lượng học sinh vì danh sách có thể có khoảng trống.
+ * - Lấy phần chữ số của tên lớp. Ví dụ: 6/3 -> 63, 6/10 -> 610.
+ * - Tìm các mã đã dùng có cùng prefix lớp.
+ * - Lấy số thứ tự lớn nhất và cộng 1.
+ * - Mã cuối cùng có dạng: mã lớp + 2 chữ số số thứ tự.
  *
- * @param {string} className Tên lớp, ví dụ "6/3" hoặc "6/10".
- * @param {Array<{student_code?: string}>} studentList Danh sách học sinh hiện tại.
- * @returns {string} Mã học sinh tiếp theo.
+ * Ví dụ:
+ * 6/3 + đã có 6301..6344 -> mã mới 6345.
+ *
+ * @returns {Promise<string>} Mã học sinh kế tiếp.
  */
-function generateNextStudentCode(className, studentList) {
-    // Chuyển tên lớp về chuỗi và giữ lại toàn bộ chữ số để tạo mã lớp.
-    const classPrefix = String(className || '')
-        .replace(/\D/g, '');
+async function getNextStudentCode() {
+    // Lấy tên lớp hiện tại từ cấu hình lớp.
+    const className = String(classSettings.class_name || '').trim();
 
-    // Từ chối cấu hình lớp không có phần mã số.
+    // Giữ lại toàn bộ chữ số trong tên lớp để tạo prefix.
+    // Ví dụ: "6/3" -> "63" và "6/10" -> "610".
+    const classPrefix = className.replace(/\D/g, '');
+
+    // Dừng nếu tên lớp không có chữ số để tránh sinh mã sai.
     if (!classPrefix) {
-        throw new Error('Chưa xác định được mã lớp để tạo mã học sinh.');
+        throw new Error('Chưa xác định được mã lớp để sinh mã học sinh.');
     }
 
-    // Tìm STT lớn nhất của những mã học sinh thuộc đúng prefix lớp.
-    const maxSequence = (studentList || [])
-        .map((student) => String(student?.student_code || ''))
-        .filter((code) => code.startsWith(classPrefix))
-        .map((code) => code.slice(classPrefix.length))
-        .filter((sequence) => /^\d{2}$/.test(sequence))
-        .reduce((max, sequence) => Math.max(max, Number(sequence)), 0);
+    // Chỉ lấy các mã có cùng prefix và đúng thêm 2 chữ số STT.
+    const { data, error } = await sb
+        .from('students')
+        .select('student_code')
+        .like('student_code', `${classPrefix}__`);
 
-    // Tăng STT lên một và luôn giữ ít nhất hai chữ số.
+    // Nếu truy vấn database lỗi, không tự sinh mã để tránh ghi sai dữ liệu.
+    if (error) {
+        throw error;
+    }
+
+    // Chuyển các mã hợp lệ thành số thứ tự.
+    const sequenceNumbers = (data || [])
+        .map((student) => {
+            const code = String(student.student_code || '');
+
+            // Bỏ prefix để lấy 2 chữ số STT phía sau.
+            const sequencePart = code.slice(classPrefix.length);
+
+            // Chỉ nhận đúng 2 chữ số STT.
+            return /^\d{2}$/.test(sequencePart)
+                ? Number(sequencePart)
+                : null;
+        })
+        .filter((sequence) => Number.isInteger(sequence));
+
+    // Lấy STT lớn nhất hiện có. Nếu chưa có học sinh thì bắt đầu từ 1.
+    const maxSequence = sequenceNumbers.length
+        ? Math.max(...sequenceNumbers)
+        : 0;
+
+    // Sinh STT kế tiếp.
     const nextSequence = maxSequence + 1;
 
-    // Trả về mã lớp + STT mới.
+    // Một lớp chỉ dùng tối đa 99 số thứ tự theo quy tắc 2 chữ số.
+    if (nextSequence > 99) {
+        throw new Error('Lớp đã vượt quá 99 học sinh, không thể sinh thêm mã theo format hiện tại.');
+    }
+
+    // Luôn giữ đủ 2 chữ số: 1 -> 01, 9 -> 09, 45 -> 45.
     return `${classPrefix}${String(nextSequence).padStart(2, '0')}`;
 }
 
-function openStudentForm(student) {
+async function openStudentForm(student) {
     // Xác định form đang dùng để thêm mới hay chỉnh sửa.
     const isEdit = Boolean(student);
+
+    // Nếu đang thêm mới, sinh mã HS tự động từ database.
+    // Mã này chỉ hiển thị để GVCN kiểm tra, không cho nhập tay.
+    let nextStudentCode = student?.student_code || '';
+
+    if (!isEdit) {
+        try {
+            nextStudentCode = await getNextStudentCode();
+        } catch (error) {
+            console.error('Không thể sinh mã HS tự động:', error);
+            alert('Không thể tạo mã học sinh tự động. Vui lòng kiểm tra cấu hình lớp.');
+            return;
+        }
+    }
 
     // Tạo form chỉ chứa thông tin hồ sơ cần thiết.
     // Email, ngày sinh và dữ liệu phụ huynh đã được loại bỏ ở Phase 2.
@@ -656,16 +701,12 @@ function openStudentForm(student) {
         '<input id="sfName" value="' +
         esc(student?.full_name || '') +
         '"></div>' +
-        '<div class="field"><label>Mã HS</label>' +
-        '<input id="sfCode" value="' +
-        esc(
-            student?.student_code ||
-            generateNextStudentCode(
-                classSettings.class_name,
-                students
-            )
-        ) +
-        '" inputmode="numeric" readonly></div>' +
+        '<div class="field"><label>Mã HS dự kiến</label>' +
+        '<div class="notice" style="margin:0">' +
+        (isEdit
+            ? '<b>' + esc(nextStudentCode) + '</b>'
+            : '<b id="sfCodePreview">' + esc(nextStudentCode) + '</b><div class="mini">Mã được hệ thống tự động gán; GVCN không cần nhập.</div>') +
+        '</div></div>' +
         '</div>' +
         '<div class="grid two">' +
         '<div class="field"><label>Giới tính</label>' +
@@ -702,10 +743,34 @@ function openStudentForm(student) {
 
 
 async function saveStudent(id) {
+    // Xác định mã học sinh.
+    // - Khi sửa: giữ nguyên mã hiện tại.
+    // - Khi thêm: hệ thống sinh lại mã để bảo đảm không trùng.
+    let studentCode = '';
+
+    if (id) {
+        const existingStudent = students.find((student) => student.id === id);
+
+        if (!existingStudent?.student_code) {
+            alert('Không xác định được mã học sinh hiện tại.');
+            return;
+        }
+
+        studentCode = existingStudent.student_code;
+    } else {
+        try {
+            studentCode = await getNextStudentCode();
+        } catch (error) {
+            console.error('Không thể sinh mã HS:', error);
+            alert('Không thể tạo mã học sinh tự động. Vui lòng thử lại.');
+            return;
+        }
+    }
+
     // Thu thập dữ liệu hồ sơ từ form.
     const payload = {
         full_name: $('sfName').value.trim(),
-        student_code: $('sfCode').value.trim() || null,
+        student_code: studentCode,
         gender: $('sfGender').value,
         team: Number($('sfTeam').value) || null,
         support_level:
@@ -716,28 +781,20 @@ async function saveStudent(id) {
         progress_note: $('sfProgress').value.trim()
     };
 
-    // Kiểm tra thông tin bắt buộc.
-    if (!payload.full_name || !payload.student_code) {
-        alert('Cần họ tên và mã HS.');
+    // Chỉ bắt buộc họ tên; mã HS đã được hệ thống tự sinh.
+    if (!payload.full_name) {
+        alert('Vui lòng nhập họ tên học sinh.');
         return;
     }
 
-    // Mã học sinh phải là đúng 4 chữ số.
-    if (!/^\d{4}$/.test(payload.student_code)) {
-        alert('Mã HS phải gồm 4 chữ số, ví dụ 6301.');
+    // Kiểm tra mã sinh tự động vẫn đúng dạng số của hệ thống.
+    if (!/^\d{4,}$/.test(payload.student_code)) {
+        alert('Mã HS được hệ thống sinh không hợp lệ.');
         return;
     }
 
-    // Nếu đang chỉnh sửa, luôn giữ nguyên mã học sinh hiện tại.
+    // Nếu đang chỉnh sửa, cập nhật đúng một học sinh theo id.
     if (id) {
-        // Tìm bản ghi hiện tại trong cache để bảo vệ mã khỏi thay đổi ngoài ý muốn.
-        const existingStudent = students.find((student) => student.id === id);
-
-        if (existingStudent?.student_code) {
-            payload.student_code = existingStudent.student_code;
-        }
-
-        // Cập nhật đúng một học sinh theo student.id.
         const { error } = await sb
             .from('students')
             .update(payload)
@@ -751,7 +808,7 @@ async function saveStudent(id) {
     } else {
         // Giai đoạn 2 chỉ tạo hồ sơ học sinh.
         // Việc cấp tài khoản đăng nhập bằng Mã HS thuộc Giai đoạn 3.
-        // Học sinh mới bắt đầu với điểm thi đua 81 theo quy tắc nghiệp vụ đã chốt.
+        // Học sinh mới bắt đầu với điểm thi đua 81.
         const newStudentPayload = {
             ...payload,
             competition_score: 81
@@ -761,7 +818,8 @@ async function saveStudent(id) {
             .from('students')
             .insert(newStudentPayload);
 
-        // Dừng nếu database trả lỗi.
+        // Nếu mã vừa sinh đã bị một thao tác đồng thời sử dụng,
+        // database UNIQUE sẽ chặn insert và báo lỗi.
         if (error) {
             alert(error.message);
             return;
