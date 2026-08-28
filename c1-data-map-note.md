@@ -1,0 +1,1 @@
+C1.1-C1.4 verified against Supabase. Current rows: students 44, competition_categories 6, competition_criteria 14, competition_records 15. Category 6 is retained. competition_records is the competition history source of truth. Student deletion is blocked when dependent records exist.
