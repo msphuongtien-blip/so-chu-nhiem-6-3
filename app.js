@@ -26,16 +26,6 @@
  * 6. Form / CRUD.
  */
 
-const APP_VERSION='V5-SUPABASE-DATABASE';
-const CONFIG= {
-    SUPABASE_URL:'https://fdyhnwklzizzbiyqqlxo.supabase.co',SUPABASE_ANON_KEY:'sb_publishable_QJeu6Jb17f6UVbvXJwuUMQ_-QfBaGDy'
-};
-let sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY),currentUser=null,currentProfile=null,role='teacher',students=[],classSettings= {
-    class_name:'6/3',school_year:'2026-2027',teacher_name:'Phượng Tiên'
-},trendChart=null,studentChart=null,randomHistory=JSON.parse(localStorage.getItem('s6r')||'[]');
-let supabaseCache= {
-    students:[],competitionRecords:[],loadedAt:null
-};
 async function loadStudentsFromSupabase() {
     const {
         data,error
@@ -81,8 +71,6 @@ async function refreshSupabaseData() {
         return false;
     }
 }
-const $=id=>document.getElementById(id);
-const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 function setRole(newRole) {
     // Lưu vai trò mà người dùng đang chọn.
     role = newRole;
@@ -181,16 +169,9 @@ async function renderStudents(){if(!supabaseCache.students.length) await loadStu
 function group(score){score=Number(score||0);return score>=91?'💎 Kim cương':score>=81?'🥇 Vàng':score>=66?'🥈 Bạc':score>=50?'🥉 Đồng':'🔩 Sắt'}function groupBadge(score){const s=group(score);const c=s.includes('Kim')?'diamond':s.includes('Vàng')?'gold':s.includes('Bạc')?'silver':s.includes('Đồng')?'bronze':'iron';return '<span class="badge '+c+'">'+s+'</span>'}
 async function renderDashboard(){const total=students.length;$('mTotal').textContent=total;const avg=total?students.reduce((a,s)=>a+Number(s.competition_score||0),0)/total:0;$('mAvg').textContent=avg.toFixed(1);const care=students.filter(s=>['Cần hỗ trợ','Cần can thiệp'].includes(s.support_level)).length;$('mSupport').textContent=care;const date=localDate();const {data:att}=await sb.from('attendance').select('status').eq('attendance_date',date);const present=(att||[]).filter(x=>x.status==='present').length;$('mPresent').textContent=present;$('mAttendanceSub').textContent=(att||[]).length+' lượt đã ghi';const top=[...students].sort((a,b)=>Number(b.competition_score||0)-Number(a.competition_score||0)).slice(0,5);$('topStudents').innerHTML=top.map((s,i)=>'<div class="notice"><b>'+(i+1)+'. '+esc(s.full_name)+'</b> <span class="badge '+(Number(s.competition_score||0)>=81?'good':'watch')+'">'+Number(s.competition_score||0).toFixed(1)+'</span><div class="mini">'+group(s.competition_score)+'</div></div>').join('')||'<div class="mini">Chưa có dữ liệu.</div>';$('careStudents').innerHTML=students.filter(s=>s.support_level).slice(0,6).map(s=>'<div class="notice '+(s.support_level==='Cần can thiệp'?'danger':'warn')+'"><b>'+esc(s.full_name)+'</b><div class="mini">'+esc(s.support_level)+' · '+esc(s.progress_note||'')+'</div></div>').join('')||'<div class="mini">Chưa có học sinh cần quan tâm.</div>';const ranks=[...students].sort((a,b)=>Number(b.competition_score||0)-Number(a.competition_score||0));$('classRankView').textContent=total?'Theo điểm TB '+avg.toFixed(1):'—';renderTrend(ranks)}
 function renderTrend(){const labels=['Tuần 1','Tuần 2','Tuần 3','Tuần 4'];const vals=[0,0,0,0];students.forEach(s=>{const h=s.score_history||[];h.forEach((v,i)=>{if(i<4)vals[i]+=Number(v||0)})});if(trendChart)trendChart.destroy();trendChart=new Chart($('trendChart'),{type:'line',data:{labels,datasets:[{label:'Điểm thi đua',data:vals.map(v=>students.length?v/students.length:0),tension:.35}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}})}
-function localDate(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 async function renderAttendance(){const date=$('attendanceDate').value||localDate();$('attendanceDate').value=date;const {data}=await sb.from('attendance').select('*').eq('attendance_date',date);const map=new Map((data||[]).map(x=>[x.student_id,x.status]));$('attendanceBody').innerHTML=students.map((s,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+esc(s.full_name)+'</b></td><td>'+s.team+'</td><td><select class="btn" data-att="'+s.id+'"><option value="present" '+(map.get(s.id)==='present'?'selected':'')+'>Có mặt</option><option value="excused" '+(map.get(s.id)==='excused'?'selected':'')+'>Vắng có phép</option><option value="absent" '+(map.get(s.id)==='absent'?'selected':'')+'>Vắng không phép</option><option value="late" '+(map.get(s.id)==='late'?'selected':'')+'>Đi muộn</option><option value="early_leave" '+(map.get(s.id)==='early_leave'?'selected':'')+'>Về sớm</option></select></td></tr>').join('');const counts={present:0,excused:0,absent:0,late:0,early_leave:0};(data||[]).forEach(x=>counts[x.status]=(counts[x.status]||0)+1);$('attendanceSummary').innerHTML=Object.entries(counts).map(([k,v])=>'<span class="pill">'+attLabel(k)+': <b>'+v+'</b></span>').join('')}
 function attLabel(k){return {present:'Có mặt',excused:'Vắng phép',absent:'Vắng không phép',late:'Đi muộn',early_leave:'Về sớm'}[k]||k}
 $('attendanceDate').addEventListener('change',renderAttendance);async function saveAttendance(){const date=$('attendanceDate').value;for(const s of students){const el=document.querySelector('[data-att="'+s.id+'"]');if(el)await sb.from('attendance').upsert({student_id:s.id,attendance_date:date,status:el.value,created_by:currentUser.id},{onConflict:'student_id,attendance_date'})}await renderAttendance();await renderDashboard();alert('Đã lưu điểm danh ngày '+date)}
-function compWeekStart(value){
-  const d=new Date((value||'')+'T00:00:00');
-  if(isNaN(d)) return getCurrentWeekStart();
-  const day=d.getDay(), diff=day===0?-6:1-day;
-  d.setDate(d.getDate()+diff); return d.toISOString().slice(0,10);
-}
 function compWeekInput(){ const el=$('compWeekFilter'); if(el&&!el.value) el.value=getCurrentWeekStart(); return compWeekStart(el?.value); }
 function categoryName(id){return ({1:'Giờ giấc – chuyên cần',2:'Nội quy – trật tự',3:'Vệ sinh – môi trường',4:'Tác phong – trang phục',5:'Trách nhiệm – ứng xử'})[String(id)]||'Trách nhiệm – ứng xử'}
 function categoryIdFromName(name){const n=String(name||'').toLowerCase(); if(n.includes('đúng giờ')||n.includes('đi muộn')||n.includes('chuyên cần')||n.includes('vắng'))return 1;if(n.includes('trật tự')||n.includes('nội quy'))return 2;if(n.includes('vệ sinh')||n.includes('môi trường'))return 3;if(n.includes('tác phong')||n.includes('trang phục')||n.includes('đồng phục'))return 4;return 5}
@@ -390,9 +371,6 @@ async function rolloverCompetitionWeek() {
         error
     }
     =await sb.rpc('rollover_competition_week'); if(error)console.warn(error.message);
-}
-function getCurrentWeekStart() {
-    const d=new Date();const day=d.getDay(),diff=day===0?-6:1-day;d.setDate(d.getDate()+diff);return d.toISOString().slice(0,10)
 }
 async function renderCompetitionCriteria() {
     const box=$('criteriaSettings');if(!box)return;const {
