@@ -15,6 +15,11 @@
  * Compatibility:
  * app.js vẫn còn một số literal category 1-5 ở form legacy. Adapter V6
  * chuyển các control đó sang dữ liệu database sau khi form render.
+ *
+ * Module loading:
+ * Sau khi category bridge được tải, module Cài đặt tiêu chí V6 được nạp
+ * động. Cách này bảo đảm app.js đã khởi tạo các hàm legacy mà module
+ * settings cần bridge, đồng thời tránh đưa UI business logic vào config.js.
  */
 
 const V6_VALID_SCORES = [
@@ -418,6 +423,26 @@ function renderCompetitionCategoryFilterV6() {
         select.value = currentValue;
     }
 }
+
+/**
+ * Nạp module Cài đặt tiêu chí sau khi app.js và Category V6 đã sẵn sàng.
+ *
+ * Đây là integration bridge tạm thời cho entry point legacy.
+ * UI/business logic vẫn nằm trong file riêng.
+ */
+(function loadCompetitionCriteriaSettingsModuleV6() {
+    const scriptId = 'competition-criteria-settings-v6-script';
+
+    if (document.getElementById(scriptId)) {
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'competition-criteria-settings-v6.js';
+
+    document.head.appendChild(script);
+})();
 
 window.CompetitionCategoryV6 = {
     V6_VALID_SCORES,
