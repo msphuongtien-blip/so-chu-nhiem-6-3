@@ -5,7 +5,7 @@
  * Tạo Supabase client dùng chung cho toàn bộ ứng dụng.
  *
  * Dependency:
- * - core/config.js cung cấp CONFIG.
+ * - core/config.js cung cấp CONFIG trong global lexical scope.
  * - CDN @supabase/supabase-js phải được load trước file này.
  *
  * Trách nhiệm:
@@ -21,23 +21,27 @@
 /**
  * Khởi tạo Supabase client từ cấu hình Core.
  *
+ * `CONFIG` là global lexical binding được tạo bởi classic script
+ * core/config.js. Nó không phải `window.CONFIG`, vì vậy phải kiểm tra bằng
+ * `typeof CONFIG` thay vì truy cập `globalThis.CONFIG`.
+ *
  * @returns {object} Supabase client dùng chung.
  * @throws {Error} Khi Supabase JS hoặc CONFIG chưa được tải.
  */
 function createSupabaseClient() {
-    if (!globalThis.CONFIG) {
+    if (typeof CONFIG === 'undefined') {
         throw new Error(
             'CONFIG chưa được khởi tạo trước core/supabase.js.',
         );
     }
 
-    if (!globalThis.supabase?.createClient) {
+    if (!window.supabase?.createClient) {
         throw new Error(
             'Supabase JS chưa được tải trước core/supabase.js.',
         );
     }
 
-    return globalThis.supabase.createClient(
+    return window.supabase.createClient(
         CONFIG.SUPABASE_URL,
         CONFIG.SUPABASE_ANON_KEY,
     );
