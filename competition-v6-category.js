@@ -33,7 +33,8 @@ const V6_VALID_SCORES = [
 ];
 
 const V6_SUPABASE_CONFIG = {
-    url: 'https://fdyhnwklzizzbiyqqlxo.supabase.co',
+    url:
+        'https://fdyhnwklzizzbiyqqlxo.supabase.co',
     anonKey:
         'sb_publishable_QJeu6Jb17f6UVbvXJwuUMQ_-QfBaGDy',
 };
@@ -111,10 +112,23 @@ function getCompetitionCategoryNameV6(id) {
 }
 
 /**
- * Tạo option HTML cho danh sách category.
+ * Tạo option HTML cho danh sách category từ một tập category cụ thể.
+ *
+ * Hàm này được expose cho test và các module V6 khác. Khi render runtime,
+ * dữ liệu được lấy trực tiếp từ `competition_categories`.
  */
-function competitionCategoryOptionsV6(selectedId = '') {
-    return getActiveCompetitionCategoriesV6()
+function buildCompetitionCategoryOptionsV6(
+    categories,
+    selectedId = '',
+) {
+    return (categories || [])
+        .filter((category) => category.active !== false)
+        .sort(
+            (a, b) =>
+                Number(a.sort_order || 0) -
+                    Number(b.sort_order || 0) ||
+                Number(a.id) - Number(b.id),
+        )
         .map((category) => {
             const selected =
                 String(category.id) === String(selectedId)
@@ -132,8 +146,17 @@ function competitionCategoryOptionsV6(selectedId = '') {
                 esc(category.name) +
                 '</option>'
             );
-        })
-        .join('');
+        });
+}
+
+/**
+ * Tạo option HTML cho danh sách category hiện đang được tải.
+ */
+function competitionCategoryOptionsV6(selectedId = '') {
+    return buildCompetitionCategoryOptionsV6(
+        competitionCategoriesV6,
+        selectedId,
+    ).join('');
 }
 
 /**
@@ -213,6 +236,173 @@ if (typeof window.scoreOptions === 'function') {
 }
 
 /**
+ * Thay danh sách category trong một select hiện có.
+ *
+ * Đây là compatibility adapter cho các form V5. Không sao chép logic form;
+ * chỉ thay options sau khi form đã render.
+ */
+function mountCategorySelectV6(
+    select,
+    selectedId = '',
+) {
+    if (!select) {
+        return;
+    }
+
+    const currentValue = selectedId || select.value || '';
+
+    select.innerHTML =
+        '<option value="">-- Chọn nhóm --</option>' +
+        competitionCategoryOptionsV6(currentValue);
+
+    if (currentValue) {
+        select.value = currentValue;
+    }
+}
+
+/**
+ * Thay các category group cards của form Ghi nhận bằng 6 category hiện tại.
+ */
+function mountCompetitionGroupCardsV6() {
+    const body = document.getElementById('modalBody');
+
+    if (!body) {
+        return;
+    }
+
+    const groupContainer = body.querySelector('.criteria-group')?.parentElement;
+
+    if (!groupContainer) {
+        return;
+    }
+
+    const criteriaGroups = {};
+
+    body.querySelectorAll('.criteria-group').forEach((group) => {
+        const heading = group.querySelector('h4')?.textContent || '';
+        const match = heading.match(/Nhóm\s+(\d+)/);
+
+        if (match) {
+            criteriaGroups[match[1]] = group;
+        }
+    });
+
+    const generated = competitionCategoriesV6
+        .filter((category) => category.active !== false)
+        .map((category) => {
+            const existing = criteriaGroups[String(category.id)];
+
+            if (existing) {
+                const heading = existing.querySelector('h4');
+
+                if (heading) {
+                    heading.textContent =
+                        `Nhóm ${category.id}: ${category.name}`;
+                }
+
+                return existing.outerHTML;
+            }
+
+            return `
+                <div class="criteria-group">
+                    <h4>Nhóm ${category.id}: ${escapeHtmlV6(category.name)}</h4>
+                    <div class="criteria-items">
+                        <span class="mini">Chưa có tiêu chí.</span>
+                    </div>
+                </div>
+            `;
+        })
+        .join('');
+
+    groupContainer.innerHTML = generated;
+}
+
+/**
+ * Escape HTML nội bộ để adapter không tạo HTML injection từ tên category.
+ */
+function escapeHtmlV6(value) {
+    return String(value ?? '').replace(
+        /[&<>\"']/g,
+        (character) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '\"': '&quot;',
+            "'": '&#039;',
+        }[character]),
+    );
+}
+
+/**
+ * Áp dụng 6 category cho các form V5 sau khi modal đã render.
+ */
+function refreshCompetitionCategoryControlsV6() {
+    mountCompetitionGroupCardsV6();
+
+    mountCategorySelectV6(
+        document.getElementById('fGroup'),
+    );
+
+    mountCategorySelectV6(
+        document.getElementById('eGroup'),
+    );
+
+    mountCategorySelectV6(
+        document.getElementById('crGroup'),
+    );
+}
+
+/**
+ * Chờ một modal V5 render xong rồi áp dụng adapter.
+ */
+function applyCategoryAdapterAfterModalV6() {
+    window.setTimeout(() => {
+        refreshCompetitionCategoryControlsV6();
+    }, 0);
+}
+
+/**
+ * Bọc các hàm V5 có select category hard-code.
+ *
+ * Wrapper chỉ can thiệp vào DOM sau khi hàm cũ đã hoàn tất nhiệm vụ chính.
+ */
+const originalOpenCompetitionFormV5 = window.openCompetitionForm;
+if (typeof originalOpenCompetitionFormV5 === 'function') {
+    window.openCompetitionForm = function openCompetitionFormV6() {
+        const result = originalOpenCompetitionFormV5();
+        applyCategoryAdapterAfterModalV6();
+        return result;
+    };
+}
+
+const originalEditCompetitionRecordV5 = window.editCompetitionRecord;
+if (typeof originalEditCompetitionRecordV5 === 'function') {
+    window.editCompetitionRecord = async function editCompetitionRecordV6(id) {
+        const result = await originalEditCompetitionRecordV5(id);
+        applyCategoryAdapterAfterModalV6();
+        return result;
+    };
+}
+
+const originalEditCriteriaV5 = window.editCriteria;
+if (typeof originalEditCriteriaV5 === 'function') {
+    window.editCriteria = function editCriteriaV6(id) {
+        const result = originalEditCriteriaV5(id);
+        applyCategoryAdapterAfterModalV6();
+        return result;
+    };
+}
+
+const originalAddCriteriaV5 = window.addCriteria;
+if (typeof originalAddCriteriaV5 === 'function') {
+    window.addCriteria = function addCriteriaV6() {
+        const result = originalAddCriteriaV5();
+        applyCategoryAdapterAfterModalV6();
+        return result;
+    };
+}
+
+/**
  * Render bộ lọc category từ database.
  */
 function renderCompetitionCategoryFilterV6() {
@@ -232,3 +422,13 @@ function renderCompetitionCategoryFilterV6() {
         select.value = currentValue;
     }
 }
+
+window.CompetitionCategoryV6 = {
+    V6_VALID_SCORES,
+    getActiveCompetitionCategoriesV6,
+    getCompetitionCategoryNameV6,
+    buildOptions: buildCompetitionCategoryOptionsV6,
+    competitionCategoryOptionsV6,
+    scoreOptionsV6,
+    refreshCompetitionCategoryControlsV6,
+};
