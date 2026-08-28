@@ -114,15 +114,6 @@
     }
 
     /**
-     * Lưu vị trí cuộn hiện tại của modal nếu cần render lại nội dung.
-     */
-    function getModalElement() {
-        return document.querySelector(
-            '.modal-backdrop:last-of-type .modal',
-        );
-    }
-
-    /**
      * Hiển thị lỗi validation theo một format thống nhất.
      *
      * @param {HTMLElement} errorBox Vùng hiển thị lỗi.
