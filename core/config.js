@@ -112,3 +112,14 @@ loadConfigModule(
     'competition-calculation-v6-script',
     'competition-calculation-v6.js',
 );
+
+/**
+ * Calculation Runtime V6.
+ *
+ * Adapter nối engine thuần vào renderer Thi đua legacy trong giai đoạn
+ * chuyển tiếp. File này không chứa công thức tính điểm.
+ */
+loadConfigModule(
+    'competition-calculation-runtime-v6-script',
+    'competition-calculation-runtime-v6.js',
+);
