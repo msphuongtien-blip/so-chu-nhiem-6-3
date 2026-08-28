@@ -201,4 +201,24 @@ for (const forbiddenField of [
     );
 }
 
+/**
+ * Regression guard cho integration point:
+ * core/config.js phải nạp đúng module Import 3 cột.
+ * Nếu trỏ lại module 8 cột, giao diện runtime sẽ quay về contract cũ.
+ */
+const configPath = path.join(root, 'core', 'config.js');
+const configSource = fs.readFileSync(configPath, 'utf8');
+
+assert.match(
+    configSource,
+    /script\.src\s*=\s*['"]students-import-v6\.js['"]/,
+    'core/config.js phải nạp module students-import-v6.js',
+);
+
+assert.doesNotMatch(
+    configSource,
+    /students-import-v6-8col\.js/,
+    'core/config.js không được nạp lại module CSV 8 cột legacy',
+);
+
 console.log('PASS: students CSV import contract');
