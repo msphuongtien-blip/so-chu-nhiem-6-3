@@ -3,21 +3,18 @@
  *
  * Mục đích:
  * C1.5 cung cấp thao tác xóa một hoặc nhiều học sinh với xác thực lại
- * mật khẩu tài khoản GVCN. C1.6 (bulk import CSV) sẽ được triển khai riêng.
+ * mật khẩu tài khoản GVCN.
  *
  * Kiến trúc:
- * - Dùng `sb` từ core/supabase.js; không tạo client thứ hai.
+ * - Dùng `sb` và state hiện tại từ Core/legacy bootstrap.
  * - Không dùng service-role key ở trình duyệt.
  * - Xóa thực tế gọi RPC PostgreSQL `delete_students_secure(uuid[])`.
  * - RLS và kiểm tra `is_teacher()` vẫn là lớp bảo vệ database.
- * - Lỗi nhập liệu được hiển thị trực tiếp trong modal, không dùng alert().
  *
- * Quy trình bảo mật:
- * 1. GVCN chọn chính xác học sinh.
- * 2. Hệ thống hiển thị lại danh sách và số lượng.
- * 3. GVCN nhập lại mật khẩu tài khoản hiện tại.
- * 4. GVCN nhập `XOA <số lượng>` để xác nhận.
- * 5. Database thực hiện thao tác trong transaction của RPC.
+ * UX/security:
+ * - Xóa bulk: chọn học sinh → xem lại danh sách → password → XOA <số lượng>.
+ * - Xóa từ modal Sửa: password → XOA 1.
+ * - Lỗi nhập liệu hiển thị trực tiếp trong modal.
  */
 
 (() => {
@@ -25,9 +22,12 @@
 
     /**
      * Escape text trước khi đưa dữ liệu học sinh vào HTML.
-     * Fallback giúp module có thể được chạy độc lập trong test.
+     * Fallback giúp module không phụ thuộc tuyệt đối vào helper legacy `esc`.
+     *
+     * @param {unknown} value Giá trị cần escape.
+     * @returns {string} Chuỗi an toàn để chèn vào HTML text context.
      */
-    const escapeText = (value) => {
+    function escapeText(value) {
         if (typeof esc === 'function') {
             return esc(value);
         }
@@ -42,13 +42,13 @@
                 "'": '&#039;',
             }[character]),
         );
-    };
+    }
 
     /**
-     * Lấy các học sinh được chọn từ state hiện tại và loại ID trùng.
+     * Lấy học sinh theo danh sách ID và loại ID trùng.
      *
      * @param {string[]} studentIds UUID của học sinh.
-     * @returns {Array<object>} Các học sinh tương ứng trong `students`.
+     * @returns {Array<object>} Danh sách học sinh tương ứng.
      */
     function getSelectedStudents(studentIds) {
         const uniqueIds = [...new Set(studentIds.map(String))];
@@ -59,14 +59,38 @@
     }
 
     /**
+     * Hiển thị lỗi nhập liệu trong modal xác thực.
+     *
+     * @param {HTMLElement} errorBox Vùng hiển thị lỗi.
+     * @param {string} message Nội dung lỗi.
+     */
+    function showValidationError(errorBox, message) {
+        errorBox.hidden = false;
+        errorBox.textContent = message;
+        errorBox.style.color = '#b42318';
+        errorBox.style.marginTop = '10px';
+        errorBox.setAttribute('role', 'alert');
+        errorBox.setAttribute('aria-live', 'polite');
+    }
+
+    /**
+     * Xóa lỗi validation hiện tại.
+     *
+     * @param {HTMLElement} errorBox Vùng hiển thị lỗi.
+     */
+    function clearValidationError(errorBox) {
+        errorBox.hidden = true;
+        errorBox.textContent = '';
+    }
+
+    /**
      * Xác thực lại mật khẩu tài khoản GVCN hiện tại.
      *
-     * Supabase Auth `signInWithPassword()` xác thực credential mà không lưu
-     * password vào database hay localStorage. Session vẫn do Supabase Auth
-     * quản lý.
+     * Supabase Auth kiểm tra credential trực tiếp; password không được lưu
+     * vào database hay localStorage.
      *
-     * @param {string} password Mật khẩu GVCN nhập lại.
-     * @returns {Promise<boolean>} true khi credential hợp lệ.
+     * @param {string} password Mật khẩu GVCN.
+     * @returns {Promise<boolean>} true khi xác thực thành công.
      */
     async function reauthenticateTeacher(password) {
         if (!currentUser?.email) {
@@ -90,10 +114,10 @@
     }
 
     /**
-     * Gọi RPC PostgreSQL để xóa toàn bộ danh sách.
+     * Gọi RPC database để xóa danh sách học sinh.
      *
-     * RPC kiểm tra quyền GVCN và thực hiện DELETE trong cùng transaction.
-     * Nếu PostgreSQL raise exception, toàn bộ thao tác được rollback.
+     * RPC kiểm tra quyền GVCN và thực hiện thao tác theo transaction.
+     * Nếu RPC báo lỗi, database rollback toàn bộ thao tác.
      *
      * @param {string[]} studentIds UUID học sinh cần xóa.
      * @returns {Promise<object>} Kết quả RPC.
@@ -114,32 +138,7 @@
     }
 
     /**
-     * Hiển thị lỗi validation theo một format thống nhất.
-     *
-     * @param {HTMLElement} errorBox Vùng hiển thị lỗi.
-     * @param {string} message Nội dung lỗi.
-     */
-    function showValidationError(errorBox, message) {
-        errorBox.hidden = false;
-        errorBox.textContent = message;
-        errorBox.style.color = '#b42318';
-        errorBox.style.marginTop = '10px';
-        errorBox.setAttribute('role', 'alert');
-    }
-
-    /**
-     * Xóa thông báo validation trước khi kiểm tra lại form.
-     *
-     * @param {HTMLElement} errorBox Vùng hiển thị lỗi.
-     */
-    function clearValidationError(errorBox) {
-        errorBox.hidden = true;
-        errorBox.textContent = '';
-    }
-
-    /**
-     * Tạo modal chọn học sinh cho thao tác bulk delete.
-     * Danh sách lấy trực tiếp từ `students`, không tạo dữ liệu giả.
+     * Tạo modal chọn một hoặc nhiều học sinh để xóa.
      */
     function openStudentSelectionDialog() {
         if (role !== 'teacher') {
@@ -162,6 +161,7 @@
                         Đóng
                     </button>
                 </div>
+
                 <div class="modal-body">
                     <div class="field">
                         <input
@@ -170,6 +170,7 @@
                             placeholder="Tìm tên hoặc mã HS..."
                         >
                     </div>
+
                     <div class="actions" style="margin:8px 0">
                         <button
                             class="btn small"
@@ -189,11 +190,13 @@
                             Đã chọn: 0
                         </span>
                     </div>
+
                     <div
                         id="studentDeleteList"
                         style="max-height:360px;overflow:auto"
                     ></div>
                 </div>
+
                 <div class="modal-foot">
                     <button class="btn" type="button" data-close>
                         Hủy
@@ -212,7 +215,6 @@
         document.body.appendChild(modal);
 
         const close = () => modal.remove();
-
         modal.querySelectorAll('[data-close]').forEach((button) => {
             button.addEventListener('click', close);
         });
@@ -223,12 +225,11 @@
         const list = modal.querySelector('#studentDeleteList');
         const count = modal.querySelector('#studentDeleteCount');
 
-        const getCheckedIds = () =>
-            [
-                ...modal.querySelectorAll(
-                    '.student-delete-check:checked',
-                ),
-            ].map((input) => input.value);
+        const getCheckedIds = () => [
+            ...modal.querySelectorAll(
+                '.student-delete-check:checked',
+            ),
+        ].map((input) => input.value);
 
         const updateCount = () => {
             count.textContent =
@@ -321,11 +322,11 @@
     }
 
     /**
-     * Hiển thị danh sách chính xác và yêu cầu password + confirmation.
+     * Mở modal xác thực hai bước cho thao tác xóa.
      *
-     * @param {string[]} studentIds UUID học sinh.
+     * @param {string[]} studentIds UUID học sinh cần xóa.
      */
-    async function openSecureDeleteDialog(studentIds) {
+    function openSecureDeleteDialog(studentIds) {
         if (role !== 'teacher') {
             alert('Chỉ GVCN mới được phép xóa học sinh.');
             return;
@@ -339,6 +340,7 @@
         }
 
         const count = selected.length;
+        const confirmationText = `XOA ${count}`;
         const listHtml = selected
             .map((student, index) => `
                 <li>
@@ -349,7 +351,6 @@
             `)
             .join('');
 
-        const confirmationText = `XOA ${count}`;
         const modal = document.createElement('div');
         modal.className = 'modal-backdrop';
         modal.innerHTML = `
@@ -360,16 +361,19 @@
                         Đóng
                     </button>
                 </div>
+
                 <div class="modal-body">
                     <div class="notice">
                         <b>Danh sách chính xác sẽ bị xóa:</b>
                         <ol>${listHtml}</ol>
                     </div>
+
                     <div class="notice" style="margin-top:12px">
-                        <b>Cảnh báo:</b> dữ liệu liên quan có thể bị xóa theo
-                        quan hệ database hiện tại. Thao tác này không thể hoàn tác
-                        từ giao diện.
+                        <b>Cảnh báo:</b>
+                        dữ liệu liên quan có thể bị xóa theo quan hệ database
+                        hiện tại. Thao tác này không thể hoàn tác từ giao diện.
                     </div>
+
                     <div class="field" style="margin-top:12px">
                         <label for="secureDeletePassword">
                             Nhập lại mật khẩu tài khoản GVCN
@@ -381,6 +385,7 @@
                             placeholder="Mật khẩu hiện tại"
                         >
                     </div>
+
                     <div class="field">
                         <label for="secureDeleteConfirm">
                             Nhập <b>${confirmationText}</b> để xác nhận
@@ -392,6 +397,7 @@
                             placeholder="${confirmationText}"
                         >
                     </div>
+
                     <div
                         id="secureDeleteError"
                         class="mini"
@@ -400,6 +406,7 @@
                         hidden
                     ></div>
                 </div>
+
                 <div class="modal-foot">
                     <button class="btn" type="button" data-close>
                         Hủy
@@ -418,7 +425,6 @@
         document.body.appendChild(modal);
 
         const close = () => modal.remove();
-
         modal.querySelectorAll('[data-close]').forEach((button) => {
             button.addEventListener('click', close);
         });
@@ -434,7 +440,7 @@
         );
         const errorBox = modal.querySelector('#secureDeleteError');
 
-        submitButton.addEventListener('click', async () => {
+        const submit = async () => {
             clearValidationError(errorBox);
 
             const password = passwordInput.value;
@@ -463,7 +469,6 @@
 
             try {
                 await reauthenticateTeacher(password);
-
                 await deleteStudentsSecurely(
                     selected.map((student) => student.id),
                 );
@@ -498,31 +503,35 @@
                 submitButton.disabled = false;
                 submitButton.textContent = `Xóa ${count} học sinh`;
             }
-        });
+        };
 
-        passwordInput.addEventListener('input', () => {
-            clearValidationError(errorBox);
-        });
+        submitButton.addEventListener('click', submit);
 
-        confirmationInput.addEventListener('input', () => {
-            clearValidationError(errorBox);
-        });
+        passwordInput.addEventListener(
+            'input',
+            () => clearValidationError(errorBox),
+        );
+
+        confirmationInput.addEventListener(
+            'input',
+            () => clearValidationError(errorBox),
+        );
 
         passwordInput.focus();
     }
 
     /**
-     * Lấy student ID từ nút Lưu trong modal Chỉnh sửa học sinh.
+     * Lấy ID học sinh đang được chỉnh sửa từ inline handler của nút Lưu.
      *
-     * `openStudentForm()` hiện dùng inline handler `saveStudent('id')`.
-     * Ta tận dụng chính ID đó để tránh duplicate form và duplicate state.
+     * Modal legacy hiện dùng `#modalBody` và button `saveStudent('id')`.
+     * Không sửa lại form legacy; chỉ đọc ID đã có.
      *
-     * @param {HTMLElement} modal Modal hiện tại.
-     * @returns {string|null} UUID học sinh hoặc null.
+     * @param {HTMLElement} modal Modal dùng chung của ứng dụng.
+     * @returns {string|null} UUID học sinh đang sửa.
      */
     function getEditingStudentId(modal) {
         const saveButton = modal.querySelector(
-            'button[onclick^="saveStudent("]',
+            '#modalBody button[onclick^="saveStudent("]',
         );
 
         if (!saveButton) {
@@ -538,26 +547,26 @@
     }
 
     /**
-     * Gắn nút Xóa vào modal Chỉnh sửa một học sinh.
+     * Gắn nút Xóa vào đúng modal `#modal` khi GVCN đang sửa một học sinh.
      *
-     * Nút này dùng cùng secure delete flow với bulk delete, nên không có
-     * đường tắt nào bỏ qua password re-authentication và mã `XOA 1`.
-     *
-     * @param {HTMLElement} modal Modal chỉnh sửa học sinh.
+     * @param {HTMLElement} modal Modal dùng chung của ứng dụng.
      */
     function mountDeleteButtonInEditModal(modal) {
-        if (!modal || modal.dataset.deleteActionReady === 'true') {
+        const title = modal.querySelector('#modalTitle');
+        const body = modal.querySelector('#modalBody');
+
+        if (!title || !body) {
             return;
         }
 
-        const heading = modal.querySelector('.modal-head h3');
-        const actions = modal.querySelector('.modal-foot, .actions');
+        const isEditStudentModal = title.textContent.trim() ===
+            'Chỉnh sửa học sinh';
 
-        if (!heading || !actions) {
+        if (!isEditStudentModal) {
             return;
         }
 
-        if (!heading.textContent.includes('Chỉnh sửa học sinh')) {
+        if (body.querySelector('#editStudentDeleteButton')) {
             return;
         }
 
@@ -567,43 +576,61 @@
             return;
         }
 
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'btn danger';
-        button.textContent = 'Xóa học sinh';
-        button.addEventListener('click', () => {
+        const saveButton = body.querySelector(
+            'button[onclick^="saveStudent("]',
+        );
+
+        if (!saveButton) {
+            return;
+        }
+
+        const deleteButton = document.createElement('button');
+        deleteButton.id = 'editStudentDeleteButton';
+        deleteButton.type = 'button';
+        deleteButton.className = 'btn danger';
+        deleteButton.textContent = 'Xóa học sinh';
+        deleteButton.title =
+            'Xóa học sinh sau khi xác thực mật khẩu và XOA 1';
+
+        deleteButton.addEventListener('click', () => {
             openSecureDeleteDialog([studentId]);
         });
 
-        actions.insertBefore(
-            button,
-            actions.querySelector('.btn.primary') || null,
+        saveButton.parentElement?.insertBefore(
+            deleteButton,
+            saveButton,
         );
-
-        modal.dataset.deleteActionReady = 'true';
     }
 
     /**
-     * Theo dõi các modal được tạo động bởi `openModal()`.
+     * Theo dõi modal legacy dùng chung.
      *
-     * MutationObserver được dùng vì modal legacy được chèn trực tiếp vào
-     * body sau khi người dùng bấm Sửa, nên lúc DOMContentLoaded chưa tồn tại.
+     * `openModal()` thay đổi `#modalTitle` và `#modalBody` bằng innerHTML,
+     * nên MutationObserver là cách ít xâm lấn nhất trong giai đoạn bridge.
      */
     function initEditModalDeleteObserver() {
+        const modal = document.getElementById('modal');
+
+        if (!modal) {
+            return;
+        }
+
         const observer = new MutationObserver(() => {
-            document
-                .querySelectorAll('.modal-backdrop .modal')
-                .forEach(mountDeleteButtonInEditModal);
+            mountDeleteButtonInEditModal(modal);
         });
 
-        observer.observe(document.body, {
+        observer.observe(modal, {
             childList: true,
             subtree: true,
+            characterData: true,
         });
+
+        // Kiểm tra ngay nếu modal đã được render trước khi observer khởi tạo.
+        mountDeleteButtonInEditModal(modal);
     }
 
     /**
-     * Expose API cho các UI/module khác trong giai đoạn refactor.
+     * Public API tạm thời cho legacy HTML và các module V6 khác.
      */
     window.deleteStudentV6 = (studentId) =>
         openSecureDeleteDialog([studentId]);
@@ -612,8 +639,7 @@
         openSecureDeleteDialog(studentIds);
 
     /**
-     * Thêm nút quản lý xóa vào page Học sinh mà không sửa lại markup lớn
-     * của index.html. Cách này giữ phạm vi thay đổi nhỏ trong C1.5.
+     * Gắn nút xóa bulk vào toolbar Học sinh.
      */
     function mountStudentDeleteButton() {
         const actions = document.querySelector(
@@ -629,6 +655,7 @@
         button.type = 'button';
         button.className = 'btn';
         button.textContent = 'Xóa học sinh';
+        button.title = 'Chọn một hoặc nhiều học sinh để xóa';
         button.addEventListener(
             'click',
             openStudentSelectionDialog,
@@ -637,6 +664,9 @@
         actions.appendChild(button);
     }
 
+    /**
+     * Khởi tạo các integration point của module.
+     */
     function initStudentActions() {
         mountStudentDeleteButton();
         initEditModalDeleteObserver();
