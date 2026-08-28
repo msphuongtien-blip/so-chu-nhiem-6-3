@@ -102,3 +102,13 @@ loadConfigModule(
     'competition-criteria-settings-ux-v6-script',
     'competition-criteria-settings-ux-v6.js',
 );
+
+/**
+ * Calculation Engine V6.
+ *
+ * Engine thuần tính điểm không phụ thuộc DOM hay Supabase.
+ */
+loadConfigModule(
+    'competition-calculation-v6-script',
+    'competition-calculation-v6.js',
+);
