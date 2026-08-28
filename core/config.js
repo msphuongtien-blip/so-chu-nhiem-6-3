@@ -15,6 +15,8 @@
  *   khởi tạo UI với Category V6.
  * - Competition Record Sync V6 được nạp động để đồng bộ cache lịch sử
  *   sau khi GVCN ghi nhận thi đua thành công.
+ * - Student Picker V6 được nạp động để thay dropdown HS dài bằng
+ *   autocomplete trong form Ghi nhận thi đua.
  *
  * Đây chỉ là integration layer tạm thời; UI/business logic vẫn nằm ở module
  * chức năng riêng.
@@ -85,6 +87,26 @@ const CONFIG = {
     const script = document.createElement('script');
     script.id = scriptId;
     script.src = 'competition-record-sync-v6.js';
+
+    document.head.appendChild(script);
+})();
+
+/**
+ * Nạp Student Picker V6.
+ *
+ * Module sẽ tự chờ `openCompetitionForm()` của form V6 sẵn sàng rồi thay
+ * riêng phần chọn HS bằng autocomplete.
+ */
+(function loadCompetitionStudentPickerModule() {
+    const scriptId = 'competition-student-picker-v6-script';
+
+    if (document.getElementById(scriptId)) {
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'competition-record-student-picker-v6.js';
 
     document.head.appendChild(script);
 })();
