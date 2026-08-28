@@ -444,6 +444,26 @@ function renderCompetitionCategoryFilterV6() {
     document.head.appendChild(script);
 })();
 
+/**
+ * Nạp form Ghi nhận V6 sau khi Category V6 đã thiết lập compatibility layer.
+ *
+ * File riêng này thay thế UI form legacy nhưng tiếp tục dùng addCompetition()
+ * và các hàm refresh dữ liệu hiện có.
+ */
+(function loadCompetitionRecordFormModuleV6() {
+    const scriptId = 'competition-record-form-v6-script';
+
+    if (document.getElementById(scriptId)) {
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'competition-record-form-v6.js';
+
+    document.head.appendChild(script);
+})();
+
 window.CompetitionCategoryV6 = {
     V6_VALID_SCORES,
     getActiveCompetitionCategoriesV6,
