@@ -17,6 +17,8 @@
  *   sau khi GVCN ghi nhận thi đua thành công.
  * - Student Picker V6 được nạp động để thay dropdown HS dài bằng
  *   autocomplete trong form Ghi nhận thi đua.
+ * - Competition Render Helpers V6 cung cấp các helper hiển thị còn được
+ *   runtime legacy sử dụng trong giai đoạn chuyển tiếp.
  *
  * Đây chỉ là integration layer tạm thời; UI/business logic vẫn nằm ở module
  * chức năng riêng.
@@ -107,6 +109,26 @@ const CONFIG = {
     const script = document.createElement('script');
     script.id = scriptId;
     script.src = 'competition-record-student-picker-v6.js';
+
+    document.head.appendChild(script);
+})();
+
+/**
+ * Nạp helper hiển thị Thi đua V6.
+ *
+ * `renderCompetition()` legacy đang gọi `trendText()` trực tiếp. Module này
+ * giữ helper tách riêng để không phải đưa utility hiển thị trở lại app.js.
+ */
+(function loadCompetitionRenderHelpersModule() {
+    const scriptId = 'competition-render-helpers-v6-script';
+
+    if (document.getElementById(scriptId)) {
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'competition-render-helpers-v6.js';
 
     document.head.appendChild(script);
 })();
