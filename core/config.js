@@ -13,6 +13,8 @@
  * - Import CSV V6 được nạp động vì index.html hiện vẫn là entry point legacy.
  * - Criteria Settings bootstrap được nạp động để đồng bộ thời điểm
  *   khởi tạo UI với Category V6.
+ * - Competition Record Sync V6 được nạp động để đồng bộ cache lịch sử
+ *   sau khi GVCN ghi nhận thi đua thành công.
  *
  * Đây chỉ là integration layer tạm thời; UI/business logic vẫn nằm ở module
  * chức năng riêng.
@@ -63,6 +65,26 @@ const CONFIG = {
     const script = document.createElement('script');
     script.id = scriptId;
     script.src = 'competition-criteria-settings-boot-v6.js';
+
+    document.head.appendChild(script);
+})();
+
+/**
+ * Nạp bridge đồng bộ lịch sử thi đua V6 một lần.
+ *
+ * Module này chờ app.js định nghĩa addCompetition() rồi mới cài wrapper,
+ * vì app.js hiện vẫn là runtime legacy của module Thi đua.
+ */
+(function loadCompetitionRecordSyncModule() {
+    const scriptId = 'competition-record-sync-v6-script';
+
+    if (document.getElementById(scriptId)) {
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'competition-record-sync-v6.js';
 
     document.head.appendChild(script);
 })();
