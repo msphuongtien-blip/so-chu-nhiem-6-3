@@ -267,3 +267,101 @@ function speakStudent(studentName) {
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Compatibility: close the legacy edit modal after a successful deletion    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Xác định modal sửa học sinh legacy có đang mở hay không.
+ *
+ * Modal chính của ứng dụng dùng chung `#modal`. Không dùng selector của
+ * modal xác thực xóa vì modal đó được tạo độc lập bởi student-actions-v6.js.
+ *
+ * @returns {boolean} true khi modal hiện tại là "Chỉnh sửa học sinh".
+ */
+function isStudentEditModalOpen() {
+    const modal = document.getElementById('modal');
+    const title = document.getElementById('modalTitle');
+
+    return Boolean(
+        modal &&
+        title &&
+        title.textContent.trim() === 'Chỉnh sửa học sinh',
+    );
+}
+
+/**
+ * Chờ modal xác nhận xóa đóng lại sau khi người dùng submit.
+ *
+ * student-actions-v6.js đóng modal xác nhận ngay trước khi gọi `loadAll()`.
+ * Nếu thao tác thành công, modal Sửa học sinh legacy vẫn còn phía dưới.
+ * Chúng ta chỉ đóng modal Sửa sau khi modal xác nhận đã biến mất và không có
+ * thông báo lỗi đang hiển thị.
+ */
+function closeStudentEditModalAfterDelete() {
+    if (!isStudentEditModalOpen()) {
+        return;
+    }
+
+    const checkInterval = window.setInterval(() => {
+        const secureModal = document.querySelector(
+            '#secureDeletePassword',
+        );
+        const errorBox = document.querySelector(
+            '#secureDeleteError',
+        );
+
+        /*
+         * Nếu modal xác nhận vẫn còn, thao tác xóa chưa kết thúc.
+         * Không đóng modal Sửa trong trường hợp này.
+         */
+        if (secureModal) {
+            return;
+        }
+
+        /*
+         * Nếu có lỗi hiển thị, người dùng vẫn đang ở trong flow xác thực.
+         * Giữ nguyên modal Sửa để họ có thể tiếp tục.
+         */
+        if (errorBox && !errorBox.hidden && errorBox.textContent.trim()) {
+            window.clearInterval(checkInterval);
+            return;
+        }
+
+        window.clearInterval(checkInterval);
+
+        if (
+            typeof closeModal === 'function' &&
+            isStudentEditModalOpen()
+        ) {
+            closeModal();
+        }
+    }, 100);
+
+    /*
+     * Guard để tránh interval treo nếu browser hoặc DOM bị thay đổi bất thường.
+     */
+    window.setTimeout(() => {
+        window.clearInterval(checkInterval);
+    }, 15000);
+}
+
+/**
+ * Event delegation cho nút Xóa trong modal Sửa.
+ *
+ * Event delegation nghĩa là ta lắng nghe click ở `document` thay vì gắn
+ * listener trực tiếp vào button. Điều này phù hợp với button được tạo động
+ * sau khi `openStudentForm()` render modal.
+ */
+document.addEventListener('click', (event) => {
+    const deleteButton = event.target.closest(
+        '#editStudentDeleteButton',
+    );
+
+    if (!deleteButton) {
+        return;
+    }
+
+    closeStudentEditModalAfterDelete();
+});
