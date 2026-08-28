@@ -3,16 +3,15 @@
  * FILE: tests/students/student-import.test.js
  *
  * Mục đích:
- * Kiểm tra contract dữ liệu của module bulk import HS.
+ * Regression tests cho parser, validation, sinh Mã HS và payload Import CSV.
  *
- * Các case quan trọng:
- * - CSV có BOM và CRLF.
- * - Giá trị có dấu phẩy trong ngoặc kép.
- * - Thiếu header bắt buộc.
- * - Mã HS sai định dạng.
- * - Trùng mã HS với database hiện tại.
- * - Trùng mã HS trong chính file CSV.
- * - Payload INSERT không chứa field hệ thống.
+ * Contract:
+ * - CSV Import chỉ có Họ tên, Giới tính, Ghi chú.
+ * - Họ tên bắt buộc.
+ * - Giới tính/Ghi chú tùy chọn.
+ * - Mã HS do hệ thống sinh.
+ * - Mức hỗ trợ dùng default "Không" của database.
+ * - Field tùy chọn để trống không được gửi vào payload.
  */
 
 const assert = require('node:assert/strict');
@@ -32,17 +31,22 @@ const context = vm.createContext({
     document: {
         readyState: 'loading',
         addEventListener() {},
-        querySelector() {
-            return null;
+        createElement() {
+            return {
+                click() {},
+            };
+        },
+        body: {
+            appendChild() {},
         },
     },
-    Set,
-    Map,
-    String,
-    Number,
-    Array,
-    Object,
-    Error,
+    Blob,
+    URL: {
+        createObjectURL() {
+            return 'blob:url';
+        },
+        revokeObjectURL() {},
+    },
 });
 
 vm.runInContext(source, context, {
@@ -52,96 +56,110 @@ vm.runInContext(source, context, {
 const api = context.window.StudentsImportV6;
 
 assert.ok(api, 'StudentsImportV6 phải được export.');
+
 assert.deepEqual(
-    api.CSV_HEADERS,
-    [
-        'full_name',
-        'student_code',
-        'gender',
-        'team',
-        'support_level',
-        'progress_note',
-        'special_note',
-    ],
+    Array.from(api.CSV_HEADERS),
+    ['Họ tên', 'Giới tính', 'Ghi chú'],
 );
 
-const matrix = api.parseCsv(
-    '\uFEFFfull_name,student_code,gender,team\r\n' +
-    'Nguyen Van A,6301,Nam,1\r\n' +
-    'Tran Thi B,6302,Nữ,2\r\n',
-);
+const csv =
+    '\uFEFFHọ tên,Giới tính,Ghi chú\r\n' +
+    'Nguyễn Văn A,Nam,"Ghi chú, có dấu phẩy"\r\n' +
+    'Trần Thị B,Nữ,\r\n';
+
+const matrix = api.parseCsv(csv);
 assert.equal(matrix.length, 3);
-assert.equal(matrix[1][0], 'Nguyen Van A');
-
-const quoted = api.parseCsv(
-    'full_name,student_code,special_note\n' +
-    'A,6303,"Ghi chú, có dấu phẩy"\n',
-);
-assert.equal(quoted[1][2], 'Ghi chú, có dấu phẩy');
+assert.equal(matrix[1][2], 'Ghi chú, có dấu phẩy');
 
 const mapped = api.mapCsvRows(matrix);
 assert.equal(mapped.rows.length, 2);
 
-const validResult = api.validateImportRows(
-    mapped.rows,
-    [],
-);
-assert.equal(validResult.errors.length, 0);
-assert.equal(validResult.validRows.length, 2);
+const validation = api.validateImportRows(mapped.rows);
+assert.equal(validation.errors.length, 0);
+assert.equal(validation.validRows.length, 2);
 
-const duplicateResult = api.validateImportRows(
+const missingName = api.validateImportRows(
     api.mapCsvRows(
         api.parseCsv(
-            'full_name,student_code\n' +
-            'A,6304\n' +
-            'B,6304\n',
+            'Họ tên,Giới tính,Ghi chú\n' +
+            ',Nam,Test\n',
         ),
     ).rows,
-    [],
 );
-assert.ok(duplicateResult.errors.length > 0);
+assert.equal(missingName.errors.length, 1);
 
-const existingResult = api.validateImportRows(
+const invalidGender = api.validateImportRows(
     api.mapCsvRows(
         api.parseCsv(
-            'full_name,student_code\n' +
-            'A,6305\n',
+            'Họ tên,Giới tính,Ghi chú\n' +
+            'Test,Khác Giới,\n',
         ),
     ).rows,
-    [{ student_code: '6305' }],
 );
-assert.equal(existingResult.errors.length, 1);
-assert.match(
-    existingResult.errors[0].reasons.join(' '),
-    /đã tồn tại/i,
+assert.equal(invalidGender.errors.length, 1);
+
+assert.equal(
+    api.getStudentCodePrefix('6/3'),
+    '63',
 );
 
-const invalidCodeResult = api.validateImportRows(
-    api.mapCsvRows(
-        api.parseCsv(
-            'full_name,student_code\n' +
-            'A,63A5\n',
-        ),
-    ).rows,
-    [],
+assert.deepEqual(
+    api.generateStudentCodes(
+        3,
+        [
+            { student_code: '6301' },
+            { student_code: '6344' },
+        ],
+        '6/3',
+    ),
+    ['6345', '6346', '6347'],
 );
-assert.equal(invalidCodeResult.errors.length, 1);
 
-const payload = api.buildInsertPayload(validResult.validRows);
+const payload = api.buildInsertPayload(
+    validation.validRows,
+    ['6345', '6346'],
+);
+
 assert.equal(payload.length, 2);
-assert.equal(payload[0].full_name, 'Nguyen Van A');
-assert.equal(payload[0].student_code, '6301');
-assert.equal(
-    Object.prototype.hasOwnProperty.call(payload[0], 'id'),
-    false,
-);
-assert.equal(
-    Object.prototype.hasOwnProperty.call(payload[0], 'competition_score'),
-    false,
-);
-assert.equal(
-    Object.prototype.hasOwnProperty.call(payload[0], 'weekly_start_score'),
-    false,
+assert.deepEqual(
+    payload[0],
+    {
+        full_name: 'Nguyễn Văn A',
+        student_code: '6345',
+        gender: 'Nam',
+        special_note: 'Ghi chú, có dấu phẩy',
+    },
 );
 
-console.log('Student CSV import contract tests: PASS');
+const minimalPayload = api.buildInsertPayload(
+    [{
+        full_name: 'HS Không Có Trường Tùy Chọn',
+    }],
+    ['6347'],
+);
+
+assert.deepEqual(
+    minimalPayload[0],
+    {
+        full_name: 'HS Không Có Trường Tùy Chọn',
+        student_code: '6347',
+    },
+);
+
+for (const forbiddenField of [
+    'team',
+    'competition_score',
+    'weekly_start_score',
+    'attendance_percent',
+    'support_level',
+]) {
+    assert.equal(
+        Object.prototype.hasOwnProperty.call(
+            minimalPayload[0],
+            forbiddenField,
+        ),
+        false,
+    );
+}
+
+console.log('PASS: student CSV import tests');
