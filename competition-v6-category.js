@@ -3,20 +3,18 @@
  *
  * Mục đích:
  * Bổ sung nền tảng Category V6 cho module Thi đua mà không thay đổi
- * responsibility của app.js.
+ * responsibility của app.js trong giai đoạn compatibility.
  *
  * Nguyên tắc:
  * - Category được đọc từ bảng competition_categories hiện có.
  * - Category 6 (Học tập) dùng cùng một đường dữ liệu với 5 category còn lại.
- * - Không hard-code danh sách category trong logic nghiệp vụ.
+ * - Không hard-code danh sách category trong logic nghiệp vụ mới.
  * - Không tự quyết định tài khoản là Teacher hay Student.
- * - Không thay thế calculation engine của V5 ở Task 1.
+ * - Không thay thế calculation engine của V5 ở C2.1.
  *
- * Quan trọng:
- * `sb` trong app.js là biến `let` ở global lexical scope nên không nằm
- * trên `window`. Module này dùng một Supabase client riêng trong giai đoạn
- * tương thích để không phụ thuộc vào biến global nội bộ của app.js.
- * Việc hợp nhất client dùng chung sẽ được xử lý ở bước refactor architecture.
+ * Compatibility:
+ * app.js vẫn còn một số literal category 1-5 ở form legacy. Adapter V6
+ * chuyển các control đó sang dữ liệu database sau khi form render.
  */
 
 const V6_VALID_SCORES = [
@@ -114,14 +112,13 @@ function getCompetitionCategoryNameV6(id) {
 /**
  * Tạo option HTML cho danh sách category từ một tập category cụ thể.
  *
- * Hàm này được expose cho test và các module V6 khác. Khi render runtime,
- * dữ liệu được lấy trực tiếp từ `competition_categories`.
+ * Hàm này được expose cho test và các module V6 khác.
  */
 function buildCompetitionCategoryOptionsV6(
     categories,
     selectedId = '',
 ) {
-    return (categories || [])
+    return [...(categories || [])]
         .filter((category) => category.active !== false)
         .sort(
             (a, b) =>
@@ -185,18 +182,12 @@ function scoreOptionsV6(selected = 1) {
 }
 
 /**
- * Chỉ bổ sung category vào luồng bootstrap hiện tại.
- *
- * Không tự kiểm tra `window.role` vì `role` trong app.js không nằm trên
- * window. Quyết định Teacher/Student vẫn thuộc về loadAll() của app.js.
+ * Bọc bootstrap V5 để bảo đảm category được đọc trước khi render thi đua.
  */
 const originalLoadAllV5 = window.loadAll;
 if (typeof originalLoadAllV5 === 'function') {
     window.loadAll = async function loadAllV6() {
-        // Category là dữ liệu bổ trợ; lỗi của nó không được chặn app.
         await ensureCompetitionCategoriesV6();
-
-        // Gọi đúng bootstrap V5 đã tồn tại, tránh duplicate role logic.
         return originalLoadAllV5();
     };
 }
@@ -241,10 +232,7 @@ if (typeof window.scoreOptions === 'function') {
  * Đây là compatibility adapter cho các form V5. Không sao chép logic form;
  * chỉ thay options sau khi form đã render.
  */
-function mountCategorySelectV6(
-    select,
-    selectedId = '',
-) {
+function mountCategorySelectV6(select, selectedId = '') {
     if (!select) {
         return;
     }
@@ -261,7 +249,10 @@ function mountCategorySelectV6(
 }
 
 /**
- * Thay các category group cards của form Ghi nhận bằng 6 category hiện tại.
+ * Cập nhật tiêu đề các group cards cũ và bổ sung Category 6 nếu cần.
+ *
+ * Không thay innerHTML của #modalBody. Chỉ thao tác trên các node
+ * `.criteria-group` đã có để tránh xóa các control khác trong modal.
  */
 function mountCompetitionGroupCardsV6() {
     const body = document.getElementById('modalBody');
@@ -270,51 +261,58 @@ function mountCompetitionGroupCardsV6() {
         return;
     }
 
-    const groupContainer = body.querySelector('.criteria-group')?.parentElement;
+    const groups = [
+        ...body.querySelectorAll('.criteria-group'),
+    ];
 
-    if (!groupContainer) {
+    if (!groups.length) {
         return;
     }
 
-    const criteriaGroups = {};
+    const existingGroups = new Map();
 
-    body.querySelectorAll('.criteria-group').forEach((group) => {
-        const heading = group.querySelector('h4')?.textContent || '';
-        const match = heading.match(/Nhóm\s+(\d+)/);
+    groups.forEach((group) => {
+        const heading = group.querySelector('h4');
+        const match = heading?.textContent.match(/Nhóm\s+(\d+)/);
 
         if (match) {
-            criteriaGroups[match[1]] = group;
+            existingGroups.set(match[1], group);
         }
     });
 
-    const generated = competitionCategoriesV6
-        .filter((category) => category.active !== false)
-        .map((category) => {
-            const existing = criteriaGroups[String(category.id)];
+    for (const category of getActiveCompetitionCategoriesV6()) {
+        const key = String(category.id);
+        const existing = existingGroups.get(key);
 
-            if (existing) {
-                const heading = existing.querySelector('h4');
+        if (existing) {
+            const heading = existing.querySelector('h4');
 
-                if (heading) {
-                    heading.textContent =
-                        `Nhóm ${category.id}: ${category.name}`;
-                }
-
-                return existing.outerHTML;
+            if (heading) {
+                heading.textContent =
+                    `Nhóm ${category.id}: ${category.name}`;
             }
 
-            return `
+            continue;
+        }
+
+        const lastGroup = groups[groups.length - 1];
+
+        lastGroup.insertAdjacentHTML(
+            'afterend',
+            `
                 <div class="criteria-group">
-                    <h4>Nhóm ${category.id}: ${escapeHtmlV6(category.name)}</h4>
+                    <h4>
+                        Nhóm ${category.id}: ${escapeHtmlV6(category.name)}
+                    </h4>
                     <div class="criteria-items">
                         <span class="mini">Chưa có tiêu chí.</span>
                     </div>
                 </div>
-            `;
-        })
-        .join('');
+            `,
+        );
 
-    groupContainer.innerHTML = generated;
+        groups.push(lastGroup.nextElementSibling);
+    }
 }
 
 /**
@@ -363,8 +361,6 @@ function applyCategoryAdapterAfterModalV6() {
 
 /**
  * Bọc các hàm V5 có select category hard-code.
- *
- * Wrapper chỉ can thiệp vào DOM sau khi hàm cũ đã hoàn tất nhiệm vụ chính.
  */
 const originalOpenCompetitionFormV5 = window.openCompetitionForm;
 if (typeof originalOpenCompetitionFormV5 === 'function') {
