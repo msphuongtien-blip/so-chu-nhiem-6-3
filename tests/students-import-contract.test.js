@@ -1,91 +1,204 @@
+#!/usr/bin/env node
 /**
- * TEST: students-import-contract.test.js
+ * FILE: tests/students-import-contract.test.js
  *
  * Mục đích:
- * Kiểm tra contract của template CSV trước khi triển khai parser/import.
+ * Kiểm tra contract chính thức của CSV Import HS.
  *
- * Các field hệ thống như `id`, `competition_score` và timestamp không được
- * yêu cầu giáo viên nhập thủ công.
+ * Import chỉ nhận:
+ * - Họ tên (bắt buộc)
+ * - Giới tính (tùy chọn)
+ * - Ghi chú (tùy chọn)
+ *
+ * STT, Mã HS, Tổ, Thi đua và Mức hỗ trợ không thuộc file import.
+ * Mã HS được sinh bởi hệ thống; Mức hỗ trợ dùng default "Không" của database.
  */
 
-const fs = require('fs');
-const vm = require('vm');
-const assert = require('assert');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 
-const modulePath = require('path').join(
-    __dirname,
-    '../../students-import-v6.js',
-);
+const root = path.resolve(__dirname, '..');
+const modulePath = path.join(root, 'students-import-v6.js');
+const source = fs.readFileSync(modulePath, 'utf8');
 
-const context = {
+const context = vm.createContext({
+    console,
     window: {},
     document: {
         readyState: 'loading',
         addEventListener() {},
-        createElement: () => ({
-            click() {},
-        }),
+        createElement() {
+            return {
+                click() {},
+            };
+        },
         body: {
             appendChild() {},
         },
     },
     Blob,
     URL: {
-        createObjectURL: () => 'blob:url',
+        createObjectURL() {
+            return 'blob:url';
+        },
         revokeObjectURL() {},
     },
-};
+});
 
-context.globalThis = context;
-context.window = context;
+vm.runInContext(source, context, {
+    filename: 'students-import-v6.js',
+});
 
-const code = fs.readFileSync(modulePath, 'utf8');
-vm.runInNewContext(code, context);
+const api = context.window.StudentsImportV6;
 
-assert.ok(
-    context.StudentsImportV6,
-    'StudentsImportV6 module must be available',
-);
+assert.ok(api, 'StudentsImportV6 phải được export.');
 
 const expectedHeaders = [
-    'full_name',
-    'student_code',
-    'gender',
-    'team',
-    'support_level',
-    'progress_note',
-    'special_note',
+    'Họ tên',
+    'Giới tính',
+    'Ghi chú',
 ];
 
-assert.deepStrictEqual(
-    Array.from(context.StudentsImportV6.CSV_HEADERS),
+assert.deepEqual(
+    Array.from(api.CSV_HEADERS),
     expectedHeaders,
-    'CSV template must expose only importable student profile fields',
+    'CSV Import phải chỉ có 3 cột hồ sơ thiết yếu.',
 );
 
-const template = context.StudentsImportV6.createTemplateCsv();
+const template = api.createTemplateCsv();
+const templateHeader = template
+    .replace(/^\uFEFF/, '')
+    .split('\n')[0];
 
-assert.ok(
-    template.startsWith(expectedHeaders.join(',')),
-    'template must start with the exact CSV header order',
+assert.equal(
+    templateHeader,
+    expectedHeaders.join(','),
+    'Template Import phải dùng đúng 3 cột chính thức.',
 );
 
 const forbiddenHeaders = [
-    'id',
-    'user_id',
-    'competition_score',
-    'attendance_percent',
-    'weekly_start_score',
-    'competition_week_start',
-    'created_at',
-    'updated_at',
+    'STT',
+    'Mã HS',
+    'Tổ',
+    'Thi đua',
+    'Mức hỗ trợ',
 ];
 
 for (const header of forbiddenHeaders) {
-    assert.ok(
-        !template.split('\n')[0].split(',').includes(header),
-        `template must not ask teacher to enter system field: ${header}`,
+    assert.equal(
+        templateHeader.includes(header),
+        false,
+        `Template Import không được yêu cầu nhập: ${header}`,
     );
 }
 
-console.log('PASS: students import contract');
+const matrix = api.parseCsv(
+    '\uFEFFHọ tên,Giới tính,Ghi chú\r\n' +
+    'Nguyễn Văn A,Nam,"Ghi chú, có dấu phẩy"\r\n' +
+    'Trần Thị B,Nữ,\r\n',
+);
+
+assert.equal(matrix.length, 3);
+assert.equal(matrix[1][2], 'Ghi chú, có dấu phẩy');
+
+const mapped = api.mapCsvRows(matrix);
+assert.equal(mapped.rows.length, 2);
+
+const valid = api.validateImportRows(mapped.rows);
+assert.equal(valid.errors.length, 0);
+assert.equal(valid.validRows.length, 2);
+
+const invalidName = api.validateImportRows(
+    api.mapCsvRows(
+        api.parseCsv(
+            'Họ tên,Giới tính,Ghi chú\n' +
+            ',Nam,Test\n',
+        ),
+    ).rows,
+);
+
+assert.equal(invalidName.errors.length, 1);
+assert.match(
+    invalidName.errors[0].reasons.join(' '),
+    /họ tên/i,
+);
+
+const invalidGender = api.validateImportRows(
+    api.mapCsvRows(
+        api.parseCsv(
+            'Họ tên,Giới tính,Ghi chú\n' +
+            'Test,T,\n',
+        ),
+    ).rows,
+);
+
+assert.equal(invalidGender.errors.length, 1);
+assert.match(
+    invalidGender.errors[0].reasons.join(' '),
+    /Giới tính/i,
+);
+
+const generatedCodes = api.generateStudentCodes(
+    2,
+    [
+        { student_code: '6343' },
+        { student_code: '6344' },
+    ],
+    '6/3',
+);
+
+assert.deepEqual(
+    generatedCodes,
+    ['6345', '6346'],
+    'Mã HS phải được sinh theo đúng rule của form thêm 1 HS.',
+);
+
+const payload = api.buildInsertPayload(
+    [
+        {
+            full_name: 'Nguyễn Văn Test',
+        },
+        {
+            full_name: 'Trần Thị Test',
+            gender: 'Nữ',
+            special_note: 'Theo dõi',
+        },
+    ],
+    ['6345', '6346'],
+);
+
+assert.deepEqual(
+    payload[0],
+    {
+        full_name: 'Nguyễn Văn Test',
+        student_code: '6345',
+    },
+    'Field trống phải được loại khỏi payload.',
+);
+
+assert.deepEqual(
+    payload[1],
+    {
+        full_name: 'Trần Thị Test',
+        student_code: '6346',
+        gender: 'Nữ',
+        special_note: 'Theo dõi',
+    },
+);
+
+for (const forbiddenField of [
+    'team',
+    'competition_score',
+    'weekly_start_score',
+    'support_level',
+]) {
+    assert.equal(
+        Object.prototype.hasOwnProperty.call(payload[0], forbiddenField),
+        false,
+        `Payload Import không được chứa field: ${forbiddenField}`,
+    );
+}
+
+console.log('PASS: students CSV import contract');
