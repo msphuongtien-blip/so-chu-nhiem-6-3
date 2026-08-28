@@ -292,76 +292,97 @@ function isStudentEditModalOpen() {
 }
 
 /**
- * Chờ modal xác nhận xóa đóng lại sau khi người dùng submit.
+ * Đánh dấu rằng người dùng vừa chọn Xóa từ modal Sửa học sinh.
  *
- * student-actions-v6.js đóng modal xác nhận ngay trước khi gọi `loadAll()`.
- * Nếu thao tác thành công, modal Sửa học sinh legacy vẫn còn phía dưới.
- * Chúng ta chỉ đóng modal Sửa sau khi modal xác nhận đã biến mất và không có
- * thông báo lỗi đang hiển thị.
+ * Chúng ta không đóng modal ngay ở sự kiện này vì lúc đó modal xác thực
+ * còn chưa được mở. Chỉ sau khi người dùng bấm nút xác nhận xóa và thao tác
+ * server thành công mới được đóng modal Sửa.
  */
-function closeStudentEditModalAfterDelete() {
-    if (!isStudentEditModalOpen()) {
+let editStudentDeletePending = false;
+
+/**
+ * Theo dõi kết quả của lần submit xóa đang chạy.
+ *
+ * - Modal xác thực còn tồn tại: chưa biết kết quả, tiếp tục chờ.
+ * - Có lỗi validation: dừng, giữ modal Sửa.
+ * - Modal xác thực biến mất mà không có lỗi: coi là xóa thành công và đóng
+ *   modal Sửa.
+ */
+function watchSuccessfulStudentDeletion() {
+    if (!editStudentDeletePending) {
         return;
     }
 
+    const startedAt = Date.now();
     const checkInterval = window.setInterval(() => {
-        const secureModal = document.querySelector(
-            '#secureDeletePassword',
+        const securePassword = document.getElementById(
+            'secureDeletePassword',
         );
-        const errorBox = document.querySelector(
-            '#secureDeleteError',
+        const errorBox = document.getElementById(
+            'secureDeleteError',
         );
 
-        /*
-         * Nếu modal xác nhận vẫn còn, thao tác xóa chưa kết thúc.
-         * Không đóng modal Sửa trong trường hợp này.
-         */
-        if (secureModal) {
+        if (securePassword) {
+            if (
+                errorBox &&
+                !errorBox.hidden &&
+                errorBox.textContent.trim()
+            ) {
+                editStudentDeletePending = false;
+                window.clearInterval(checkInterval);
+            }
+
             return;
         }
 
-        /*
-         * Nếu có lỗi hiển thị, người dùng vẫn đang ở trong flow xác thực.
-         * Giữ nguyên modal Sửa để họ có thể tiếp tục.
-         */
-        if (errorBox && !errorBox.hidden && errorBox.textContent.trim()) {
-            window.clearInterval(checkInterval);
-            return;
-        }
-
+        editStudentDeletePending = false;
         window.clearInterval(checkInterval);
 
         if (
-            typeof closeModal === 'function' &&
-            isStudentEditModalOpen()
+            Date.now() - startedAt >= 0 &&
+            isStudentEditModalOpen() &&
+            typeof closeModal === 'function'
         ) {
             closeModal();
         }
     }, 100);
 
-    /*
-     * Guard để tránh interval treo nếu browser hoặc DOM bị thay đổi bất thường.
-     */
     window.setTimeout(() => {
         window.clearInterval(checkInterval);
+        editStudentDeletePending = false;
     }, 15000);
 }
 
 /**
- * Event delegation cho nút Xóa trong modal Sửa.
+ * Event delegation cho hai nút liên quan đến secure delete.
  *
- * Event delegation nghĩa là ta lắng nghe click ở `document` thay vì gắn
- * listener trực tiếp vào button. Điều này phù hợp với button được tạo động
- * sau khi `openStudentForm()` render modal.
+ * `student-actions-v6.js` tạo các button động sau khi modal được mở, nên
+ * lắng nghe tại document giúp không phải gắn listener lại cho mỗi modal.
  */
 document.addEventListener('click', (event) => {
-    const deleteButton = event.target.closest(
+    const editDeleteButton = event.target.closest(
         '#editStudentDeleteButton',
     );
 
-    if (!deleteButton) {
+    if (editDeleteButton) {
+        editStudentDeletePending = true;
         return;
     }
 
-    closeStudentEditModalAfterDelete();
+    const submitButton = event.target.closest(
+        '#secureDeleteSubmit',
+    );
+
+    if (!submitButton || !editStudentDeletePending) {
+        return;
+    }
+
+    /*
+     * Đợi event handler của student-actions-v6.js chạy xong và mở modal/
+     * validation trước khi bắt đầu quan sát kết quả.
+     */
+    window.setTimeout(
+        watchSuccessfulStudentDeletion,
+        0,
+    );
 });
