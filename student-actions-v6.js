@@ -322,6 +322,21 @@
     }
 
     /**
+     * Đóng modal chỉnh sửa học sinh legacy sau khi xóa thành công.
+     *
+     * `#modal` là modal dùng chung của ứng dụng. Chỉ gọi helper này sau khi
+     * RPC đã hoàn tất thành công, để không đóng form trong trường hợp xác thực
+     * hoặc thao tác database thất bại.
+     */
+    function closeStudentEditModal() {
+        const editModal = document.getElementById('modal');
+
+        if (editModal) {
+            editModal.classList.add('hidden');
+        }
+    }
+
+    /**
      * Mở modal xác thực hai bước cho thao tác xóa.
      *
      * @param {string[]} studentIds UUID học sinh cần xóa.
@@ -479,17 +494,17 @@
                     selected.map((student) => student.id),
                 );
 
+                // Xóa thành công: đóng modal xác thực trước.
                 close();
 
-                if (typeof loadAll === 'function') {
-                    await loadAll();
+                // Nếu thao tác bắt đầu từ modal Sửa, đóng modal Sửa ngay.
+                if (closeEditModalOnSuccess) {
+                    closeStudentEditModal();
                 }
 
-                if (
-                    closeEditModalOnSuccess &&
-                    typeof closeModal === 'function'
-                ) {
-                    closeModal();
+                // Sau khi UI đã đóng, tải lại dữ liệu từ Supabase.
+                if (typeof loadAll === 'function') {
+                    await loadAll();
                 }
             } catch (error) {
                 console.error(
