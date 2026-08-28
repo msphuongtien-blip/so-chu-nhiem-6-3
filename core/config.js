@@ -86,3 +86,19 @@ loadConfigModule(
     'competition-ux-v6-script',
     'competition-ux-v6.js',
 );
+
+/**
+ * Đồng bộ state sau khi sửa record.
+ */
+loadConfigModule(
+    'competition-record-edit-sync-v6-script',
+    'competition-record-edit-sync-v6.js',
+);
+
+/**
+ * Bảo đảm Cài đặt tiêu chí luôn sử dụng layout nhóm V6.
+ */
+loadConfigModule(
+    'competition-criteria-settings-ux-v6-script',
+    'competition-criteria-settings-ux-v6.js',
+);
