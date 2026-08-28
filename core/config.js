@@ -29,9 +29,10 @@ const CONFIG = {
  *
  * `defer` ở index.html giữ thứ tự Core → app. Loader này chỉ có nhiệm vụ
  * bridge tạm thời, không chứa logic import.
+ * Module runtime chính thức là `students-import-v6.js` (3 cột).
  */
 (function loadStudentCsvImportModule() {
-    const scriptId = 'students-import-v6-8col-script';
+    const scriptId = 'students-import-v6-script';
 
     if (document.getElementById(scriptId)) {
         return;
@@ -39,7 +40,7 @@ const CONFIG = {
 
     const script = document.createElement('script');
     script.id = scriptId;
-    script.src = 'students-import-v6-8col.js';
+    script.src = 'students-import-v6.js';
     script.defer = true;
 
     document.head.appendChild(script);
