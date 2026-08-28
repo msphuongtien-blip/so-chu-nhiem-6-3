@@ -33,12 +33,12 @@
         }
 
         return String(value ?? '').replace(
-            /[&<>"']/g,
+            /[&<>\"']/g,
             (character) => ({
                 '&': '&amp;',
                 '<': '&lt;',
                 '>': '&gt;',
-                '"': '&quot;',
+                '\"': '&quot;',
                 "'": '&#039;',
             }[character]),
         );
@@ -325,8 +325,14 @@
      * Mở modal xác thực hai bước cho thao tác xóa.
      *
      * @param {string[]} studentIds UUID học sinh cần xóa.
+     * @param {object} options Tùy chọn ngữ cảnh gọi modal xóa.
+     * @param {boolean} options.closeEditModalOnSuccess Có đóng modal Sửa
+     * học sinh sau khi xóa thành công hay không.
      */
-    function openSecureDeleteDialog(studentIds) {
+    function openSecureDeleteDialog(
+        studentIds,
+        { closeEditModalOnSuccess = false } = {},
+    ) {
         if (role !== 'teacher') {
             alert('Chỉ GVCN mới được phép xóa học sinh.');
             return;
@@ -479,7 +485,12 @@
                     await loadAll();
                 }
 
-                alert(`Đã xóa ${count} học sinh.`);
+                if (
+                    closeEditModalOnSuccess &&
+                    typeof closeModal === 'function'
+                ) {
+                    closeModal();
+                }
             } catch (error) {
                 console.error(
                     'Secure student deletion failed:',
@@ -559,8 +570,8 @@
             return;
         }
 
-        const isEditStudentModal = title.textContent.trim() ===
-            'Chỉnh sửa học sinh';
+        const isEditStudentModal =
+            title.textContent.trim() === 'Chỉnh sửa học sinh';
 
         if (!isEditStudentModal) {
             return;
@@ -593,7 +604,12 @@
             'Xóa học sinh sau khi xác thực mật khẩu và XOA 1';
 
         deleteButton.addEventListener('click', () => {
-            openSecureDeleteDialog([studentId]);
+            openSecureDeleteDialog(
+                [studentId],
+                {
+                    closeEditModalOnSuccess: true,
+                },
+            );
         });
 
         saveButton.parentElement?.insertBefore(
