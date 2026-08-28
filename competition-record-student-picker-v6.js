@@ -23,6 +23,7 @@ const STUDENT_PICKER_V6_POLL_MS = 100;
 
 let studentPickerOriginalOpenFormV6 = null;
 let studentPickerInitializedV6 = false;
+let studentPickerDocumentClickBoundV6 = false;
 let selectedStudentPickerIdV6 = '';
 
 /**
@@ -255,6 +256,30 @@ function buildStudentPickerMarkupV6() {
 }
 
 /**
+ * Đóng gợi ý khi GVCN click ra ngoài picker.
+ *
+ * Listener chỉ đăng ký một lần trong toàn bộ vòng đời trang để tránh
+ * tạo nhiều event handler sau mỗi lần mở form.
+ */
+function bindStudentPickerDocumentClickV6() {
+    if (studentPickerDocumentClickBoundV6) {
+        return;
+    }
+
+    document.addEventListener('click', (event) => {
+        const picker = event.target.closest(
+            '.student-picker-v6',
+        );
+
+        if (!picker) {
+            closeStudentPickerResultsV6();
+        }
+    });
+
+    studentPickerDocumentClickBoundV6 = true;
+}
+
+/**
  * Gắn event cho autocomplete.
  */
 function bindStudentPickerEventsV6() {
@@ -325,15 +350,7 @@ function bindStudentPickerEventsV6() {
         clearButton.classList.remove('hidden');
     });
 
-    document.addEventListener('click', (event) => {
-        const picker = event.target.closest(
-            '.student-picker-v6',
-        );
-
-        if (!picker) {
-            closeStudentPickerResultsV6();
-        }
-    });
+    bindStudentPickerDocumentClickV6();
 }
 
 /**
