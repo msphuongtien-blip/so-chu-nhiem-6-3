@@ -39,7 +39,7 @@ function syncEditedRecordWeekV6() {
     const weekInput = document.getElementById('eWeek');
 
     if (!dateInput || !weekInput) {
-        return;
+        return false;
     }
 
     const derivedWeek = getEditedRecordWeekFromDateV6(
@@ -62,6 +62,8 @@ function syncEditedRecordWeekV6() {
     helper.textContent = derivedWeek
         ? `Tuần thi đua: ${derivedWeek} (hệ thống tự xác định)`
         : 'Tuần thi đua sẽ được hệ thống tự xác định.';
+
+    return true;
 }
 
 /**
@@ -81,37 +83,54 @@ function hideEditedRecordWeekFieldV6() {
         field.classList.add('hidden');
     }
 
-    syncEditedRecordWeekV6();
-    return true;
+    return syncEditedRecordWeekV6();
 }
 
 /**
- * Theo dõi modal để áp dụng date-only ngay sau khi form Sửa render.
+ * Gắn listener ngày một lần cho form Sửa.
+ */
+function bindEditedRecordDateChangeV6() {
+    const dateInput = document.getElementById('eDate');
+
+    if (!dateInput || dateInput.dataset.weekSyncBoundV6 === 'true') {
+        return;
+    }
+
+    dateInput.addEventListener(
+        'change',
+        syncEditedRecordWeekV6,
+    );
+    dateInput.dataset.weekSyncBoundV6 = 'true';
+}
+
+/**
+ * Theo dõi modal để áp dụng date-only mỗi khi form Sửa được render.
+ *
+ * MutationObserver phù hợp hơn polling ở đây vì modal được tạo động.
  */
 function bootstrapEditedRecordDateV6() {
-    const startedAt = Date.now();
-    const waitMs = 15000;
+    const modalBody = document.getElementById('modalBody');
 
-    const timer = window.setInterval(() => {
-        const dateInput = document.getElementById('eDate');
-        const weekInput = document.getElementById('eWeek');
+    if (!modalBody) {
+        return;
+    }
 
-        if (dateInput && weekInput) {
-            hideEditedRecordWeekFieldV6();
-
-            dateInput.addEventListener(
-                'change',
-                syncEditedRecordWeekV6,
-            );
-
-            window.clearInterval(timer);
-            return;
+    const applyToCurrentModal = () => {
+        if (hideEditedRecordWeekFieldV6()) {
+            bindEditedRecordDateChangeV6();
         }
+    };
 
-        if (Date.now() - startedAt >= waitMs) {
-            window.clearInterval(timer);
-        }
-    }, 100);
+    applyToCurrentModal();
+
+    const observer = new MutationObserver(() => {
+        applyToCurrentModal();
+    });
+
+    observer.observe(modalBody, {
+        childList: true,
+        subtree: true,
+    });
 }
 
 bootstrapEditedRecordDateV6();
