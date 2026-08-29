@@ -123,3 +123,13 @@ loadConfigModule(
     'competition-calculation-runtime-v6-script',
     'competition-calculation-runtime-v6.js',
 );
+
+/**
+ * Record Date V6.
+ *
+ * GVCN chỉ chọn ngày ghi nhận; module tự suy ra tuần tương ứng.
+ */
+loadConfigModule(
+    'competition-record-date-v6-script',
+    'competition-record-date-v6.js',
+);
