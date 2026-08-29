@@ -106,7 +106,7 @@ loadConfigModule(
 /**
  * Calculation Engine V6.
  *
- * Engine thuần tính điểm không phụ thuộc DOM hay Supabase.
+ * Engine thuần tính toán, không phụ thuộc DOM hay Supabase.
  */
 loadConfigModule(
     'competition-calculation-v6-script',
@@ -116,8 +116,7 @@ loadConfigModule(
 /**
  * Calculation Runtime V6.
  *
- * Adapter nối engine thuần vào renderer Thi đua legacy trong giai đoạn
- * chuyển tiếp. File này không chứa công thức tính điểm.
+ * Adapter nối engine vào renderer Thi đua legacy trong giai đoạn chuyển tiếp.
  */
 loadConfigModule(
     'competition-calculation-runtime-v6-script',
@@ -132,4 +131,14 @@ loadConfigModule(
 loadConfigModule(
     'competition-record-date-v6-script',
     'competition-record-date-v6.js',
+);
+
+/**
+ * Edit Record Date V6.
+ *
+ * Form Sửa cũng chỉ cho chọn ngày; tuần được suy ra tự động từ ngày.
+ */
+loadConfigModule(
+    'competition-record-edit-date-v6-script',
+    'competition-record-edit-date-v6.js',
 );
