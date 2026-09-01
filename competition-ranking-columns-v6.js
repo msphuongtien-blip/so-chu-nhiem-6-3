@@ -29,6 +29,30 @@ function normalizeRankingHeaderV6(header) {
     return header.textContent.trim();
 }
 
+/**
+ * Legacy renderCompetition() có thể vẫn tạo 6 ô:
+ * STT, Học sinh, Điểm tuần, Điểm tháng, Huy hiệu, Xu hướng.
+ * Khi header đã được chuẩn hóa còn 4 cột, phải chuẩn hóa cả body.
+ */
+function normalizeCompetitionRankingBodyRowsV6(table) {
+    if (!table) {
+        return;
+    }
+
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+    rows.forEach((row) => {
+        if (row.children.length >= 6) {
+            row.children[5]?.remove();
+            row.children[3]?.remove();
+        }
+
+        while (row.children.length > 4) {
+            row.lastElementChild?.remove();
+        }
+    });
+}
+
 function enforceCompetitionRankingColumnsV6(table) {
     if (!table) {
         return;
@@ -58,6 +82,8 @@ function enforceCompetitionRankingColumnsV6(table) {
             row.children[index]?.remove();
         });
     });
+
+    normalizeCompetitionRankingBodyRowsV6(table);
 }
 
 function hideLegacyRankingColumnsV6() {
@@ -110,4 +136,5 @@ globalThis.CompetitionRankingColumnsV6 = Object.freeze({
     allowedHeaders: RANKING_ALLOWED_HEADERS_V6,
     hide: hideLegacyRankingColumnsV6,
     enforce: enforceCompetitionRankingColumnsV6,
+    normalizeBodyRows: normalizeCompetitionRankingBodyRowsV6,
 });
