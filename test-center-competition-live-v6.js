@@ -13,7 +13,6 @@
 
 async function getLiveAppFrameV6() {
     await waitForFrameReady();
-
     const frame = await waitForAppSession();
 
     if (!frame) {
@@ -173,7 +172,6 @@ addTest(
     'Ngày ghi nhận tự xác định tuần, không cho chọn tuần',
     async () => {
         const frame = await getLiveAppFrameV6();
-
         await frame.openCompetitionForm();
 
         const dateInput = frame.document.getElementById('fDateV6');
@@ -195,7 +193,16 @@ addTest(
 
         const testDate = '2026-09-03';
         dateInput.value = testDate;
-        dateInput.dispatchEvent(new Event('change'));
+        const FrameEvent = frame.document.defaultView?.Event;
+
+        if (!FrameEvent) {
+            frame.closeModal?.();
+            throw new Error('Không lấy được Event constructor của iframe.');
+        }
+
+        dateInput.dispatchEvent(new FrameEvent('change', {
+            bubbles: true,
+        }));
 
         const expectedWeek =
             frame.CompetitionCalculationV6.getMonday(testDate);
