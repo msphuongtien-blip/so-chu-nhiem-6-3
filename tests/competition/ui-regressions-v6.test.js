@@ -1,7 +1,5 @@
 #!/usr/bin/env node
-/**
- * Regression tests cho các lỗi UI vừa phát hiện từ runtime.
- */
+/** Regression tests for V6 ranking, student picker, and record form UI. */
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -10,79 +8,24 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '../..');
 const rawIndexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const indexSource = rawIndexSource.replace(/\s+/g, ' ');
-const autocompleteSource = fs.readFileSync(
-    path.join(root, 'student-autocomplete-v6.js'),
-    'utf8',
-);
-const finalFormSource = fs.readFileSync(
-    path.join(root, 'competition-record-form-final-v6.js'),
-    'utf8',
-);
+const autocompleteSource = fs.readFileSync(path.join(root, 'student-autocomplete-v6.js'), 'utf8');
+const finalFormSource = fs.readFileSync(path.join(root, 'competition-record-form-final-v6.js'), 'utf8');
+const rankingColumnsSource = fs.readFileSync(path.join(root, 'competition-ranking-columns-v6.js'), 'utf8');
 
 assert.match(
-    indexSource,
-    /<th>Hạng<\/th>\s*<th>Học sinh<\/th>\s*<th>Điểm tuần<\/th>\s*<th>Huy hiệu<\/th>/,
-    'Index phải khai báo đúng 4 cột: Hạng, Học sinh, Điểm tuần, Huy hiệu.',
+    rankingColumnsSource,
+    /RANKING_ALLOWED_HEADERS_V6\s*=\s*Object\.freeze\(\[\s*'Hạng',\s*'Học sinh',\s*'Điểm tuần',\s*'Huy hiệu'/s,
+    'Ranking V6 phải định nghĩa đúng 4 cột.',
 );
-
-assert.doesNotMatch(
-    indexSource,
-    /<th>Hạng<\/th>\s*<th>Học sinh<\/th>\s*<th>Điểm tuần<\/th>\s*<th>Điểm tháng<\/th>/,
-    'Index không được giữ header ranking legacy 6 cột.',
-);
-
-assert.doesNotMatch(
-    autocompleteSource,
-    /label \? '<label>Học sinh<\/label>'/,
-    'Autocomplete không được tự chèn thêm label Học sinh vào field đã có label.',
-);
-
-assert.match(
-    finalFormSource,
-    /removeCompetitionWeekFieldFinalV6[\s\S]*fWeekV6[\s\S]*remove/,
-    'Boundary cuối phải loại field Tuần khỏi form.',
-);
-
-assert.match(
-    finalFormSource,
-    /const date = document\.getElementById\('fDateV6'\)\?\.value/,
-    'Submit phải lấy Ngày do người dùng chọn.',
-);
-
-assert.match(
-    finalFormSource,
-    /getMonday\?\.\(date\)/,
-    'Tuần phải tự suy ra từ Ngày.',
-);
-
-assert.match(
-    finalFormSource,
-    /globalThis\.submitCompetitionV6 = submitCompetitionFinalV6/,
-    'Boundary cuối phải khóa submit handler V6, tránh bị legacy ghi đè.',
-);
-
-assert.match(
-    finalFormSource,
-    /function removeDuplicateCompetitionFormCloseButtonV6[\s\S]*Đóng[\s\S]*remove\(\)/,
-    'Form chỉ giữ nút X của modal, không được tạo thêm nút Đóng ở footer.',
-);
-
-assert.match(
-    finalFormSource,
-    /submitCompetitionFinalV6[\s\S]*waitForCompetitionWriteBoundaryV6[\s\S]*writeBoundary\(/,
-    'Luồng Lưu phải chờ và đi qua write boundary V6 duy nhất.',
-);
-
-assert.match(
-    finalFormSource,
-    /resolveStudentIdFromCompetitionFormV6[\s\S]*fStudentV6DisplayV6[\s\S]*student_code/,
-    'Submit phải có fallback xác định HS từ ô tìm kiếm hiển thị khi hidden id bị mất.',
-);
-
-assert.match(
-    indexSource,
-    /<section id="messagesTeacher"[\s\S]*<\/div><\/section>/,
-    'Index phải giữ cấu trúc đóng đầy đủ cho section Tin nhắn.',
-);
+assert.doesNotMatch(rankingColumnsSource, /Điểm tháng/, 'Ranking V6 không được chứa Điểm tháng.');
+assert.doesNotMatch(autocompleteSource, /label \? '<label>Học sinh<\/label>'/);
+assert.match(finalFormSource, /removeCompetitionWeekFieldFinalV6[\s\S]*fWeekV6[\s\S]*remove/);
+assert.match(finalFormSource, /const date = document\.getElementById\('fDateV6'\)\?\.value/);
+assert.match(finalFormSource, /getMonday\?\.\(date\)/);
+assert.match(finalFormSource, /globalThis\.submitCompetitionV6 = submitCompetitionFinalV6/);
+assert.match(finalFormSource, /function removeDuplicateCompetitionFormCloseButtonV6[\s\S]*Đóng[\s\S]*remove\(\)/);
+assert.match(finalFormSource, /submitCompetitionFinalV6[\s\S]*waitForCompetitionWriteBoundaryV6[\s\S]*writeBoundary\(/);
+assert.match(finalFormSource, /resolveStudentIdFromCompetitionFormV6[\s\S]*fStudentV6DisplayV6[\s\S]*student_code/);
+assert.match(indexSource, /<section id="messagesTeacher"[\s\S]*<\/div><\/section>/);
 
 console.log('PASS: UI regressions for ranking, student picker, and record form');
