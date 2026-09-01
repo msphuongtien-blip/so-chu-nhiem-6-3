@@ -40,11 +40,13 @@ const context = vm.createContext({
     supabaseCache: {
         competitionRecords: [record],
     },
-    window: {},
-    globalThis: {},
+    window: {
+        setInterval() {
+            return 1;
+        },
+        clearInterval() {},
+    },
 });
-
-context.globalThis = context;
 
 vm.runInContext(source, context, {
     filename: 'competition-calculation-runtime-v6.js',
