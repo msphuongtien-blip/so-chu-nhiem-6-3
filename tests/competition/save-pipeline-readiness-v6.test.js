@@ -4,12 +4,7 @@
  *
  * Regression:
  * Form V6 may become usable before the dynamically loaded write boundary.
- * In that window, clicking Lưu reaches criteria lookup but stops before any
- * INSERT to competition_records because the writer is reported as unavailable.
- *
- * Contract:
- * - submitCompetitionFinalV6() must wait briefly for the V6 writer pipeline.
- * - It must not fail merely because module-loader is still finishing startup.
+ * In that window, submit must wait rather than report a false readiness error.
  */
 
 const assert = require('node:assert/strict');
@@ -77,13 +72,18 @@ const vm = require('node:vm');
         renderCompetition: async () => {},
         renderDashboard: async () => {},
         SNCoreSupabase: { client },
+        CompetitionCalculationV6: {
+            getMonday() {
+                return '2030-01-07';
+            },
+        },
         CompetitionRecordWriteBoundaryV6: {
             get addCompetitionThroughV6Boundary() {
                 return writerReady
                     ? async () => {
-                          writerCalls += 1;
-                          return true;
-                      }
+                        writerCalls += 1;
+                        return true;
+                    }
                     : undefined;
             },
         },
