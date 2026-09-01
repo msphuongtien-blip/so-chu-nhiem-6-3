@@ -147,7 +147,7 @@ addTest(
 
 addTest(
     'Thi đua live',
-    'Không còn Điểm tháng, Nhóm hoặc Xu hướng trong ranking',
+    'Ranking chỉ giữ Điểm tuần + Huy hiệu, bỏ Điểm tháng/Xu hướng',
     async () => {
         const frame = await getLiveAppFrameV6();
         frame.showPage('competition');
@@ -165,17 +165,21 @@ addTest(
             .querySelector('thead')
             ?.textContent || '';
 
-        for (const forbidden of ['Điểm tháng', 'Nhóm', 'Xu hướng']) {
+        for (const forbidden of ['Điểm tháng', 'Xu hướng']) {
             if (headerText.includes(forbidden)) {
                 throw new Error(`Ranking vẫn hiển thị ${forbidden}.`);
             }
+        }
+
+        if (!headerText.includes('Huy hiệu')) {
+            throw new Error('Ranking không còn cột Huy hiệu.');
         }
     },
 );
 
 addTest(
     'Thi đua live',
-    'Ghi nhận không cho chọn Ngày hoặc Tuần thủ công',
+    'Ghi nhận cho chọn Ngày nhưng không cho chọn Tuần',
     async () => {
         const frame = await getLiveAppFrameV6();
         await frame.openCompetitionForm();
@@ -183,11 +187,14 @@ addTest(
         const dateInput = frame.document.getElementById('fDateV6');
         const weekInput = frame.document.getElementById('fWeekV6');
 
-        if (dateInput || weekInput) {
+        if (!dateInput) {
             frame.closeModal?.();
-            throw new Error(
-                'Form Ghi nhận vẫn để người dùng chọn Ngày hoặc Tuần thủ công.',
-            );
+            throw new Error('Form Ghi nhận không còn field Ngày.');
+        }
+
+        if (weekInput) {
+            frame.closeModal?.();
+            throw new Error('Form Ghi nhận vẫn cho người dùng chọn Tuần.');
         }
 
         frame.closeModal?.();
