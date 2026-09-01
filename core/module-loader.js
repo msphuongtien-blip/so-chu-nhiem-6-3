@@ -83,6 +83,10 @@ const APPLICATION_MODULES = [
         'competition-record-edit-date-v6.js',
     ],
     [
+        'competition-record-write-boundary-v6-script',
+        'competition-record-write-boundary-v6.js',
+    ],
+    [
         'competition-ranking-ui-v6-script',
         'competition-ranking-ui-v6.js',
     ],
