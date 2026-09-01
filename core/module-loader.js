@@ -105,6 +105,14 @@ const APPLICATION_MODULES = [
         'competition-ranking-columns-v6.js',
     ],
     [
+        'competition-issues-service-v6-script',
+        'competition-issues-service-v6.js',
+    ],
+    [
+        'competition-issues-renderer-v6-script',
+        'competition-issues-renderer-v6.js',
+    ],
+    [
         'competition-snapshot-notification-v6-script',
         'competition-snapshot-notification-v6.js',
     ],
@@ -121,7 +129,6 @@ const APPLICATION_MODULES = [
 
 /**
  * Nạp tuần tự để các module phụ thuộc không chạy trước module nền.
- * Ví dụ: form final chỉ được cài sau write boundary đã tồn tại.
  */
 async function loadApplicationModulesV6() {
     for (const [scriptId, source] of APPLICATION_MODULES) {
