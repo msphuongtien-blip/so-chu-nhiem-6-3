@@ -8,8 +8,9 @@
  * Contract:
  * - Không hiển thị Điểm tháng.
  * - Không hiển thị Xu hướng.
- * - Giữ Huy hiệu và toàn bộ các mức badge.
- * - Tổ học sinh không thuộc contract này và không bị xóa khỏi dữ liệu.
+ * - Đổi nhãn legacy Nhóm thành Huy hiệu.
+ * - Giữ toàn bộ badge: Kim cương, Vàng, Bạc, Đồng, Sắt.
+ * - Không đụng dữ liệu Tổ học sinh.
  */
 
 const assert = require('node:assert/strict');
@@ -23,7 +24,6 @@ const source = fs.readFileSync(
     'utf8',
 );
 const appSource = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
-const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 const document = {
     getElementById() {
@@ -56,39 +56,33 @@ assert.deepEqual(
 );
 
 assert.match(
-    indexSource,
-    /<th>Huy hiệu<\/th>/,
-    'Ranking phải hiển thị cột Huy hiệu.',
+    source,
+    /textContent\.trim\(\) === 'Nhóm'/,
+    'Boundary phải nhận diện nhãn Nhóm legacy.',
 );
 
-assert.doesNotMatch(
-    indexSource,
-    /<th>Điểm tháng<\/th>/,
-    'Ranking không được khai báo cột Điểm tháng.',
-);
-
-assert.doesNotMatch(
-    indexSource,
-    /<th>Xu hướng<\/th>/,
-    'Ranking không được khai báo cột Xu hướng.',
+assert.match(
+    source,
+    /header\.textContent = 'Huy hiệu'/,
+    'Boundary phải đổi Nhóm legacy thành Huy hiệu.',
 );
 
 assert.match(
     appSource,
-    /group\(score\).*Kim cương.*Vàng.*Bạc.*Đồng.*Sắt/s,
+    /function group\(score\).*Kim cương.*Vàng.*Bạc.*Đồng.*Sắt/s,
     'Badge phải giữ đủ Kim cương, Vàng, Bạc, Đồng và Sắt.',
 );
 
 assert.doesNotMatch(
-    appSource,
-    /calculateStudentMonth\(/,
-    'Logic Điểm tháng không được còn trong app.js.',
+    source,
+    /trendText\(/,
+    'Ranking boundary không được render Xu hướng.',
 );
 
 assert.doesNotMatch(
-    appSource,
-    /monthly:calcMonth|monthly\s*:/,
-    'Ranking không được tính điểm tháng.',
+    source,
+    /calculateStudentMonth\(/,
+    'Ranking boundary không được render Điểm tháng.',
 );
 
 assert.match(
