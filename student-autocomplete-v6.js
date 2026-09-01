@@ -20,6 +20,16 @@ const STUDENT_AUTOCOMPLETE_V6_TARGETS = Object.freeze({
     msgStudent: 'user_id',
 });
 
+function getStudentAutocompleteSourceV6() {
+    if (typeof students !== 'undefined' && Array.isArray(students)) {
+        return students;
+    }
+
+    return Array.isArray(globalThis.students)
+        ? globalThis.students
+        : [];
+}
+
 function normalizeStudentAutocompleteV6(value) {
     return String(value ?? '')
         .normalize('NFD')
@@ -71,9 +81,7 @@ function escapeStudentAutocompleteV6(value) {
 }
 
 function findStudentForValueV6(value) {
-    const allStudents = Array.isArray(globalThis.students)
-        ? globalThis.students
-        : [];
+    const allStudents = getStudentAutocompleteSourceV6();
     const normalized = String(value ?? '');
 
     return allStudents.find((student) =>
@@ -180,7 +188,7 @@ function mountStudentAutocompleteV6(select) {
 
     const renderResults = () => {
         const matches = filterStudents(
-            globalThis.students,
+            getStudentAutocompleteSourceV6(),
             input.value,
         );
 
@@ -285,7 +293,7 @@ function mountStudentAutocompleteV6(select) {
         }
 
         const matches = filterStudents(
-            globalThis.students,
+            getStudentAutocompleteSourceV6(),
             input.value,
         );
         const student = matches[Number(option.dataset.index)];
