@@ -4,27 +4,32 @@
  * Mục đích:
  * Regression smoke test trên ứng dụng thật trong iframe.
  *
- * Kiểm tra lỗi GVCN vừa phát hiện:
- * - Record đã tồn tại trong Supabase.
- * - Điểm ở trang Học sinh/Hồ sơ có thể đã cập nhật.
- * - Nhưng Lịch sử Thi đua và Xếp hạng không được phép vẫn hiển thị dữ liệu cũ.
+ * Kiểm tra chuỗi:
+ * Supabase → Calculation → Lịch sử → Xếp hạng → reload.
+ * Đồng thời kiểm tra các invariant UX của form Ghi nhận.
  *
  * Test này chỉ đọc dữ liệu và DOM, không INSERT/UPDATE/DELETE.
  */
+
+async function getLiveAppFrameV6() {
+    await waitForFrameReady();
+
+    const frame = await waitForAppSession();
+
+    if (!frame) {
+        throw new Error(
+            'Chưa có phiên đăng nhập trong iframe. Đăng nhập ứng dụng rồi chạy lại Test Center.',
+        );
+    }
+
+    return frame;
+}
 
 addTest(
     'Thi đua live',
     'Ghi nhận mới phải đồng bộ Lịch sử + Xếp hạng',
     async () => {
-        await waitForFrameReady();
-
-        const frame = await waitForAppSession();
-
-        if (!frame) {
-            throw new Error(
-                'Chưa có phiên đăng nhập trong iframe. Đăng nhập ứng dụng rồi chạy lại Test Center.',
-            );
-        }
+        const frame = await getLiveAppFrameV6();
 
         if (
             typeof frame.renderCompetition !== 'function' ||
@@ -129,6 +134,147 @@ addTest(
             throw new Error(
                 `Lịch sử Thi đua không hiển thị đúng điểm ${scoreLabel}.`,
             );
+        }
+    },
+);
+
+addTest(
+    'Thi đua live',
+    'Không còn Điểm tháng hoặc Nhóm điểm trong ranking',
+    async () => {
+        const frame = await getLiveAppFrameV6();
+        frame.showPage('competition');
+        await frame.renderCompetition();
+
+        const table = frame.document
+            .getElementById('rankBody')
+            ?.closest('table');
+
+        if (!table) {
+            throw new Error('Không tìm thấy bảng xếp hạng.');
+        }
+
+        const headerText = table
+            .querySelector('thead')
+            ?.textContent || '';
+
+        if (headerText.includes('Điểm tháng')) {
+            throw new Error('Ranking vẫn hiển thị Điểm tháng.');
+        }
+
+        if (/\bNhóm\b/.test(headerText)) {
+            throw new Error('Ranking vẫn hiển thị Nhóm điểm cũ.');
+        }
+    },
+);
+
+addTest(
+    'Thi đua live',
+    'Ngày ghi nhận tự xác định tuần, không cho chọn tuần',
+    async () => {
+        const frame = await getLiveAppFrameV6();
+
+        await frame.openCompetitionForm();
+
+        const dateInput = frame.document.getElementById('fDateV6');
+        const weekInput = frame.document.getElementById('fWeekV6');
+
+        if (!dateInput || !weekInput) {
+            frame.closeModal?.();
+            throw new Error(
+                'Form V6 chưa có field Ngày/Tuần theo contract.',
+            );
+        }
+
+        const weekField = weekInput.closest('.field');
+
+        if (weekField && !weekField.classList.contains('hidden')) {
+            frame.closeModal?.();
+            throw new Error('Người dùng vẫn có thể chọn Tuần thủ công.');
+        }
+
+        const testDate = '2026-09-03';
+        dateInput.value = testDate;
+        dateInput.dispatchEvent(new Event('change'));
+
+        const expectedWeek =
+            frame.CompetitionCalculationV6.getMonday(testDate);
+
+        if (weekInput.value !== expectedWeek) {
+            frame.closeModal?.();
+            throw new Error(
+                `Tuần không tự đồng bộ: expected ${expectedWeek}, got ${weekInput.value}.`,
+            );
+        }
+
+        frame.closeModal?.();
+    },
+);
+
+addTest(
+    'Thi đua live',
+    'Mọi competition record đều có tuần khớp với ngày',
+    async () => {
+        const frame = await getLiveAppFrameV6();
+        const records = frame.supabaseCache.competitionRecords || [];
+        const engine = frame.CompetitionCalculationV6;
+
+        if (!records.length) {
+            throw new Error('Không có competition record để kiểm tra.');
+        }
+
+        const mismatches = records.filter((record) => {
+            if (!record.date || !record.week) {
+                return true;
+            }
+
+            return engine.getMonday(record.date) !== engine.getMonday(record.week);
+        });
+
+        if (mismatches.length) {
+            throw new Error(
+                `Có ${mismatches.length} record có Ngày và Tuần không đồng nhất.`,
+            );
+        }
+    },
+);
+
+addTest(
+    'Thi đua live',
+    'Reload vẫn giữ cùng điểm tuần và lịch sử',
+    async () => {
+        const frame = await getLiveAppFrameV6();
+        frame.showPage('competition');
+        await frame.renderCompetition();
+
+        const before = {
+            ranking: frame.document
+                .getElementById('rankBody')
+                ?.innerText || '',
+            history: frame.document
+                .getElementById('competitionRecent')
+                ?.innerText || '',
+        };
+
+        await frame.loadCompetitionHistoryFromSupabase();
+        await frame.loadStudentsFromSupabase();
+        await frame.renderCompetition();
+
+        const after = {
+            ranking: frame.document
+                .getElementById('rankBody')
+                ?.innerText || '',
+            history: frame.document
+                .getElementById('competitionRecent')
+                ?.innerText || '',
+        };
+
+        if (before.ranking !== after.ranking) {
+            throw new Error('Ranking thay đổi sau khi đọc lại từ Supabase.');
+        }
+
+        if (before.history !== after.history) {
+            throw new Error('Lịch sử thay đổi sau khi đọc lại từ Supabase.');
         }
     },
 );
