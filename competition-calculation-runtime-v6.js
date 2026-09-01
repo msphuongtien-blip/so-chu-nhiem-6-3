@@ -55,6 +55,13 @@ function getCalculationRecordsForWeekV6(targetWeek) {
         ? supabaseCache.competitionRecords
         : [];
 
+    // Calculation Engine V6 hiện không khai báo OFFICIAL_FIRST_WEEK.
+    // Khi cấu hình này chưa tồn tại, tuyệt đối không dùng
+    // `week >= undefined` vì biểu thức đó sẽ loại toàn bộ history.
+    if (!officialFirstWeek) {
+        return records;
+    }
+
     return records.filter((record) => {
         const week = engine.getMonday(
             record.week ||
