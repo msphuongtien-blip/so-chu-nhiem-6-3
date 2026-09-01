@@ -11,8 +11,8 @@
  * - Module V6 expose helper dùng chung để render category.
  * - Entry point hiện tại phải load module Category V6.
  *
- * Một số literal 1-5 vẫn tồn tại trong app.js legacy ở C2.1. Chúng là
- * điểm tích hợp tạm thời và sẽ được loại bỏ khi C2.3 tách Record CRUD.
+ * Test dùng VM fixture. DOM API tối thiểu được stub để module có thể bootstrap
+ * mà không cần browser thật.
  */
 
 const assert = require('node:assert/strict');
@@ -49,7 +49,22 @@ const context = vm.createContext({
             },
         },
     },
-    document: {},
+    document: {
+        getElementById() {
+            return null;
+        },
+        createElement() {
+            return {
+                src: '',
+                async: false,
+                onload: null,
+                onerror: null,
+            };
+        },
+        head: {
+            appendChild() {},
+        },
+    },
 });
 
 vm.runInContext(categorySource, context, {
