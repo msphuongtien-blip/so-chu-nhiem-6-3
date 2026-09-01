@@ -8,7 +8,8 @@
  * Contract:
  * - Không hiển thị Điểm tháng.
  * - Không hiển thị Nhóm điểm cũ.
- * - Giữ Hạng, Học sinh, Điểm tuần và Xu hướng.
+ * - Không hiển thị Xu hướng.
+ * - Chỉ giữ Hạng, Học sinh và Điểm tuần.
  */
 
 const assert = require('node:assert/strict');
@@ -49,7 +50,7 @@ const api = context.CompetitionRankingColumnsV6;
 assert.ok(api, 'CompetitionRankingColumnsV6 phải được expose.');
 assert.deepEqual(
     Array.from(api.hiddenHeaders),
-    ['Điểm tháng', 'Nhóm'],
+    ['Điểm tháng', 'Nhóm', 'Xu hướng'],
 );
 
 const headers = [
@@ -70,8 +71,7 @@ assert.deepEqual(
         '<th>Hạng</th>',
         '<th>Học sinh</th>',
         '<th>Điểm tuần</th>',
-        '<th>Xu hướng</th>',
     ],
 );
 
-console.log('PASS: monthly/group-free ranking contract');
+console.log('PASS: legacy monthly/group/trend-free ranking contract');
