@@ -3,9 +3,9 @@
  * Contract test cho bảng xếp hạng Thi đua V6.
  *
  * Contract:
- * - Chỉ có 4 cột: STT, Học sinh, Điểm tuần, Huy hiệu.
+ * - Chỉ có 4 cột: Hạng, Học sinh, Điểm tuần, Huy hiệu.
  * - Không hiển thị Điểm tháng, Xu hướng.
- * - Legacy Hạng được đổi thành STT.
+ * - Legacy STT được chuẩn hóa thành Hạng.
  * - Legacy Nhóm được đổi thành Huy hiệu.
  * - Giữ toàn bộ badge: Kim cương, Vàng, Bạc, Đồng, Sắt.
  * - Không đụng dữ liệu Tổ học sinh.
@@ -48,13 +48,13 @@ const api = context.CompetitionRankingColumnsV6;
 assert.ok(api, 'CompetitionRankingColumnsV6 phải được expose.');
 assert.deepEqual(
     Array.from(api.allowedHeaders),
-    ['STT', 'Học sinh', 'Điểm tuần', 'Huy hiệu'],
+    ['Hạng', 'Học sinh', 'Điểm tuần', 'Huy hiệu'],
 );
 
 assert.match(
     source,
-    /label === 'Hạng'[\s\S]*header\.textContent = 'STT'/,
-    'Boundary phải đổi Hạng legacy thành STT.',
+    /label === 'STT'[\s\S]*header\.textContent = 'Hạng'/,
+    'Boundary phải đổi STT legacy thành Hạng.',
 );
 
 assert.match(
@@ -65,13 +65,13 @@ assert.match(
 
 assert.match(
     source,
-    /RANKING_ALLOWED_HEADERS_V6[\s\S]*STT[\s\S]*Học sinh[\s\S]*Điểm tuần[\s\S]*Huy hiệu/,
+    /RANKING_ALLOWED_HEADERS_V6[\s\S]*Hạng[\s\S]*Học sinh[\s\S]*Điểm tuần[\s\S]*Huy hiệu/,
     'Boundary phải khóa bảng về đúng 4 cột nghiệp vụ.',
 );
 
 assert.match(
     source,
-    /function normalizeCompetitionRankingBodyRowsV6[\s\S]*children\.length > 4[\s\S]*remove/,
+    /function normalizeCompetitionRankingBodyRowsV6[\s\S]*children\.length >= 6[\s\S]*remove/,
     'Boundary phải loại các ô dư trong body khi legacy render sinh hơn 4 ô.',
 );
 
@@ -93,4 +93,4 @@ assert.match(
     'Dữ liệu Tổ học sinh phải tiếp tục được sử dụng.',
 );
 
-console.log('PASS: ranking is locked to STT, student, weekly score, badge');
+console.log('PASS: V6 ranking columns and tie-ranking contract');
