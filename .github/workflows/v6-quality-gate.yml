@@ -1,0 +1,36 @@
+name: V6 Quality Gate
+
+on:
+  push:
+    branches:
+      - 'v6/**'
+  pull_request:
+    branches:
+      - main
+      - 'v6/**'
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run competition and core tests
+        run: |
+          node --test tests/competition/*.test.js tests/core/*.test.js tests/students/*.test.js tests/*.test.js
+
+      - name: Syntax check JavaScript
+        shell: bash
+        run: |
+          set -e
+          find . -name '*.js' \
+            -not -path './node_modules/*' \
+            -not -path './.git/*' \
+            -print0 | xargs -0 -n1 node --check
