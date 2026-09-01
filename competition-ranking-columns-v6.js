@@ -13,11 +13,6 @@
  * - Học sinh.
  * - Điểm tuần.
  * - Huy hiệu theo điểm tuần: Kim cương, Vàng, Bạc, Đồng, Sắt.
- *
- * Không chịu trách nhiệm:
- * - Tính điểm.
- * - Xóa dữ liệu Tổ học sinh.
- * - Thay đổi competition_records.
  */
 
 const RANKING_HIDDEN_HEADERS_V6 = Object.freeze([
@@ -34,6 +29,13 @@ function hideLegacyRankingColumnsV6() {
     }
 
     const headers = Array.from(table.querySelectorAll('thead th'));
+
+    headers.forEach((header) => {
+        if (header.textContent.trim() === 'Nhóm') {
+            header.textContent = 'Huy hiệu';
+        }
+    });
+
     const indexes = headers
         .map((header, index) => ({
             index,
