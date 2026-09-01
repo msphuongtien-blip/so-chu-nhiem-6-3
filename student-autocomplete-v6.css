@@ -1,0 +1,101 @@
+.student-autocomplete-v6 {
+    position: relative;
+}
+
+.student-autocomplete-input-wrap-v6 {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.student-autocomplete-input-wrap-v6 input {
+    width: 100%;
+    padding-right: 42px;
+}
+
+.student-autocomplete-clear-v6 {
+    position: absolute;
+    right: 6px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 22px;
+    line-height: 1;
+}
+
+.student-autocomplete-clear-v6:hover {
+    background: var(--soft);
+    color: var(--ink);
+}
+
+.student-autocomplete-results-v6 {
+    position: absolute;
+    z-index: 1200;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.student-autocomplete-option-v6 {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+}
+
+.student-autocomplete-option-v6:last-child {
+    border-bottom: 0;
+}
+
+.student-autocomplete-option-v6:hover,
+.student-autocomplete-option-v6:focus-visible,
+.student-autocomplete-option-v6.is-active {
+    background: var(--soft);
+    outline: none;
+}
+
+.student-autocomplete-option-v6 span:first-child {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.student-autocomplete-option-v6 strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.student-autocomplete-option-v6 small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.student-autocomplete-empty-v6 {
+    padding: 12px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.student-autocomplete-hint-v6 {
+    margin-top: 6px;
+}
