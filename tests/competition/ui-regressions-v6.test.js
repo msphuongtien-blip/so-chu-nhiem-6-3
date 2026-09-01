@@ -13,8 +13,8 @@ const autocompleteSource = fs.readFileSync(
     path.join(root, 'student-autocomplete-v6.js'),
     'utf8',
 );
-const formSource = fs.readFileSync(
-    path.join(root, 'competition-record-form-v6.js'),
+const finalFormSource = fs.readFileSync(
+    path.join(root, 'competition-record-form-final-v6.js'),
     'utf8',
 );
 
@@ -36,16 +36,34 @@ assert.doesNotMatch(
     'Autocomplete không được tự chèn thêm label Học sinh vào field đã có label.',
 );
 
-assert.doesNotMatch(
-    formSource,
-    /id="fWeekV6"/,
-    'Form Ghi nhận V6 không được cho người dùng chọn Tuần.',
+assert.match(
+    finalFormSource,
+    /removeCompetitionWeekFieldFinalV6[\s\S]*fWeekV6[\s\S]*remove/,
+    'Boundary cuối phải loại field Tuần khỏi form.',
 );
 
 assert.match(
-    formSource,
+    finalFormSource,
+    /const date = document\.getElementById\('fDateV6'\)\?\.value/,
+    'Submit phải lấy Ngày do người dùng chọn.',
+);
+
+assert.match(
+    finalFormSource,
     /getMonday\?\.\(date\)/,
-    'Form phải tự suy ra tuần từ Ngày.',
+    'Tuần phải tự suy ra từ Ngày.',
+);
+
+assert.match(
+    finalFormSource,
+    /globalThis\.submitCompetitionV6 = submitCompetitionFinalV6/,
+    'Boundary cuối phải khóa submit handler V6, tránh bị legacy ghi đè.',
+);
+
+assert.match(
+    indexSource,
+    /<section id="messagesTeacher"[\s\S]*<\/div><\/section>/,
+    'Index phải giữ cấu trúc đóng đầy đủ cho section Tin nhắn.',
 );
 
 console.log('PASS: UI regressions for ranking, student picker, and record form');
