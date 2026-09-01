@@ -58,9 +58,12 @@ function resolveStudentIdFromCompetitionFormV6() {
 
     const display = document.getElementById('fStudentV6DisplayV6')?.value || '';
     const normalizedDisplay = normalizeStudentSearchTextFinalV6(display);
-    const sourceStudents = Array.isArray(globalThis.students)
-        ? globalThis.students
-        : [];
+    const sourceStudents =
+        typeof students !== 'undefined' && Array.isArray(students)
+            ? students
+            : Array.isArray(globalThis.students)
+                ? globalThis.students
+                : [];
 
     if (!normalizedDisplay) {
         return '';
@@ -81,6 +84,34 @@ function resolveStudentIdFromCompetitionFormV6() {
     });
 
     return match?.id ? String(match.id) : '';
+}
+
+/**
+ * Module-loader injecteert V6 scripts dynamisch. Daardoor kan het formulier
+ * al klikbaar zijn terwijl de write boundary nog niet klaar is. Wachten is
+ * veiliger dan een directe "niet beschikbaar" foutmelding.
+ */
+async function waitForCompetitionWriteBoundaryV6(
+    timeoutMs = 5000,
+    intervalMs = 50,
+) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt <= timeoutMs) {
+        const writeBoundary =
+            globalThis.CompetitionRecordWriteBoundaryV6
+                ?.addCompetitionThroughV6Boundary;
+
+        if (typeof writeBoundary === 'function') {
+            return writeBoundary;
+        }
+
+        await new Promise((resolve) => {
+            globalThis.setTimeout(resolve, intervalMs);
+        });
+    }
+
+    return null;
 }
 
 async function submitCompetitionFinalV6() {
@@ -131,9 +162,7 @@ async function submitCompetitionFinalV6() {
         return false;
     }
 
-    const writeBoundary =
-        globalThis.CompetitionRecordWriteBoundaryV6
-            ?.addCompetitionThroughV6Boundary;
+    const writeBoundary = await waitForCompetitionWriteBoundaryV6();
 
     if (typeof writeBoundary !== 'function') {
         alert('Luồng lưu thi đua V6 chưa sẵn sàng. Vui lòng thử lại.');
@@ -193,6 +222,7 @@ globalThis.CompetitionRecordFormFinalV6 = Object.freeze({
     removeWeek: removeCompetitionWeekFieldFinalV6,
     removeDuplicateCloseButton: removeDuplicateCompetitionFormCloseButtonV6,
     resolveStudentId: resolveStudentIdFromCompetitionFormV6,
+    waitForWriter: waitForCompetitionWriteBoundaryV6,
     submit: submitCompetitionFinalV6,
     install: installFinalCompetitionRecordFormV6,
 });
