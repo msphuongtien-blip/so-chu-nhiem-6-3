@@ -151,11 +151,14 @@ function mountStudentAutocompleteV6(select) {
     )
         ? select.value
         : '';
-    const label = parent.querySelector('label');
     const wrapper = document.createElement('div');
 
+    /*
+     * Không chèn thêm label ở đây.
+     * Field gốc đã có label "Học sinh"; chèn thêm label là nguyên nhân
+     * khiến form hiển thị "Học sinh" hai lần.
+     */
     wrapper.innerHTML = `
-        ${label ? '<label>Học sinh</label>' : ''}
         <input
             id="${fieldId}"
             type="hidden"
