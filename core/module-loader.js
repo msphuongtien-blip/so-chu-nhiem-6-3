@@ -8,18 +8,33 @@
  * - Giữ dependency loading tập trung ở một nơi.
  * - Không đưa DOM, Supabase query hoặc business logic vào Core config.
  * - Bảo đảm mỗi module chỉ được thêm vào DOM một lần.
+ * - Bảo đảm module được nạp theo đúng thứ tự khai báo.
  */
 
 function loadApplicationModule(scriptId, source) {
-    if (document.getElementById(scriptId)) {
-        return;
+    const existingScript = document.getElementById(scriptId);
+
+    if (existingScript) {
+        return Promise.resolve(existingScript);
     }
 
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = source;
-    script.defer = true;
-    document.head.appendChild(script);
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = source;
+        script.defer = true;
+        script.addEventListener('load', () => resolve(script), {
+            once: true,
+        });
+        script.addEventListener('error', () => {
+            reject(
+                new Error(
+                    `Không thể nạp module ứng dụng: ${source}`,
+                ),
+            );
+        }, { once: true });
+        document.head.appendChild(script);
+    });
 }
 
 const APPLICATION_MODULES = [
@@ -100,6 +115,24 @@ const APPLICATION_MODULES = [
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
 ];
 
-APPLICATION_MODULES.forEach(([scriptId, source]) => {
-    loadApplicationModule(scriptId, source);
+/**
+ * Nạp tuần tự để các module phụ thuộc không chạy trước module nền.
+ * Ví dụ: form final chỉ được cài sau write boundary đã tồn tại.
+ */
+async function loadApplicationModulesV6() {
+    for (const [scriptId, source] of APPLICATION_MODULES) {
+        try {
+            await loadApplicationModule(scriptId, source);
+        } catch (error) {
+            console.error('[V6 Module Loader] Failed:', source, error);
+        }
+    }
+}
+
+globalThis.ApplicationModuleLoaderV6 = Object.freeze({
+    loadApplicationModule,
+    loadApplicationModulesV6,
+    APPLICATION_MODULES,
 });
+
+loadApplicationModulesV6();
