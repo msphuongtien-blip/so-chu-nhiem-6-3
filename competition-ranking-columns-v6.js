@@ -1,23 +1,17 @@
 /**
  * FILE: competition-ranking-columns-v6.js
  *
- * Mục đích:
- * Chuẩn hóa bảng xếp hạng Thi đua V6 về đúng 3 cột nghiệp vụ mà GVCN
- * cần nhìn trong một lần quét:
+ * Chuẩn hóa bảng xếp hạng Thi đua V6 về đúng 4 cột:
+ * - STT
  * - Học sinh
  * - Điểm tuần
  * - Huy hiệu
  *
- * Không hiển thị:
- * - Hạng
- * - Điểm tháng
- * - Xu hướng
- * - Nhóm legacy
- *
- * Badge vẫn được lấy từ điểm tuần và giữ đủ 5 cấp.
+ * Không hiển thị Điểm tháng, Xu hướng hoặc Nhóm legacy.
  */
 
 const RANKING_ALLOWED_HEADERS_V6 = Object.freeze([
+    'STT',
     'Học sinh',
     'Điểm tuần',
     'Huy hiệu',
@@ -26,26 +20,21 @@ const RANKING_ALLOWED_HEADERS_V6 = Object.freeze([
 function normalizeRankingHeaderV6(header) {
     const label = header.textContent.trim();
 
-    if (label === 'Nhóm') {
+    if (label === 'Hạng') {
+        header.textContent = 'STT';
+    } else if (label === 'Nhóm') {
         header.textContent = 'Huy hiệu';
     }
 
     return header.textContent.trim();
 }
 
-/**
- * Giữ đúng các cột nghiệp vụ cần thiết và xóa toàn bộ cột presentation
- * legacy khỏi cả header lẫn body để không còn tình trạng lệch cột.
- */
 function enforceCompetitionRankingColumnsV6(table) {
     if (!table) {
         return;
     }
 
-    const headers = Array.from(
-        table.querySelectorAll('thead th'),
-    );
-
+    const headers = Array.from(table.querySelectorAll('thead th'));
     headers.forEach(normalizeRankingHeaderV6);
 
     const keepIndexes = new Set(
@@ -54,9 +43,7 @@ function enforceCompetitionRankingColumnsV6(table) {
                 index,
                 label: header.textContent.trim(),
             }))
-            .filter(({ label }) =>
-                RANKING_ALLOWED_HEADERS_V6.includes(label),
-            )
+            .filter(({ label }) => RANKING_ALLOWED_HEADERS_V6.includes(label))
             .map(({ index }) => index),
     );
 
@@ -67,12 +54,9 @@ function enforceCompetitionRankingColumnsV6(table) {
 
     removeIndexes.forEach((index) => {
         headers[index]?.remove();
-
-        table
-            .querySelectorAll('#rankBody tr')
-            .forEach((row) => {
-                row.children[index]?.remove();
-            });
+        table.querySelectorAll('tbody tr').forEach((row) => {
+            row.children[index]?.remove();
+        });
     });
 }
 
