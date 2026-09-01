@@ -46,7 +46,6 @@ const history92 = [
     { student_id: 's1', week: week1, score: 5 },
     { student_id: 's1', week: week1, score: 5 },
     { student_id: 's1', week: week1, score: 1 },
-    { student_id: 's1', week: week1, score: 1 },
 ];
 
 assert.equal(
