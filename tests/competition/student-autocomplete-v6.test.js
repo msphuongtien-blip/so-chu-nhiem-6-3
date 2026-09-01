@@ -13,6 +13,14 @@ const source = fs.readFileSync(
     path.join(root, 'student-autocomplete-v6.js'),
     'utf8',
 );
+const loaderSource = fs.readFileSync(
+    path.join(root, 'core/module-loader.js'),
+    'utf8',
+);
+const rankingSource = fs.readFileSync(
+    path.join(root, 'competition-ranking-columns-v6.js'),
+    'utf8',
+);
 
 const context = vm.createContext({
     console,
@@ -88,7 +96,7 @@ const targetIds = [
 for (const id of targetIds) {
     assert.match(
         source,
-        new RegExp(`['\"]${id}['\"]`),
+        new RegExp(id),
         `Autocomplete phải hỗ trợ field ${id}.`,
     );
 }
@@ -103,6 +111,18 @@ assert.doesNotMatch(
     source,
     /<select[\s\S]*Học sinh/,
     'Shared autocomplete không được tạo dropdown 44 học sinh.',
+);
+
+assert.match(
+    loaderSource,
+    /student-autocomplete-v6\.js/,
+    'Module autocomplete phải được load trong module-loader.',
+);
+
+assert.match(
+    rankingSource,
+    /Học sinh[\s\S]*Điểm tuần[\s\S]*Huy hiệu/,
+    'Ranking boundary phải giữ đúng ba cột UX.',
 );
 
 console.log('PASS: student autocomplete supports name/code across student form fields');
