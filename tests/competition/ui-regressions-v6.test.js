@@ -12,12 +12,16 @@ const autocompleteSource = fs.readFileSync(path.join(root, 'student-autocomplete
 const finalFormSource = fs.readFileSync(path.join(root, 'competition-record-form-final-v6.js'), 'utf8');
 const rankingColumnsSource = fs.readFileSync(path.join(root, 'competition-ranking-columns-v6.js'), 'utf8');
 
+const rankingHeaderMatch = rankingColumnsSource.match(
+    /RANKING_ALLOWED_HEADERS_V6\s*=\s*Object\.freeze\(\[([\s\S]*?)\]\)/,
+);
+assert.ok(rankingHeaderMatch, 'Ranking V6 phải định nghĩa danh sách cột được phép.');
 assert.match(
-    rankingColumnsSource,
-    /RANKING_ALLOWED_HEADERS_V6\s*=\s*Object\.freeze\(\[\s*'Hạng',\s*'Học sinh',\s*'Điểm tuần',\s*'Huy hiệu'/s,
+    rankingHeaderMatch[1],
+    /'Hạng'\s*,\s*'Học sinh'\s*,\s*'Điểm tuần'\s*,\s*'Huy hiệu'/,
     'Ranking V6 phải định nghĩa đúng 4 cột.',
 );
-assert.doesNotMatch(rankingColumnsSource, /Điểm tháng/, 'Ranking V6 không được chứa Điểm tháng.');
+assert.doesNotMatch(rankingHeaderMatch[1], /Điểm tháng|Xu hướng|Nhóm/);
 assert.doesNotMatch(autocompleteSource, /label \? '<label>Học sinh<\/label>'/);
 assert.match(finalFormSource, /removeCompetitionWeekFieldFinalV6[\s\S]*fWeekV6[\s\S]*remove/);
 assert.match(finalFormSource, /const date = document\.getElementById\('fDateV6'\)\?\.value/);
