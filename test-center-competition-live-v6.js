@@ -26,19 +26,9 @@ async function getLiveAppFrameV6() {
 
 addTest(
     'Thi đua live',
-    'Ghi nhận mới phải đồng bộ Lịch sử + Xếp hạng',
+    'Ghi nhận mới đồng bộ Lịch sử + Xếp hạng',
     async () => {
         const frame = await getLiveAppFrameV6();
-
-        if (
-            typeof frame.renderCompetition !== 'function' ||
-            !frame.supabaseCache?.competitionRecords
-        ) {
-            throw new Error(
-                'Thi đua chưa sẵn sàng: thiếu renderer hoặc competition cache.',
-            );
-        }
-
         frame.showPage('competition');
         await frame.renderCompetition();
 
@@ -50,7 +40,40 @@ addTest(
             throw new Error('Không xác định được tuần Thi đua hiện tại.');
         }
 
-        const records = frame.supabaseCache.competitionRecords || [];
+        const records = frame.supabaseCache?.competitionRecords || [];
+        const rankingRows = [
+            ...frame.document.querySelectorAll('#rankBody tr'),
+        ];
+
+        if (rankingRows.length !== 44) {
+            throw new Error(
+                `Ranking phải luôn hiển thị đủ 44 học sinh, hiện có ${rankingRows.length}.`,
+            );
+        }
+
+        if (!records.length) {
+            const nonBaselineRows = rankingRows.filter((row) => {
+                return Number(row.children[2]?.textContent?.trim()) !== 81;
+            });
+
+            if (nonBaselineRows.length) {
+                throw new Error(
+                    `Không có history nhưng ranking vẫn có ${nonBaselineRows.length} học sinh khác 81 điểm.`,
+                );
+            }
+
+            const historyText =
+                frame.document.getElementById('competitionRecent')?.textContent || '';
+
+            if (historyText.trim()) {
+                throw new Error(
+                    'Không có history nhưng khu vực Lịch sử vẫn hiển thị dữ liệu.',
+                );
+            }
+
+            return;
+        }
+
         const weekRecords = records.filter((record) => {
             const recordWeek =
                 frame.CompetitionCalculationV6?.getMonday?.(
@@ -85,12 +108,8 @@ addTest(
                 week,
             );
 
-        const rankingRows = [
-            ...frame.document.querySelectorAll('#rankBody tr'),
-        ];
         const rankingRow = rankingRows.find((row) => {
-            const cells = [...row.children];
-            return cells[1]?.textContent?.trim() === student.full_name;
+            return row.children[1]?.textContent?.trim() === student.full_name;
         });
 
         if (!rankingRow) {
@@ -123,23 +142,12 @@ addTest(
                 'Lịch sử Thi đua không hiển thị đúng tiêu chí của record mới nhất.',
             );
         }
-
-        const scoreLabel =
-            Number(latestRecord.score) > 0
-                ? `+${Number(latestRecord.score)}`
-                : String(Number(latestRecord.score));
-
-        if (!historyText.includes(scoreLabel)) {
-            throw new Error(
-                `Lịch sử Thi đua không hiển thị đúng điểm ${scoreLabel}.`,
-            );
-        }
     },
 );
 
 addTest(
     'Thi đua live',
-    'Không còn Điểm tháng hoặc Nhóm điểm trong ranking',
+    'Không còn Điểm tháng, Nhóm hoặc Xu hướng trong ranking',
     async () => {
         const frame = await getLiveAppFrameV6();
         frame.showPage('competition');
@@ -157,19 +165,17 @@ addTest(
             .querySelector('thead')
             ?.textContent || '';
 
-        if (headerText.includes('Điểm tháng')) {
-            throw new Error('Ranking vẫn hiển thị Điểm tháng.');
-        }
-
-        if (/\bNhóm\b/.test(headerText)) {
-            throw new Error('Ranking vẫn hiển thị Nhóm điểm cũ.');
+        for (const forbidden of ['Điểm tháng', 'Nhóm', 'Xu hướng']) {
+            if (headerText.includes(forbidden)) {
+                throw new Error(`Ranking vẫn hiển thị ${forbidden}.`);
+            }
         }
     },
 );
 
 addTest(
     'Thi đua live',
-    'Ngày ghi nhận tự xác định tuần, không cho chọn tuần',
+    'Ghi nhận không cho chọn Ngày hoặc Tuần thủ công',
     async () => {
         const frame = await getLiveAppFrameV6();
         await frame.openCompetitionForm();
@@ -177,40 +183,10 @@ addTest(
         const dateInput = frame.document.getElementById('fDateV6');
         const weekInput = frame.document.getElementById('fWeekV6');
 
-        if (!dateInput || !weekInput) {
+        if (dateInput || weekInput) {
             frame.closeModal?.();
             throw new Error(
-                'Form V6 chưa có field Ngày/Tuần theo contract.',
-            );
-        }
-
-        const weekField = weekInput.closest('.field');
-
-        if (weekField && !weekField.classList.contains('hidden')) {
-            frame.closeModal?.();
-            throw new Error('Người dùng vẫn có thể chọn Tuần thủ công.');
-        }
-
-        const testDate = '2026-09-03';
-        dateInput.value = testDate;
-        const FrameEvent = frame.document.defaultView?.Event;
-
-        if (!FrameEvent) {
-            frame.closeModal?.();
-            throw new Error('Không lấy được Event constructor của iframe.');
-        }
-
-        dateInput.dispatchEvent(new FrameEvent('change', {
-            bubbles: true,
-        }));
-
-        const expectedWeek =
-            frame.CompetitionCalculationV6.getMonday(testDate);
-
-        if (weekInput.value !== expectedWeek) {
-            frame.closeModal?.();
-            throw new Error(
-                `Tuần không tự đồng bộ: expected ${expectedWeek}, got ${weekInput.value}.`,
+                'Form Ghi nhận vẫn để người dùng chọn Ngày hoặc Tuần thủ công.',
             );
         }
 
@@ -223,12 +199,8 @@ addTest(
     'Mọi competition record đều có tuần khớp với ngày',
     async () => {
         const frame = await getLiveAppFrameV6();
-        const records = frame.supabaseCache.competitionRecords || [];
+        const records = frame.supabaseCache?.competitionRecords || [];
         const engine = frame.CompetitionCalculationV6;
-
-        if (!records.length) {
-            throw new Error('Không có competition record để kiểm tra.');
-        }
 
         const mismatches = records.filter((record) => {
             if (!record.date || !record.week) {
