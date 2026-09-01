@@ -1,0 +1,38 @@
+/*
+ * FILE: refactor-v6.css
+ *
+ * Mục đích:
+ * Chứa các style nhỏ được tách khỏi index.html trong đợt code-quality V6.
+ *
+ * Trách nhiệm:
+ * - Giữ presentation ở stylesheet thay vì inline style attributes.
+ *
+ * Không chịu trách nhiệm:
+ * - Logic nghiệp vụ.
+ * - Dữ liệu hoặc Supabase.
+ */
+
+.login-year-notice {
+    margin-top: 30px;
+    background: #ffffff14;
+    border-color: #ffffff22;
+    color: #fff;
+}
+
+.login-submit {
+    width: 100%;
+    padding: 12px;
+}
+
+.logout-button {
+    width: 100%;
+}
+
+.random-button {
+    font-size: 18px;
+    padding: 13px 22px;
+}
+
+.competition-data-status {
+    margin-top: 8px;
+}
