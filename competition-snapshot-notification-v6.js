@@ -2,24 +2,23 @@
  * FILE: competition-snapshot-notification-v6.js
  *
  * Mục đích:
- * Hiển thị thông báo đầu tuần khi snapshot Thi đua của tuần trước đã có
- * và cho GVCN mở snapshot 44 học sinh.
+ * Thông báo đầu tuần và cho GVCN xem lại lịch sử cộng/trừ của tuần trước.
  *
  * Trách nhiệm:
- * - Truy vấn snapshot tuần trước từ Supabase.
- * - Hiển thị [Xem snapshot] / [Xem sau].
- * - Ghi trạng thái đã xem bằng localStorage.
- * - Render snapshot trong modal dùng chung.
+ * - Kiểm tra snapshot tuần trước đã được server lưu.
+ * - Đọc các competition_records thực tế thuộc tuần đó để đối chiếu.
+ * - Chỉ hiển thị record có phát sinh điểm, không render 44 học sinh.
+ * - Snapshot là read-only; nếu sai, GVCN tạo task sửa điểm.
+ * - Refresh notification ngay sau khi module được cài đặt.
  *
  * Không chịu trách nhiệm:
  * - Tạo snapshot.
- * - Sửa snapshot.
- * - Ghi điểm vào competition_records.
+ * - Sửa/xóa competition_records.
  */
 
 const COMPETITION_SNAPSHOT_TABLE_V6 = 'competition_weekly_snapshots';
-const COMPETITION_SNAPSHOT_VIEWED_PREFIX_V6 =
-    'competition-snapshot-viewed:';
+const COMPETITION_RECORD_TABLE_V6 = 'competition_records';
+const COMPETITION_SNAPSHOT_VIEWED_PREFIX_V6 = 'competition-snapshot-viewed:';
 
 function snapshotLocalDateV6() {
     return new Intl.DateTimeFormat('en-CA', {
@@ -84,40 +83,11 @@ function snapshotRoleIsTeacherV6() {
     return globalThis.role === 'teacher';
 }
 
-async function getPreviousCompetitionSnapshotV6() {
-    const client = snapshotClientV6();
-
-    if (!client) {
-        return {
-            week: previousCompetitionSnapshotWeekV6(),
-            rows: [],
-            error: new Error('Supabase client chưa sẵn sàng.'),
-        };
-    }
-
-    const week = previousCompetitionSnapshotWeekV6();
-    const { data, error } = await client
-        .from(COMPETITION_SNAPSHOT_TABLE_V6)
-        .select(
-            'student_id, week, week_end, start_score, total_plus, total_minus, total_change, final_score, group_name, rank',
-        )
-        .eq('week', week)
-        .order('rank', { ascending: true })
-        .order('final_score', { ascending: false });
-
-    return {
-        week,
-        rows: data || [],
-        error,
-    };
-}
-
-function resolveStudentNameV6(studentId) {
+function snapshotStudentNameV6(studentId) {
     const list =
-        (typeof students !== 'undefined' && Array.isArray(students))
+        typeof students !== 'undefined' && Array.isArray(students)
             ? students
             : globalThis.students;
-
     const student = (list || []).find(
         (item) => String(item.id) === String(studentId),
     );
@@ -125,19 +95,74 @@ function resolveStudentNameV6(studentId) {
     return student?.full_name || student?.name || String(studentId);
 }
 
-function renderSnapshotRowsV6(rows) {
-    return rows.map((row, index) => {
-        const rank = row.rank ?? index + 1;
-        const score = Number(row.final_score ?? 81);
+async function getPreviousCompetitionSnapshotV6() {
+    const client = snapshotClientV6();
+    const week = previousCompetitionSnapshotWeekV6();
+
+    if (!client) {
+        return {
+            week,
+            rows: [],
+            snapshotRows: [],
+            error: new Error('Supabase client chưa sẵn sàng.'),
+        };
+    }
+
+    const snapshotResult = await client
+        .from(COMPETITION_SNAPSHOT_TABLE_V6)
+        .select('id, student_id, week')
+        .eq('week', week);
+
+    if (snapshotResult.error) {
+        return {
+            week,
+            rows: [],
+            snapshotRows: [],
+            error: snapshotResult.error,
+        };
+    }
+
+    const recordResult = await client
+        .from(COMPETITION_RECORD_TABLE_V6)
+        .select('id, student_id, week, date, group_name, criteria, points, note')
+        .eq('week', week)
+        .order('date', { ascending: true })
+        .order('created_at', { ascending: true });
+
+    return {
+        week,
+        rows: recordResult.data || [],
+        snapshotRows: snapshotResult.data || [],
+        error: recordResult.error,
+    };
+}
+
+function renderSnapshotRowsV6(rows, week) {
+    return rows.map((row) => {
+        const points = Number(row.points);
+        const sign = points > 0 ? '+' : '';
+        const snapshotId = (globalThis.CompetitionSnapshotNotificationV6
+            ?.snapshotIdForRecord)
+            ? globalThis.CompetitionSnapshotNotificationV6.snapshotIdForRecord(
+                row.student_id,
+                week,
+            )
+            : '';
 
         return `
             <tr>
-                <td>${escapeSnapshotHtmlV6(rank)}</td>
-                <td>${escapeSnapshotHtmlV6(resolveStudentNameV6(row.student_id))}</td>
-                <td>${escapeSnapshotHtmlV6(score)}</td>
+                <td>${escapeSnapshotHtmlV6(row.date || week)}</td>
+                <td>${escapeSnapshotHtmlV6(snapshotStudentNameV6(row.student_id))}</td>
                 <td>${escapeSnapshotHtmlV6(row.group_name || '')}</td>
-                <td>${escapeSnapshotHtmlV6(row.total_plus || 0)}</td>
-                <td>${escapeSnapshotHtmlV6(row.total_minus || 0)}</td>
+                <td>${escapeSnapshotHtmlV6(row.criteria || '')}</td>
+                <td>${escapeSnapshotHtmlV6(`${sign}${points}`)}</td>
+                <td>${escapeSnapshotHtmlV6(row.note || '')}</td>
+                <td>
+                    <button class="btn small" type="button"
+                        onclick="createCompetitionIssueFromSnapshotV6('${escapeSnapshotHtmlV6(row.id)}','${escapeSnapshotHtmlV6(row.student_id)}','${escapeSnapshotHtmlV6(week)}','${escapeSnapshotHtmlV6(snapshotId)}')">
+                        Tạo task sửa điểm
+                    </button>
+                </td>
             </tr>
         `;
     }).join('');
@@ -152,27 +177,30 @@ function showCompetitionSnapshotV6(rows, week) {
         return false;
     }
 
-    title.textContent = `Snapshot Thi đua — tuần ${week}`;
-    body.innerHTML = `
-        <div class="mini" style="margin-bottom:10px">
-            Kết quả đã lưu · ${rows.length} học sinh
-        </div>
-        <div class="tablewrap">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Hạng</th>
-                        <th>Học sinh</th>
-                        <th>Điểm</th>
-                        <th>Huy hiệu</th>
-                        <th>Cộng</th>
-                        <th>Trừ</th>
-                    </tr>
-                </thead>
-                <tbody>${renderSnapshotRowsV6(rows)}</tbody>
-            </table>
-        </div>
-    `;
+    title.textContent = `Lịch sử thi đua — tuần ${week}`;
+    body.innerHTML = rows.length
+        ? `
+            <div class="mini" style="margin-bottom:10px">
+                Chỉ hiển thị các lần cộng/trừ đã ghi nhận trong tuần. Snapshot không thể chỉnh sửa trực tiếp.
+            </div>
+            <div class="tablewrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Học sinh</th>
+                            <th>Nhóm</th>
+                            <th>Tiêu chí</th>
+                            <th>Điểm</th>
+                            <th>Ghi chú</th>
+                            <th>Đối chiếu</th>
+                        </tr>
+                    </thead>
+                    <tbody>${renderSnapshotRowsV6(rows, week)}</tbody>
+                </table>
+            </div>
+        `
+        : '<div class="notice">Tuần trước không có phát sinh điểm cộng/trừ.</div>';
 
     modal.classList.remove('hidden');
     return true;
@@ -182,11 +210,11 @@ async function openPreviousCompetitionSnapshotV6(week) {
     const result = await getPreviousCompetitionSnapshotV6();
 
     if (result.error) {
-        alert(`Không thể tải snapshot: ${result.error.message}`);
+        alert(`Không thể tải lịch sử tuần trước: ${result.error.message}`);
         return false;
     }
 
-    if (!result.rows.length) {
+    if (!result.snapshotRows.length) {
         alert(`Chưa có snapshot cho tuần ${week || result.week}.`);
         return false;
     }
@@ -196,9 +224,7 @@ async function openPreviousCompetitionSnapshotV6(week) {
 }
 
 function hideCompetitionSnapshotNoticeV6() {
-    const notice = document.getElementById(
-        'competitionSnapshotNoticeV6',
-    );
+    const notice = document.getElementById('competitionSnapshotNoticeV6');
 
     if (notice) {
         notice.classList.add('hidden');
@@ -224,11 +250,11 @@ function renderCompetitionSnapshotNoticeV6(week, count) {
 
     notice.innerHTML = `
         <div>
-            <b>Snapshot thi đua tuần trước đã được lưu.</b>
-            <div class="mini">${count} học sinh · Tuần ${escapeSnapshotHtmlV6(week)}</div>
+            <b>Đã lưu lịch sử thi đua tuần trước.</b>
+            <div class="mini">${count} lần cộng/trừ · Tuần ${escapeSnapshotHtmlV6(week)}</div>
         </div>
         <div class="actions">
-            <button class="btn primary" onclick="openPreviousCompetitionSnapshotV6('${week}')">
+            <button class="btn primary" onclick="openPreviousCompetitionSnapshotV6('${escapeSnapshotHtmlV6(week)}')">
                 Xem snapshot
             </button>
             <button class="btn" onclick="hideCompetitionSnapshotNoticeV6()">
@@ -241,13 +267,18 @@ function renderCompetitionSnapshotNoticeV6(week, count) {
 }
 
 async function refreshCompetitionSnapshotNotificationV6() {
-    if (!snapshotRoleIsTeacher()) {
+    if (!snapshotRoleIsTeacherV6()) {
         return;
     }
 
     const result = await getPreviousCompetitionSnapshotV6();
 
-    if (result.error || !result.rows.length || isSnapshotViewedV6(result.week)) {
+    if (
+        result.error ||
+        !result.snapshotRows.length ||
+        !result.rows.length ||
+        isSnapshotViewedV6(result.week)
+    ) {
         return;
     }
 
@@ -271,6 +302,7 @@ function installCompetitionSnapshotNotificationV6() {
     };
 
     globalThis.__competitionSnapshotNotificationV6Installed = true;
+    void refreshCompetitionSnapshotNotificationV6();
     return true;
 }
 
