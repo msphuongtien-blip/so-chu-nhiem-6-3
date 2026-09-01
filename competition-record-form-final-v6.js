@@ -8,7 +8,6 @@
  * - Không cho GVCN chọn Tuần.
  * - Tự suy ra tuần từ Ngày.
  * - Bắt buộc chọn rõ học sinh trước khi lưu.
- * - Chỉ giữ nút đóng của modal; bỏ nút Đóng lặp trong footer form.
  * - Khóa submit handler V6 để không bị legacy ghi đè.
  */
 
@@ -56,7 +55,8 @@ function resolveStudentIdFromCompetitionFormV6() {
         return hiddenId;
     }
 
-    const display = document.getElementById('fStudentV6DisplayV6')?.value || '';
+    const display =
+        document.getElementById('fStudentV6DisplayV6')?.value || '';
     const normalizedDisplay = normalizeStudentSearchTextFinalV6(display);
     const sourceStudents =
         typeof students !== 'undefined' && Array.isArray(students)
@@ -72,9 +72,7 @@ function resolveStudentIdFromCompetitionFormV6() {
     const match = sourceStudents.find((student) => {
         const name = normalizeStudentSearchTextFinalV6(student.full_name);
         const code = normalizeStudentSearchTextFinalV6(student.student_code);
-        const combined = code
-            ? `${name} · ${code}`
-            : name;
+        const combined = code ? `${name} · ${code}` : name;
 
         return (
             normalizedDisplay === combined ||
@@ -87,9 +85,8 @@ function resolveStudentIdFromCompetitionFormV6() {
 }
 
 /**
- * Module-loader injecteert V6 scripts dynamisch. Daardoor kan het formulier
- * al klikbaar zijn terwijl de write boundary nog niet klaar is. Wachten is
- * veiliger dan een directe "niet beschikbaar" foutmelding.
+ * Module-loader injects V6 scripts dynamically. Form may become clickable
+ * before write boundary is available, so wait rather than failing early.
  */
 async function waitForCompetitionWriteBoundaryV6(
     timeoutMs = 5000,
@@ -206,17 +203,19 @@ function installFinalCompetitionRecordFormV6() {
     return true;
 }
 
-const startedAt = Date.now();
-const timer = window.setInterval(() => {
-    if (installFinalCompetitionRecordFormV6()) {
-        window.clearInterval(timer);
-        return;
-    }
+if (typeof window !== 'undefined' && window.document) {
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+        if (installFinalCompetitionRecordFormV6()) {
+            window.clearInterval(timer);
+            return;
+        }
 
-    if (Date.now() - startedAt >= 15000) {
-        window.clearInterval(timer);
-    }
-}, 100);
+        if (Date.now() - startedAt >= 15000) {
+            window.clearInterval(timer);
+        }
+    }, 100);
+}
 
 globalThis.CompetitionRecordFormFinalV6 = Object.freeze({
     removeWeek: removeCompetitionWeekFieldFinalV6,
