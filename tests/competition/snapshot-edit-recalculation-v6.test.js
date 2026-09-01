@@ -105,7 +105,7 @@ const before = context.CompetitionRecalculationV6.calculate(
 );
 
 assert.deepEqual(
-    before.calculations.map((item) => item.weeklyScore),
+    Array.from(before.calculations, (item) => item.weeklyScore),
     [86, 86, 76],
     'Chuỗi trước sửa phải áp dụng rollover theo từng tuần.',
 );
@@ -122,7 +122,7 @@ const after = context.CompetitionRecalculationV6.calculate(
 );
 
 assert.deepEqual(
-    after.calculations.map((item) => item.weeklyScore),
+    Array.from(after.calculations, (item) => item.weeklyScore),
     [76, 76, 66],
     'Sửa tuần cũ phải làm thay đổi toàn bộ chuỗi tuần sau qua rollover.',
 );
