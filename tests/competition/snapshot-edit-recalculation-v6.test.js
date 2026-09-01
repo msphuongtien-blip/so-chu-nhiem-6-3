@@ -35,14 +35,13 @@ assert.match(
     /Xem sau/,
     'Snapshot phải có nút Xem sau.',
 );
-assert.match(
-    snapshotSource,
-    /hideCompetitionSnapshotNoticeV6\(\)/,
-    'Xem sau phải chỉ ẩn notification hiện tại.',
+const hideHandlerMatch = snapshotSource.match(
+    /function hideCompetitionSnapshotNoticeV6\(\)\s*\{([\s\S]*?)\n\}/,
 );
+assert.ok(hideHandlerMatch, 'Phải có handler Xem sau.');
 assert.doesNotMatch(
-    snapshotSource,
-    /hideCompetitionSnapshotNoticeV6[\s\S]*markSnapshotViewedV6/,
+    hideHandlerMatch[1],
+    /markSnapshotViewedV6/,
     'Xem sau không được đánh dấu snapshot đã xem.',
 );
 assert.match(
