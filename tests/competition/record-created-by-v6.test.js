@@ -7,6 +7,7 @@
  * - Boundary không được giả định `currentUser` nằm trên globalThis.
  * - Khi form đã điền đủ dữ liệu, boundary phải lấy đúng created_by để
  *   Record Service có thể INSERT competition_records.
+ * - Ghi chú phải được truyền nguyên vẹn qua boundary.
  */
 
 const assert = require('node:assert/strict');
@@ -96,9 +97,14 @@ vm.runInContext(source, context, {
         'teacher-1',
         'created_by phải lấy từ currentUser trong app state, không chỉ từ globalThis.',
     );
+    assert.equal(
+        serviceCalls[0].note,
+        'Tích cực phát biểu',
+        'Ghi chú phải được truyền nguyên vẹn tới Record Service.',
+    );
     assert.deepEqual(alerts, [], 'Luồng hợp lệ không được báo lỗi.');
 
-    console.log('PASS: competition record created_by regression');
+    console.log('PASS: competition record created_by and note regression');
 })().catch((error) => {
     console.error(error);
     process.exitCode = 1;
