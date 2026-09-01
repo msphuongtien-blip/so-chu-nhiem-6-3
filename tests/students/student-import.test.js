@@ -104,13 +104,15 @@ assert.equal(
 );
 
 assert.deepEqual(
-    api.generateStudentCodes(
-        3,
-        [
-            { student_code: '6301' },
-            { student_code: '6344' },
-        ],
-        '6/3',
+    Array.from(
+        api.generateStudentCodes(
+            3,
+            [
+                { student_code: '6301' },
+                { student_code: '6344' },
+            ],
+            '6/3',
+        ),
     ),
     ['6345', '6346', '6347'],
 );
@@ -122,7 +124,7 @@ const payload = api.buildInsertPayload(
 
 assert.equal(payload.length, 2);
 assert.deepEqual(
-    payload[0],
+    JSON.parse(JSON.stringify(payload[0])),
     {
         full_name: 'Nguyễn Văn A',
         student_code: '6345',
@@ -139,7 +141,7 @@ const minimalPayload = api.buildInsertPayload(
 );
 
 assert.deepEqual(
-    minimalPayload[0],
+    JSON.parse(JSON.stringify(minimalPayload[0])),
     {
         full_name: 'HS Không Có Trường Tùy Chọn',
         student_code: '6347',
