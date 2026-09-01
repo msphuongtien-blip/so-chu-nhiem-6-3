@@ -13,18 +13,10 @@
  * - Thực hiện nghiệp vụ.
  * - Tạo Supabase client.
  * - Thay đổi dữ liệu database.
- *
- * Dependency:
- * - core/config.js, core/supabase.js, core/state.js, core/utils.js.
- * - app.js phải được load trước module-loader.js.
  */
 
 /**
  * Nạp một classic script chuyển tiếp nếu script chưa tồn tại.
- *
- * @param {string} scriptId ID duy nhất của thẻ script.
- * @param {string} source Đường dẫn module cần nạp.
- * @returns {void}
  */
 function loadApplicationModule(scriptId, source) {
     if (document.getElementById(scriptId)) {
@@ -35,7 +27,6 @@ function loadApplicationModule(scriptId, source) {
     script.id = scriptId;
     script.src = source;
     script.defer = true;
-
     document.head.appendChild(script);
 }
 
@@ -75,14 +66,6 @@ const APPLICATION_MODULES = [
         'competition-calculation-runtime-v6.js',
     ],
     [
-        'competition-record-date-v6-script',
-        'competition-record-date-v6.js',
-    ],
-    [
-        'competition-record-edit-date-v6-script',
-        'competition-record-edit-date-v6.js',
-    ],
-    [
         'competition-record-write-boundary-v6-script',
         'competition-record-write-boundary-v6.js',
     ],
@@ -93,6 +76,14 @@ const APPLICATION_MODULES = [
     [
         'competition-legacy-boundary-v6-script',
         'competition-legacy-boundary-v6.js',
+    ],
+    [
+        'competition-record-date-v6-script',
+        'competition-record-date-v6.js',
+    ],
+    [
+        'competition-record-edit-date-v6-script',
+        'competition-record-edit-date-v6.js',
     ],
     [
         'competition-ranking-columns-v6-script',
