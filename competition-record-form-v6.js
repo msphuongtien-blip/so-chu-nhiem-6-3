@@ -10,6 +10,7 @@
  * - Criteria lấy từ competition_criteria và lọc theo category_id.
  * - Category 6 (Học tập) hoạt động giống 5 category còn lại.
  * - Thang điểm chỉ gồm -5…-1 và +1…+5; không có 0.
+ * - Giáo viên chỉ chọn Ngày; Tuần luôn là dữ liệu dẫn xuất.
  *
  * Compatibility:
  * - Module giữ nguyên addCompetition(), renderStudents(),
@@ -42,9 +43,6 @@ const RECORD_FORM_V6_SCORES = [
     5,
 ];
 
-/**
- * Escape HTML trước khi đưa dữ liệu database vào chuỗi HTML.
- */
 function escapeRecordFormV6(value) {
     return String(value ?? '').replace(
         /[&<>\"']/g,
@@ -58,17 +56,11 @@ function escapeRecordFormV6(value) {
     );
 }
 
-/**
- * Lấy categories từ Category V6 dùng chung.
- */
 function getRecordFormCategoriesV6() {
     return window.CompetitionCategoryV6
         ?.getActiveCompetitionCategoriesV6?.() || [];
 }
 
-/**
- * Sinh option cho select Nhóm tiêu chí.
- */
 function buildRecordGroupOptionsV6(
     categories,
     selectedId = '',
@@ -102,9 +94,6 @@ function buildRecordGroupOptionsV6(
         .join('');
 }
 
-/**
- * Sinh option cho select Điểm.
- */
 function buildRecordScoreOptionsV6(selected = 1) {
     return RECORD_FORM_V6_SCORES
         .map((value) => {
@@ -125,9 +114,6 @@ function buildRecordScoreOptionsV6(selected = 1) {
         .join('');
 }
 
-/**
- * Tải criteria đang active từ database.
- */
 async function loadRecordFormCriteriaV6() {
     const { data, error } = await recordFormV6Supabase
         .from('competition_criteria')
@@ -146,12 +132,6 @@ async function loadRecordFormCriteriaV6() {
     return data || [];
 }
 
-/**
- * Lọc criteria theo category đã chọn.
- *
- * `category_id` là khóa liên kết chính. `group_name` chỉ là compatibility
- * với dữ liệu legacy chưa được chuẩn hóa hoàn toàn.
- */
 function filterRecordFormCriteriaV6(
     criteria,
     categoryId,
@@ -165,9 +145,6 @@ function filterRecordFormCriteriaV6(
     });
 }
 
-/**
- * Sinh option criteria cho một category.
- */
 function buildRecordCriteriaOptionsV6(
     criteria,
     categoryId,
@@ -185,9 +162,6 @@ function buildRecordCriteriaOptionsV6(
         .join('');
 }
 
-/**
- * Cập nhật danh sách criteria theo Nhóm tiêu chí.
- */
 function refreshRecordFormCriteriaV6(criteria) {
     const groupSelect = document.getElementById('fGroupV6');
     const criteriaSelect = document.getElementById('fCriteriaV6');
@@ -207,9 +181,6 @@ function refreshRecordFormCriteriaV6(criteria) {
     criteriaSelect.disabled = !options;
 }
 
-/**
- * Chờ Category V6 tải xong nếu module form được nạp sớm hơn network response.
- */
 async function waitForRecordFormCategoriesV6() {
     for (let attempt = 0; attempt < 30; attempt += 1) {
         const categories = getRecordFormCategoriesV6();
@@ -227,10 +198,27 @@ async function waitForRecordFormCategoriesV6() {
 }
 
 /**
- * Form ghi nhận V6.
- *
- * Không còn block criteria cards duplicate của V5.
+ * Tính Monday từ Ngày đã chọn. Không phụ thuộc module khác để tránh
+ * trường hợp load-order làm form không xác định được Tuần.
  */
+function getRecordFormWeekFromDateV6(dateValue) {
+    if (typeof dateValue !== 'string' || !dateValue) {
+        return '';
+    }
+
+    const date = new Date(`${dateValue}T00:00:00`);
+
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const day = date.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    date.setDate(date.getDate() + diff);
+
+    return date.toISOString().slice(0, 10);
+}
+
 async function openCompetitionFormV6() {
     const categories = await waitForRecordFormCategoriesV6();
 
@@ -283,15 +271,6 @@ async function openCompetitionFormV6() {
                         )
                         .join('')}
                 </select>
-            </div>
-
-            <div class="field">
-                <label>Tuần</label>
-                <input
-                    id="fWeekV6"
-                    type="date"
-                    value="${escapeRecordFormV6(getCurrentWeekStart())}"
-                >
             </div>
 
             <div class="field">
@@ -363,26 +342,23 @@ async function openCompetitionFormV6() {
         ?.focus();
 }
 
-/**
- * Lưu record sau khi form V6 đã xác thực category + criteria.
- */
 async function submitCompetitionV6() {
     const studentId = document.getElementById('fStudentV6')?.value;
-    const week = document.getElementById('fWeekV6')?.value;
     const date = document.getElementById('fDateV6')?.value;
     const categoryId = document.getElementById('fGroupV6')?.value;
     const criteriaId = document.getElementById('fCriteriaV6')?.value;
     const points = Number(document.getElementById('fPointsV6')?.value);
     const note = document.getElementById('fNoteV6')?.value.trim() || '';
+    const week = getRecordFormWeekFromDateV6(date);
 
-    if (!studentId || !week || !date || !categoryId || !criteriaId) {
+    if (!studentId || !date || !categoryId || !criteriaId || !week) {
         alert('Vui lòng chọn đầy đủ học sinh, nhóm và tiêu chí.');
-        return;
+        return false;
     }
 
     if (!RECORD_FORM_V6_SCORES.includes(points)) {
         alert('Điểm chỉ được chọn từ -5 đến -1 hoặc +1 đến +5.');
-        return;
+        return false;
     }
 
     const {
@@ -396,7 +372,7 @@ async function submitCompetitionV6() {
 
     if (error || !selectedCriteria) {
         alert('Không tìm thấy tiêu chí đã chọn.');
-        return;
+        return false;
     }
 
     if (
@@ -404,7 +380,7 @@ async function submitCompetitionV6() {
         String(selectedCriteria.category_id) !== String(categoryId)
     ) {
         alert('Tiêu chí không thuộc nhóm đang chọn hoặc đã được tắt.');
-        return;
+        return false;
     }
 
     const ok = await addCompetition(
@@ -418,7 +394,7 @@ async function submitCompetitionV6() {
     );
 
     if (!ok) {
-        return;
+        return false;
     }
 
     closeModal();
@@ -426,11 +402,9 @@ async function submitCompetitionV6() {
     await renderStudents();
     await renderCompetition();
     await renderDashboard();
+    return true;
 }
 
-/**
- * Replace the legacy form entry point after app.js has loaded.
- */
 window.openCompetitionForm = openCompetitionFormV6;
 
 window.CompetitionRecordFormV6 = {
@@ -439,4 +413,5 @@ window.CompetitionRecordFormV6 = {
     buildRecordScoreOptionsV6,
     filterRecordFormCriteriaV6,
     buildRecordCriteriaOptionsV6,
+    getRecordFormWeekFromDateV6,
 };
