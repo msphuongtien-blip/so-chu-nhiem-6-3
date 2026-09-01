@@ -82,6 +82,10 @@ const APPLICATION_MODULES = [
         'competition-record-edit-date-v6-script',
         'competition-record-edit-date-v6.js',
     ],
+    [
+        'competition-ranking-ui-v6-script',
+        'competition-ranking-ui-v6.js',
+    ],
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
 ];
 
