@@ -24,24 +24,11 @@ const source = fs.readFileSync(
 
 const rows = [
     '<tr><th>Hạng</th><th>Học sinh</th><th>Điểm tuần</th><th>Điểm tháng</th><th>Nhóm</th><th>Xu hướng</th></tr>',
-    '<tr><td>1</td><td>A</td><td>91</td><td>91</td><td>Vàng</td><td>↗ Tăng</td></tr>',
+    '<tr><td>1</td><td>A</td><td><b>91</b></td><td>91</td><td>Vàng</td><td>↗ Tăng</td></tr>',
 ];
 
 const document = {
-    querySelectorAll(selector) {
-        if (selector === '#rankBody tr') {
-            return rows.slice(1).map((html) => ({
-                cells: html.match(/<td>/g) || [],
-                innerHTML: html,
-            }));
-        }
-
-        if (selector === '#rankBody') {
-            return [{
-                innerHTML: rows[1],
-            }];
-        }
-
+    querySelectorAll() {
         return [];
     },
     getElementById() {
@@ -60,7 +47,7 @@ vm.runInContext(source, context, {
     filename: 'competition-ranking-ui-v6.js',
 });
 
-const api = context.window.CompetitionRankingUIV6;
+const api = context.CompetitionRankingUIV6;
 
 assert.ok(api, 'CompetitionRankingUIV6 phải được expose.');
 assert.equal(
@@ -79,7 +66,7 @@ assert.doesNotMatch(
 
 assert.doesNotMatch(
     cleanedRow,
-    />91<\/td><td>Vàng/,
+    /<td>91<\/td><td>Vàng/,
     'Row ranking không được giữ monthly score cell.',
 );
 
