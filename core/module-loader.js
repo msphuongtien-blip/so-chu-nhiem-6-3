@@ -93,6 +93,10 @@ const APPLICATION_MODULES = [
         'student-autocomplete-v6-script',
         'student-autocomplete-v6.js',
     ],
+    [
+        'competition-record-form-final-v6-script',
+        'competition-record-form-final-v6.js',
+    ],
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
 ];
 
