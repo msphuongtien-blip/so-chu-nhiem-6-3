@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
   try {
     const [students, records] = await Promise.all([
       supabaseFetch('students?select=id&order=id.asc'),
-      supabaseFetch(`competition_records?select=id,student_id,score,points,week,week_start,date,group_name,category_id,criteria,note,created_at,updated_at&or=(week.lte.${targetWeek},week_start.lte.${targetWeek},date.lte.${weekEnd})`),
+      supabaseFetch(`competition_records?select=id,student_id,score,points,week,week_start,date,category_id,criteria,note,created_at,updated_at&or=(week.lte.${targetWeek},week_start.lte.${targetWeek},date.lte.${weekEnd})`),
     ])
 
     const calculations = students.map((student: { id: string }) => ({
@@ -169,7 +169,6 @@ Deno.serve(async (req) => {
           id: record.id,
           student_id: record.student_id,
           date: record.date,
-          group_name: record.group_name,
           category_id: record.category_id,
           criteria: record.criteria,
           points: validScore(record),
