@@ -20,8 +20,8 @@ const finalFormSource = fs.readFileSync(
 
 assert.match(
     indexSource,
-    /<th>STT<\/th><th>Học sinh<\/th><th>Điểm tuần<\/th><th>Huy hiệu<\/th>/,
-    'Index phải khai báo đúng 4 cột: STT, Học sinh, Điểm tuần, Huy hiệu.',
+    /<th>Hạng<\/th><th>Học sinh<\/th><th>Điểm tuần<\/th><th>Huy hiệu<\/th>/,
+    'Index phải khai báo đúng 4 cột: Hạng, Học sinh, Điểm tuần, Huy hiệu.',
 );
 
 assert.doesNotMatch(
@@ -68,8 +68,8 @@ assert.match(
 
 assert.match(
     finalFormSource,
-    /submitCompetitionFinalV6[\s\S]*CompetitionRecordWriteBoundaryV6[\s\S]*addCompetitionThroughV6Boundary/,
-    'Luồng Lưu phải đi qua write boundary V6 duy nhất.',
+    /submitCompetitionFinalV6[\s\S]*waitForCompetitionWriteBoundaryV6[\s\S]*writeBoundary\(/,
+    'Luồng Lưu phải chờ và đi qua write boundary V6 duy nhất.',
 );
 
 assert.match(
