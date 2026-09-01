@@ -69,24 +69,37 @@ vm.runInContext(source, context, {
     filename: 'competition-record-write-boundary-v6.js',
 });
 
-const ok = await context.CompetitionRecordWriteBoundaryV6
-    .addCompetitionThroughV6Boundary(
-        'student-1',
-        2,
-        'Phát biểu xây dựng bài',
-        'Tích cực phát biểu',
-        6,
-        '2030-01-07',
-        '2030-01-09',
+(async () => {
+    const ok = await context.CompetitionRecordWriteBoundaryV6
+        .addCompetitionThroughV6Boundary(
+            'student-1',
+            2,
+            'Phát biểu xây dựng bài',
+            'Tích cực phát biểu',
+            6,
+            '2030-01-07',
+            '2030-01-09',
+        );
+
+    assert.equal(
+        ok,
+        true,
+        'Boundary phải trả về thành công khi dữ liệu hợp lệ.',
     );
+    assert.equal(
+        serviceCalls.length,
+        1,
+        'Record Service phải được gọi đúng 1 lần.',
+    );
+    assert.equal(
+        serviceCalls[0].createdBy,
+        'teacher-1',
+        'created_by phải lấy từ currentUser trong app state, không chỉ từ globalThis.',
+    );
+    assert.deepEqual(alerts, [], 'Luồng hợp lệ không được báo lỗi.');
 
-assert.equal(ok, true, 'Boundary phải trả về thành công khi dữ liệu hợp lệ.');
-assert.equal(serviceCalls.length, 1, 'Record Service phải được gọi đúng 1 lần.');
-assert.equal(
-    serviceCalls[0].createdBy,
-    'teacher-1',
-    'created_by phải lấy từ currentUser trong app state, không chỉ từ globalThis.',
-);
-assert.deepEqual(alerts, [], 'Luồng hợp lệ không được báo lỗi.');
-
-console.log('PASS: competition record created_by regression');
+    console.log('PASS: competition record created_by regression');
+})().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+});
