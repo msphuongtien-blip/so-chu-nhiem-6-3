@@ -62,10 +62,6 @@ const APPLICATION_MODULES = [
         'competition-record-form-v6.js',
     ],
     [
-        'competition-record-form-clean-v6-script',
-        'competition-record-form-clean-v6.js',
-    ],
-    [
         'competition-record-write-boundary-v6-script',
         'competition-record-write-boundary-v6.js',
     ],
@@ -76,6 +72,10 @@ const APPLICATION_MODULES = [
     [
         'competition-legacy-boundary-v6-script',
         'competition-legacy-boundary-v6.js',
+    ],
+    [
+        'competition-record-form-clean-v6-script',
+        'competition-record-form-clean-v6.js',
     ],
     [
         'competition-record-date-v6-script',
