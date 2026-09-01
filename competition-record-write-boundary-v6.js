@@ -14,7 +14,7 @@
  * - Render form.
  * - Tính điểm tuần.
  * - Render ranking.
- * - Thay đổi database schema/RLS.
+ * - Thay đổi RLS hoặc schema.
  */
 
 const COMPETITION_WRITE_BOUNDARY_SCORES_V6 = Object.freeze([
@@ -74,6 +74,25 @@ function getCompetitionWriteBoundaryClientV6() {
 }
 
 /**
+ * State của app.js/core/state.js dùng lexical binding (`let currentUser`),
+ * không tự động xuất hiện trên globalThis. Dùng `typeof` để đọc đúng state
+ * khi boundary chạy cùng page; fallback globalThis giúp test/legacy caller
+ * vẫn hoạt động khi state được expose công khai.
+ */
+function getCompetitionCurrentUserIdV6() {
+    if (
+        typeof currentUser !== 'undefined' &&
+        currentUser?.id
+    ) {
+        return String(currentUser.id);
+    }
+
+    return globalThis.currentUser?.id
+        ? String(globalThis.currentUser.id)
+        : '';
+}
+
+/**
  * Resolve criteria theo id hoặc theo tên + category.
  * Tên criteria chỉ là compatibility fallback.
  */
@@ -130,7 +149,7 @@ async function addCompetitionThroughV6Boundary(
     week,
     date,
 ) {
-    const createdBy = globalThis.currentUser?.id;
+    const createdBy = getCompetitionCurrentUserIdV6();
 
     try {
         const criteria = await resolveCompetitionCriteriaV6(
@@ -179,6 +198,7 @@ async function addCompetitionThroughV6Boundary(
 globalThis.CompetitionRecordWriteBoundaryV6 = Object.freeze({
     COMPETITION_WRITE_BOUNDARY_SCORES_V6,
     buildLegacyCompetitionRecordInputV6,
+    getCompetitionCurrentUserIdV6,
     resolveCompetitionCriteriaV6,
     addCompetitionThroughV6Boundary,
 });
