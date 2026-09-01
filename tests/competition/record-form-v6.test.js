@@ -10,6 +10,7 @@
  * - Form phải có select Nhóm tiêu chí và Tiêu chí riêng.
  * - Helper nhóm phải nhận đầy đủ category từ dữ liệu bên ngoài.
  * - Category 6 phải được render nếu database trả về category 6.
+ * - Người dùng chỉ chọn Ngày; Tuần phải được hệ thống tự suy ra.
  */
 
 const assert = require('node:assert/strict');
@@ -48,6 +49,18 @@ assert.doesNotMatch(
     source,
     /criteria-group.*criteria-chip/s,
     'Form V6 không được render block criteria cards duplicate.',
+);
+
+assert.doesNotMatch(
+    source,
+    /id="fWeekV6"/,
+    'Form V6 không được cho người dùng chọn Tuần thủ công.',
+);
+
+assert.match(
+    source,
+    /CompetitionCalculationV6\.getMonday/,
+    'Submit V6 phải tự suy ra tuần từ Ngày bằng calculation engine.',
 );
 
 console.log('PASS: Competition Record Form V6 contract');
