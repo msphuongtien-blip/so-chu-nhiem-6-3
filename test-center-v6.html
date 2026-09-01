@@ -1,22 +1,4 @@
-<!--
-    FILE: test-center-v6.html
-
-    Mục đích:
-    Trang Test Center chạy trực tiếp trên Vercel để GVCN có thể bấm nút
-    và chạy regression test mà không cần localhost hoặc terminal.
-
-    Không chịu trách nhiệm:
-    - Không thay đổi dữ liệu lớp.
-    - Không chứa logic nghiệp vụ của ứng dụng.
-    - Không dùng dữ liệu giả làm dữ liệu sản xuất.
-
-    Cấu trúc:
-    - test-center-v6.css: giao diện Test Center.
-    - test-center-v6.js: test runner và các assertion.
-    - test-center-competition-live-v6.js: smoke test đồng bộ Lịch sử + Xếp hạng.
-    - test-center-groups-v6.js: runner cho từng cụm test.
-    - test-center-groups-shell-v6.js: render sẵn các cụm và nút chạy riêng.
-    -->
+<!-- Test Center V6 -->
 <!doctype html>
 <html lang="vi">
 <head>
@@ -38,40 +20,32 @@
                 <a class="qa-button" href="index.html">← Quay lại ứng dụng</a>
             </div>
         </header>
-
         <section class="qa-summary" aria-live="polite">
             <div><span class="label">Tổng</span><strong id="totalCount">0</strong></div>
             <div><span class="label">PASS</span><strong id="passCount">0</strong></div>
             <div><span class="label">FAIL</span><strong id="failCount">0</strong></div>
             <div><span class="label">SKIP</span><strong id="skipCount">0</strong></div>
         </section>
-
         <section class="qa-note">
-            <strong>Nguyên tắc an toàn:</strong>
-            Unit/regression test không ghi database. Smoke test UI chỉ dùng session hiện có
-            và lịch sử gọi tên trong localStorage. Test mutation thật sẽ được bật riêng sau
-            khi có sandbox test data/cleanup contract hoàn chỉnh.
+            <strong>An toàn:</strong> các test Snapshot, task sửa điểm và recalculation dùng fixture/mock, không ghi dữ liệu production. Smoke test Supabase hiện có chỉ đọc.
         </section>
-
         <section id="testGroups" class="qa-groups"></section>
-
         <section class="qa-live">
             <div class="qa-live-header">
                 <h2>Ứng dụng thật</h2>
                 <span id="frameStatus" class="qa-badge neutral">Chưa tải</span>
             </div>
-            <iframe
-                id="appFrame"
-                title="Ứng dụng Sổ chủ nhiệm dùng cho UI regression test"
-                src="index.html"
-            ></iframe>
+            <iframe id="appFrame" title="Ứng dụng Sổ chủ nhiệm dùng cho UI regression test" src="index.html"></iframe>
         </section>
     </main>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="competition-calculation-v6.js"></script>
+    <script src="competition-recalculation-v6.js"></script>
+    <script src="competition-snapshot-notification-v6.js"></script>
+    <script src="competition-issues-service-v6.js"></script>
     <script src="random-picker-v6-compat.js"></script>
     <script src="test-center-v6.js"></script>
+    <script src="test-center-snapshot-v6.js"></script>
     <script src="test-center-competition-live-v6.js"></script>
     <script src="test-center-groups-v6.js"></script>
     <script src="test-center-groups-shell-v6.js"></script>
