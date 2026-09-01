@@ -4,51 +4,24 @@
  * Mục đích:
  * Chứa các cấu hình tĩnh dùng chung cho toàn bộ ứng dụng.
  *
- * Quy tắc:
- * - Không chứa dữ liệu học sinh.
- * - Không chứa logic nghiệp vụ.
- * - Không khởi tạo Supabase ở file này.
+ * Trách nhiệm:
+ * - Cung cấp phiên bản ứng dụng.
+ * - Cung cấp thông tin kết nối Supabase hiện tại.
  *
- * Đây cũng là integration layer tạm thời trong quá trình tách V5 sang V6.
+ * Không chịu trách nhiệm:
+ * - Khởi tạo Supabase client.
+ * - Load module JavaScript.
+ * - Đọc/ghi DOM hoặc dữ liệu nghiệp vụ.
+ *
+ * Dependency:
+ * - Không phụ thuộc module ứng dụng khác.
  */
 
 const APP_VERSION = 'V5-SUPABASE-DATABASE';
 
-const CONFIG = {
+const CONFIG = Object.freeze({
     SUPABASE_URL:
         'https://fdyhnwklzizzbiyqqlxo.supabase.co',
     SUPABASE_ANON_KEY:
         'sb_publishable_QJeu6Jb17f6UVbvXJwuUMQ_-QfBaGDy',
-};
-
-/**
- * Nạp một module JavaScript một lần.
- *
- * Config chỉ chịu trách nhiệm nối các module vào runtime.
- */
-function loadConfigModule(scriptId, source) {
-    if (document.getElementById(scriptId)) {
-        return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = source;
-    script.defer = true;
-
-    document.head.appendChild(script);
-}
-
-loadConfigModule('students-import-v6-script', 'students-import-v6.js');
-loadConfigModule('competition-criteria-settings-boot-v6-script', 'competition-criteria-settings-boot-v6.js');
-loadConfigModule('competition-record-sync-v6-script', 'competition-record-sync-v6.js');
-loadConfigModule('competition-student-picker-v6-script', 'competition-record-student-picker-v6.js');
-loadConfigModule('competition-render-helpers-v6-script', 'competition-render-helpers-v6.js');
-loadConfigModule('competition-ux-v6-script', 'competition-ux-v6.js');
-loadConfigModule('competition-record-edit-sync-v6-script', 'competition-record-edit-sync-v6.js');
-loadConfigModule('competition-criteria-settings-ux-v6-script', 'competition-criteria-settings-ux-v6.js');
-loadConfigModule('competition-calculation-v6-script', 'competition-calculation-v6.js');
-loadConfigModule('competition-calculation-runtime-v6-script', 'competition-calculation-runtime-v6.js');
-loadConfigModule('competition-record-date-v6-script', 'competition-record-date-v6.js');
-loadConfigModule('competition-record-edit-date-v6-script', 'competition-record-edit-date-v6.js');
-loadConfigModule('test-center-entry-v6-script', 'test-center-entry-v6.js');
+});
