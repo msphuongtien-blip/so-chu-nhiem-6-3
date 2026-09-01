@@ -8,15 +8,85 @@
  * - Không cho GVCN chọn Tuần.
  * - Tự suy ra tuần từ Ngày.
  * - Bắt buộc chọn rõ học sinh trước khi lưu.
- * - Đảm bảo submitCompetitionV6 không bị app legacy ghi đè do thứ tự script.
+ * - Chỉ giữ một nút đóng: nút X của modal.
+ * - Khóa submit handler V6 để không bị legacy ghi đè.
  */
 
 function removeCompetitionWeekFieldFinalV6() {
     document.getElementById('fWeekV6')?.closest('.field')?.remove();
 }
 
+/**
+ * openModal đã có nút X ở phần tiêu đề. Footer của form không cần thêm
+ * một nút Đóng thứ hai.
+ */
+function removeDuplicateCompetitionFormCloseButtonV6() {
+    const modal = document.querySelector('.modal, .modalbox, [role="dialog"]');
+
+    if (!modal) {
+        return;
+    }
+
+    const buttons = Array.from(modal.querySelectorAll('button'));
+
+    buttons.forEach((button) => {
+        if (button.textContent.trim() !== 'Đóng') {
+            return;
+        }
+
+        button.remove();
+    });
+}
+
+function normalizeStudentSearchTextFinalV6(value) {
+    return String(value ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+/**
+ * Autocomplete giữ mã học sinh trong hidden input. Nếu một lớp UI legacy
+ * làm mất hidden value nhưng ô hiển thị vẫn còn lựa chọn, phục hồi id từ
+ * tên + Mã HS để không báo "thiếu học sinh" oan.
+ */
+function resolveStudentIdFromCompetitionFormV6() {
+    const hiddenId = document.getElementById('fStudentV6')?.value || '';
+
+    if (hiddenId) {
+        return hiddenId;
+    }
+
+    const display = document.getElementById('fStudentV6DisplayV6')?.value || '';
+    const normalizedDisplay = normalizeStudentSearchTextFinalV6(display);
+    const sourceStudents = Array.isArray(globalThis.students)
+        ? globalThis.students
+        : [];
+
+    if (!normalizedDisplay) {
+        return '';
+    }
+
+    const match = sourceStudents.find((student) => {
+        const name = normalizeStudentSearchTextFinalV6(student.full_name);
+        const code = normalizeStudentSearchTextFinalV6(student.student_code);
+        const combined = code
+            ? `${name} · ${code}`
+            : name;
+
+        return (
+            normalizedDisplay === combined ||
+            normalizedDisplay === name ||
+            normalizedDisplay === code
+        );
+    });
+
+    return match?.id ? String(match.id) : '';
+}
+
 async function submitCompetitionFinalV6() {
-    const studentId = document.getElementById('fStudentV6')?.value || '';
+    const studentId = resolveStudentIdFromCompetitionFormV6();
     const date = document.getElementById('fDateV6')?.value || '';
     const categoryId = document.getElementById('fGroupV6')?.value || '';
     const criteriaId = document.getElementById('fCriteriaV6')?.value || '';
@@ -53,7 +123,16 @@ async function submitCompetitionFinalV6() {
         return false;
     }
 
-    const ok = await addCompetition(
+    const writeBoundary =
+        globalThis.CompetitionRecordWriteBoundaryV6
+            ?.addCompetitionThroughV6Boundary;
+
+    if (typeof writeBoundary !== 'function') {
+        alert('Luồng lưu thi đua V6 chưa sẵn sàng. Vui lòng thử lại.');
+        return false;
+    }
+
+    const ok = await writeBoundary(
         studentId,
         points,
         selectedCriteria.name,
@@ -82,6 +161,7 @@ function installFinalCompetitionRecordFormV6() {
     globalThis.openCompetitionForm = async function openCompetitionFormFinalV6() {
         await globalThis.openCompetitionFormV6();
         removeCompetitionWeekFieldFinalV6();
+        removeDuplicateCompetitionFormCloseButtonV6();
     };
 
     globalThis.submitCompetitionV6 = submitCompetitionFinalV6;
@@ -103,6 +183,8 @@ const timer = window.setInterval(() => {
 
 globalThis.CompetitionRecordFormFinalV6 = Object.freeze({
     removeWeek: removeCompetitionWeekFieldFinalV6,
+    removeDuplicateCloseButton: removeDuplicateCompetitionFormCloseButtonV6,
+    resolveStudentId: resolveStudentIdFromCompetitionFormV6,
     submit: submitCompetitionFinalV6,
     install: installFinalCompetitionRecordFormV6,
 });
