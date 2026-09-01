@@ -8,16 +8,8 @@
  * - Giữ dependency loading tập trung ở một nơi.
  * - Không đưa DOM, Supabase query hoặc business logic vào Core config.
  * - Bảo đảm mỗi module chỉ được thêm vào DOM một lần.
- *
- * Không chịu trách nhiệm:
- * - Thực hiện nghiệp vụ.
- * - Tạo Supabase client.
- * - Thay đổi dữ liệu database.
  */
 
-/**
- * Nạp một classic script chuyển tiếp nếu script chưa tồn tại.
- */
 function loadApplicationModule(scriptId, source) {
     if (document.getElementById(scriptId)) {
         return;
@@ -64,6 +56,10 @@ const APPLICATION_MODULES = [
     [
         'competition-calculation-runtime-v6-script',
         'competition-calculation-runtime-v6.js',
+    ],
+    [
+        'competition-record-form-v6-script',
+        'competition-record-form-v6.js',
     ],
     [
         'competition-record-write-boundary-v6-script',
