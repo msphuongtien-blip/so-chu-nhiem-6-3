@@ -1,33 +1,21 @@
 /**
  * FILE: competition-record-form-clean-v6.js
  *
- * Mục đích:
- * Giữ Ngày do giáo viên chọn và loại hoàn toàn việc chọn Tuần thủ công.
- * Hệ thống tự tính tuần từ Ngày trước khi lưu record.
+ * Boundary chuyển tiếp cho form ghi nhận thi đua V6.
  *
- * Trách nhiệm:
- * - Giữ field Ngày cho người dùng.
- * - Xóa field Tuần khỏi UI.
- * - Tính week từ date bằng Calculation Engine V6.
- *
- * Không chịu trách nhiệm:
- * - Quản lý category/criteria.
- * - Tính ranking.
- * - Thay đổi database schema.
+ * Nếu Final Boundary V6 đã được cài đặt, module này không được phép ghi đè
+ * openCompetitionForm/submitCompetitionV6 nữa.
  */
 
-/**
- * Loại duy nhất field Tuần khỏi form V6.
- * Field Ngày vẫn được giữ để giáo viên chọn ngày ghi nhận.
- */
 function removeManualCompetitionWeekV6() {
     document.getElementById('fWeekV6')?.closest('.field')?.remove();
 }
 
-/**
- * Submit record với tuần được hệ thống suy ra từ Ngày.
- */
 async function submitCompetitionCleanV6() {
+    if (globalThis.__finalCompetitionRecordFormV6Installed) {
+        return globalThis.CompetitionRecordFormFinalV6?.submit?.() || false;
+    }
+
     const studentId = document.getElementById('fStudentV6')?.value;
     const date = document.getElementById('fDateV6')?.value;
     const categoryId = document.getElementById('fGroupV6')?.value;
@@ -38,15 +26,22 @@ async function submitCompetitionCleanV6() {
 
     if (!studentId || !date || !categoryId || !criteriaId || !week) {
         alert('Không thể xác định đầy đủ dữ liệu ghi nhận. Vui lòng thử lại.');
-        return;
+        return false;
     }
 
     if (![-5, -4, -3, -2, -1, 1, 2, 3, 4, 5].includes(points)) {
         alert('Điểm chỉ được chọn từ -5 đến -1 hoặc +1 đến +5.');
-        return;
+        return false;
     }
 
-    const { data: selectedCriteria, error } = await sb
+    const client = globalThis.SNCoreSupabase?.client || globalThis.sb;
+
+    if (!client) {
+        alert('Supabase Core chưa sẵn sàng. Vui lòng thử lại.');
+        return false;
+    }
+
+    const { data: selectedCriteria, error } = await client
         .from('competition_criteria')
         .select('id, name, active, category_id')
         .eq('id', criteriaId)
@@ -54,7 +49,7 @@ async function submitCompetitionCleanV6() {
 
     if (error || !selectedCriteria) {
         alert('Không tìm thấy tiêu chí đã chọn.');
-        return;
+        return false;
     }
 
     if (
@@ -62,10 +57,19 @@ async function submitCompetitionCleanV6() {
         String(selectedCriteria.category_id) !== String(categoryId)
     ) {
         alert('Tiêu chí không thuộc nhóm đang chọn hoặc đã được tắt.');
-        return;
+        return false;
     }
 
-    const ok = await addCompetition(
+    const writeBoundary =
+        globalThis.CompetitionRecordWriteBoundaryV6
+            ?.addCompetitionThroughV6Boundary;
+
+    if (typeof writeBoundary !== 'function') {
+        alert('Luồng lưu thi đua V6 chưa sẵn sàng. Vui lòng thử lại.');
+        return false;
+    }
+
+    const ok = await writeBoundary(
         studentId,
         points,
         selectedCriteria.name,
@@ -76,20 +80,21 @@ async function submitCompetitionCleanV6() {
     );
 
     if (!ok) {
-        return;
+        return false;
     }
 
     closeModal();
     await renderStudents();
     await renderCompetition();
     await renderDashboard();
+    return true;
 }
 
-/**
- * Replace legacy entry points after the V6 form has loaded.
- */
 function installCleanCompetitionRecordFormV6() {
-    if (typeof globalThis.openCompetitionFormV6 !== 'function') {
+    if (
+        globalThis.__finalCompetitionRecordFormV6Installed ||
+        typeof globalThis.openCompetitionFormV6 !== 'function'
+    ) {
         return false;
     }
 
