@@ -150,7 +150,7 @@ const generatedCodes = api.generateStudentCodes(
 );
 
 assert.deepEqual(
-    generatedCodes,
+    Array.from(generatedCodes),
     ['6345', '6346'],
     'Mã HS phải được sinh theo đúng rule của form thêm 1 HS.',
 );
