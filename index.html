@@ -24,6 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="refactor-v6.css">
     <script defer src="core/config.js"></script>
     <script defer src="core/supabase.js"></script>
     <script defer src="core/state.js"></script>
@@ -147,7 +148,7 @@
                         <div class="filters">
                             <div class="field"><label>Tuần</label><input id="compWeekFilter" type="date" onchange="renderCompetition()"></div>
                             <div class="field"><label>Học sinh</label><select id="compStudentFilter" onchange="renderCompetition()"><option value="">Tất cả học sinh</option></select></div>
-                            <div class="field"><label>Nhóm tiêu chí</label><select id="compGroupFilter" onchange="renderCompetition"><option value="">Tất cả nhóm</option></select></div>
+                            <div class="field"><label>Nhóm tiêu chí</label><select id="compGroupFilter" onchange="renderCompetition()"><option value="">Tất cả nhóm</option></select></div>
                         </div>
                         <div id="supabaseDataStatus" class="mini competition-data-status">Nguồn dữ liệu: Supabase</div>
                     </div>
@@ -169,7 +170,7 @@
             <section id="settings" class="page"><div class="card"><h2>Cài đặt</h2><div class="grid two"><div class="field"><label>Tên lớp</label><input id="classNameInput"></div><div class="field"><label>Năm học</label><input id="schoolYearInput"></div></div><div class="field"><label>GVCN</label><input id="teacherNameInput"></div><button class="btn primary" onclick="saveClassSettings()">Lưu cài đặt</button><hr><button class="btn" onclick="changePassword()">Đổi mật khẩu</button></div></section>
             <section id="sHome" class="page"><div class="card"><h2>Chào mừng em</h2><p class="mini">Theo dõi tiến bộ và thành tích của em.</p></div></section>
             <section id="sProfile" class="page"><div class="card"><h2>Hồ sơ của em</h2><div id="sProfileBody"></div></div></section>
-            <section id="sProgress" class="page"><div class="card"><h2>Hành trình tiến bộ</h2><div id="sProgressBody"></div></div></section>
+            <section id="sProgress" class="page"><div class="card"><h2>Hành trình tiến bộ</h2><div id="sProgressBody"></div></section>
             <section id="sHonors" class="page"><div class="card"><h2>Thành tích của em</h2><div id="sHonorsBody"></div></div></section>
             <section id="sGoals" class="page"><div class="card"><h2>Mục tiêu tuần</h2><div id="sGoalsBody"></div></div></section>
             <section id="sFeedback" class="page"><div class="card"><h2>Phản hồi</h2><div id="sFeedbackBody"></div></div></section>
