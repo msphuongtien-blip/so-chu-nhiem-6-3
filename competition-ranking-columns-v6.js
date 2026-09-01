@@ -2,17 +2,17 @@
  * FILE: competition-ranking-columns-v6.js
  *
  * Chuẩn hóa bảng xếp hạng Thi đua V6 về đúng 4 cột:
- * - STT
+ * - Hạng
  * - Học sinh
  * - Điểm tuần
  * - Huy hiệu
  *
- * STT trong bảng này là THỨ HẠNG. Học sinh cùng điểm phải đồng hạng.
+ * Hạng là THỨ HẠNG. Học sinh cùng điểm phải đồng hạng.
  * Không hiển thị Điểm tháng, Xu hướng hoặc Nhóm legacy.
  */
 
 const RANKING_ALLOWED_HEADERS_V6 = Object.freeze([
-    'STT',
+    'Hạng',
     'Học sinh',
     'Điểm tuần',
     'Huy hiệu',
@@ -21,8 +21,8 @@ const RANKING_ALLOWED_HEADERS_V6 = Object.freeze([
 function normalizeRankingHeaderV6(header) {
     const label = header.textContent.trim();
 
-    if (label === 'Hạng') {
-        header.textContent = 'STT';
+    if (label === 'STT') {
+        header.textContent = 'Hạng';
     } else if (label === 'Nhóm') {
         header.textContent = 'Huy hiệu';
     }
