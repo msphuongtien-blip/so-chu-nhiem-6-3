@@ -8,7 +8,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
-const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const rawIndexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const indexSource = rawIndexSource.replace(/\s+/g, ' ');
 const autocompleteSource = fs.readFileSync(
     path.join(root, 'student-autocomplete-v6.js'),
     'utf8',
@@ -20,13 +21,13 @@ const finalFormSource = fs.readFileSync(
 
 assert.match(
     indexSource,
-    /<th>Hạng<\/th><th>Học sinh<\/th><th>Điểm tuần<\/th><th>Huy hiệu<\/th>/,
+    /<th>Hạng<\/th>\s*<th>Học sinh<\/th>\s*<th>Điểm tuần<\/th>\s*<th>Huy hiệu<\/th>/,
     'Index phải khai báo đúng 4 cột: Hạng, Học sinh, Điểm tuần, Huy hiệu.',
 );
 
 assert.doesNotMatch(
     indexSource,
-    /<th>Hạng<\/th><th>Học sinh<\/th><th>Điểm tuần<\/th><th>Điểm tháng<\/th>/,
+    /<th>Hạng<\/th>\s*<th>Học sinh<\/th>\s*<th>Điểm tuần<\/th>\s*<th>Điểm tháng<\/th>/,
     'Index không được giữ header ranking legacy 6 cột.',
 );
 
