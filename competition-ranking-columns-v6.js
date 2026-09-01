@@ -2,23 +2,79 @@
  * FILE: competition-ranking-columns-v6.js
  *
  * Mục đích:
- * Loại các trường presentation legacy không còn dùng khỏi bảng xếp hạng.
+ * Chuẩn hóa bảng xếp hạng Thi đua V6 về đúng 3 cột nghiệp vụ mà GVCN
+ * cần nhìn trong một lần quét:
+ * - Học sinh
+ * - Điểm tuần
+ * - Huy hiệu
  *
  * Không hiển thị:
- * - Điểm tháng.
- * - Xu hướng.
+ * - Hạng
+ * - Điểm tháng
+ * - Xu hướng
+ * - Nhóm legacy
  *
- * Vẫn hiển thị:
- * - Hạng.
- * - Học sinh.
- * - Điểm tuần.
- * - Huy hiệu theo điểm tuần: Kim cương, Vàng, Bạc, Đồng, Sắt.
+ * Badge vẫn được lấy từ điểm tuần và giữ đủ 5 cấp.
  */
 
-const RANKING_HIDDEN_HEADERS_V6 = Object.freeze([
-    'Điểm tháng',
-    'Xu hướng',
+const RANKING_ALLOWED_HEADERS_V6 = Object.freeze([
+    'Học sinh',
+    'Điểm tuần',
+    'Huy hiệu',
 ]);
+
+function normalizeRankingHeaderV6(header) {
+    const label = header.textContent.trim();
+
+    if (label === 'Nhóm') {
+        header.textContent = 'Huy hiệu';
+    }
+
+    return header.textContent.trim();
+}
+
+/**
+ * Giữ đúng các cột nghiệp vụ cần thiết và xóa toàn bộ cột presentation
+ * legacy khỏi cả header lẫn body để không còn tình trạng lệch cột.
+ */
+function enforceCompetitionRankingColumnsV6(table) {
+    if (!table) {
+        return;
+    }
+
+    const headers = Array.from(
+        table.querySelectorAll('thead th'),
+    );
+
+    headers.forEach(normalizeRankingHeaderV6);
+
+    const keepIndexes = new Set(
+        headers
+            .map((header, index) => ({
+                index,
+                label: header.textContent.trim(),
+            }))
+            .filter(({ label }) =>
+                RANKING_ALLOWED_HEADERS_V6.includes(label),
+            )
+            .map(({ index }) => index),
+    );
+
+    const removeIndexes = headers
+        .map((_, index) => index)
+        .filter((index) => !keepIndexes.has(index))
+        .sort((a, b) => b - a);
+
+    removeIndexes.forEach((index) => {
+        headers[index]?.remove();
+
+        table
+            .querySelectorAll('#rankBody tr')
+            .forEach((row) => {
+                row.children[index]?.remove();
+            });
+    });
+}
 
 function hideLegacyRankingColumnsV6() {
     const rankBody = document.getElementById('rankBody');
@@ -28,30 +84,7 @@ function hideLegacyRankingColumnsV6() {
         return;
     }
 
-    const headers = Array.from(table.querySelectorAll('thead th'));
-
-    headers.forEach((header) => {
-        if (header.textContent.trim() === 'Nhóm') {
-            header.textContent = 'Huy hiệu';
-        }
-    });
-
-    const indexes = headers
-        .map((header, index) => ({
-            index,
-            label: header.textContent.trim(),
-        }))
-        .filter(({ label }) => RANKING_HIDDEN_HEADERS_V6.includes(label))
-        .map(({ index }) => index)
-        .sort((a, b) => b - a);
-
-    indexes.forEach((index) => {
-        headers[index]?.remove();
-
-        Array.from(rankBody.querySelectorAll('tr')).forEach((row) => {
-            row.children[index]?.remove();
-        });
-    });
+    enforceCompetitionRankingColumnsV6(table);
 }
 
 function installRankingColumnBoundaryV6() {
@@ -90,6 +123,7 @@ if (typeof window !== 'undefined' && window.document) {
 }
 
 globalThis.CompetitionRankingColumnsV6 = Object.freeze({
-    hiddenHeaders: RANKING_HIDDEN_HEADERS_V6,
+    allowedHeaders: RANKING_ALLOWED_HEADERS_V6,
     hide: hideLegacyRankingColumnsV6,
+    enforce: enforceCompetitionRankingColumnsV6,
 });
