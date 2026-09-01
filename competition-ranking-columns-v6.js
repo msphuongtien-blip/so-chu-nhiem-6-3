@@ -7,6 +7,7 @@
  * - Điểm tuần
  * - Huy hiệu
  *
+ * STT trong bảng này là THỨ HẠNG. Học sinh cùng điểm phải đồng hạng.
  * Không hiển thị Điểm tháng, Xu hướng hoặc Nhóm legacy.
  */
 
@@ -30,10 +31,43 @@ function normalizeRankingHeaderV6(header) {
 }
 
 /**
- * Legacy renderCompetition() có thể vẫn tạo 6 ô:
- * STT, Học sinh, Điểm tuần, Điểm tháng, Huy hiệu, Xu hướng.
- * Khi header đã được chuẩn hóa còn 4 cột, phải chuẩn hóa cả body.
+ * Competition ranking chuẩn: 1, 2, 2, 4.
+ * Không dùng thứ tự dòng làm hạng khi có cùng điểm.
  */
+function calculateCompetitionRanksV6(scores) {
+    let previousScore = null;
+    let previousRank = 0;
+
+    return scores.map((score, index) => {
+        const numericScore = Number(score);
+
+        if (index === 0 || numericScore !== previousScore) {
+            previousRank = index + 1;
+            previousScore = numericScore;
+        }
+
+        return previousRank;
+    });
+}
+
+function applyCompetitionRankingRanksV6(table) {
+    if (!table) {
+        return;
+    }
+
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    const scores = rows.map((row) => Number(row.children[2]?.textContent));
+    const ranks = calculateCompetitionRanksV6(scores);
+
+    rows.forEach((row, index) => {
+        const rankCell = row.children[0];
+
+        if (rankCell) {
+            rankCell.textContent = String(ranks[index]);
+        }
+    });
+}
+
 function normalizeCompetitionRankingBodyRowsV6(table) {
     if (!table) {
         return;
@@ -51,6 +85,8 @@ function normalizeCompetitionRankingBodyRowsV6(table) {
             row.lastElementChild?.remove();
         }
     });
+
+    applyCompetitionRankingRanksV6(table);
 }
 
 function enforceCompetitionRankingColumnsV6(table) {
@@ -134,6 +170,7 @@ if (typeof window !== 'undefined' && window.document) {
 
 globalThis.CompetitionRankingColumnsV6 = Object.freeze({
     allowedHeaders: RANKING_ALLOWED_HEADERS_V6,
+    calculateRanks: calculateCompetitionRanksV6,
     hide: hideLegacyRankingColumnsV6,
     enforce: enforceCompetitionRankingColumnsV6,
     normalizeBodyRows: normalizeCompetitionRankingBodyRowsV6,
