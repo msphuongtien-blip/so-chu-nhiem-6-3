@@ -8,7 +8,7 @@
  * - Không cho GVCN chọn Tuần.
  * - Tự suy ra tuần từ Ngày.
  * - Bắt buộc chọn rõ học sinh trước khi lưu.
- * - Chỉ giữ một nút đóng: nút X của modal.
+ * - Chỉ giữ nút đóng của modal; bỏ nút Đóng lặp trong footer form.
  * - Khóa submit handler V6 để không bị legacy ghi đè.
  */
 
@@ -17,24 +17,22 @@ function removeCompetitionWeekFieldFinalV6() {
 }
 
 /**
- * openModal đã có nút X ở phần tiêu đề. Footer của form không cần thêm
- * một nút Đóng thứ hai.
+ * openModal có nút Đóng riêng ở modal head. Chỉ loại nút Đóng do form
+ * chèn trong modalBody, tránh xóa nút đóng chính của modal.
  */
 function removeDuplicateCompetitionFormCloseButtonV6() {
-    const modal = document.getElementById('modal');
+    const modalBody = document.getElementById('modalBody');
 
-    if (!modal) {
+    if (!modalBody) {
         return;
     }
 
-    const buttons = Array.from(modal.querySelectorAll('button'));
+    const buttons = Array.from(modalBody.querySelectorAll('button'));
 
     buttons.forEach((button) => {
-        if (button.textContent.trim() !== 'Đóng') {
-            return;
+        if (button.textContent.trim() === 'Đóng') {
+            button.remove();
         }
-
-        button.remove();
     });
 }
 
