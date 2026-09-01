@@ -113,8 +113,16 @@ const APPLICATION_MODULES = [
         'competition-issues-renderer-v6.js',
     ],
     [
+        'competition-recalculation-v6-script',
+        'competition-recalculation-v6.js',
+    ],
+    [
         'competition-snapshot-notification-v6-script',
         'competition-snapshot-notification-v6.js',
+    ],
+    [
+        'competition-snapshot-edit-v6-script',
+        'competition-snapshot-edit-v6.js',
     ],
     [
         'student-autocomplete-v6-script',
