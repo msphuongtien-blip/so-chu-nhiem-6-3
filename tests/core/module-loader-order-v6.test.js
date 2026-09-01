@@ -58,7 +58,8 @@ const vm = require('node:vm');
         context.ApplicationModuleLoaderV6.APPLICATION_MODULES.length,
     );
 
-    const expected = context.ApplicationModuleLoaderV6.APPLICATION_MODULES.map(
+    const expected = Array.from(
+        context.ApplicationModuleLoaderV6.APPLICATION_MODULES,
         ([, src]) => src,
     );
 
