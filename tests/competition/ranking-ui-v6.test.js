@@ -9,6 +9,7 @@
  * - Legacy Nhóm được đổi thành Huy hiệu.
  * - Giữ toàn bộ badge: Kim cương, Vàng, Bạc, Đồng, Sắt.
  * - Không đụng dữ liệu Tổ học sinh.
+ * - Body phải được chuẩn hóa theo đúng 4 cột kể cả khi legacy render sinh dư ô.
  */
 
 const assert = require('node:assert/strict');
@@ -66,6 +67,18 @@ assert.match(
     source,
     /RANKING_ALLOWED_HEADERS_V6[\s\S]*STT[\s\S]*Học sinh[\s\S]*Điểm tuần[\s\S]*Huy hiệu/,
     'Boundary phải khóa bảng về đúng 4 cột nghiệp vụ.',
+);
+
+assert.match(
+    source,
+    /function normalizeCompetitionRankingBodyRowsV6[\s\S]*children\.length > 4[\s\S]*remove/,
+    'Boundary phải loại các ô dư trong body khi legacy render sinh hơn 4 ô.',
+);
+
+assert.match(
+    source,
+    /removeIndexes[\s\S]*children\[index\]\?\.remove\(\)/,
+    'Boundary phải xóa đúng các ô dư trên từng dòng body.',
 );
 
 assert.match(
