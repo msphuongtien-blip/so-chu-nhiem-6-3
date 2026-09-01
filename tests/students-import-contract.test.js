@@ -21,9 +21,9 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const modulePath = path.join(root, 'students-import-v6.js');
-const indexPath = path.join(root, 'index.html');
+const loaderPath = path.join(root, 'core', 'module-loader.js');
 const source = fs.readFileSync(modulePath, 'utf8');
-const indexSource = fs.readFileSync(indexPath, 'utf8');
+const loaderSource = fs.readFileSync(loaderPath, 'utf8');
 
 const context = vm.createContext({
     console,
@@ -37,6 +37,12 @@ const context = vm.createContext({
             };
         },
         body: {
+            appendChild() {},
+        },
+        getElementById() {
+            return null;
+        },
+        head: {
             appendChild() {},
         },
     },
@@ -205,18 +211,18 @@ for (const forbiddenField of [
 
 /**
  * Regression guard cho integration point:
- * index.html phải load đúng module Import 3 cột.
+ * module-loader.js phải nạp đúng module Import 3 cột.
  */
 assert.match(
-    indexSource,
+    loaderSource,
     /students-import-v6\.js/,
-    'index.html phải nạp module students-import-v6.js',
+    'module-loader.js phải nạp module students-import-v6.js',
 );
 
 assert.doesNotMatch(
-    indexSource,
+    loaderSource,
     /students-import-v6-8col\.js/,
-    'index.html không được nạp lại module CSV 8 cột legacy',
+    'module-loader.js không được nạp lại module CSV 8 cột legacy',
 );
 
 console.log('PASS: students CSV import contract');
