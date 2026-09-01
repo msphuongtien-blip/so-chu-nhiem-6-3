@@ -13,6 +13,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const formSource = fs.readFileSync(
@@ -40,8 +41,13 @@ assert.doesNotMatch(
 );
 assert.match(
     formSource,
-    /getMonday|getRecordFormWeek|week.*date/i,
-    'Form phải có logic suy tuần từ Ngày.',
+    /getRecordFormWeekFromDateV6/,
+    'Form phải có hàm suy Tuần từ Ngày.',
+);
+assert.match(
+    formSource,
+    /const week = getRecordFormWeekFromDateV6\(date\)/,
+    'Submit phải lấy Tuần từ Ngày, không lấy từ input Tuần.',
 );
 assert.match(
     finalFormSource,
@@ -52,15 +58,22 @@ assert.match(
 // 2. Opening the edit modal must not recursively mutate the modal forever.
 assert.match(
     editDateSource,
-    /helper\.textContent\s*!==\s*derivedWeek|helper\.textContent\s*!==/,
+    /helper\.textContent\s*!==\s*helperText/,
     'Edit date sync phải tránh ghi DOM lặp vô hạn trong MutationObserver.',
 );
 
 // 3. Ranking ties: same score must receive the same rank number.
-assert.match(
-    rankingSource,
-    /assignCompetitionRanksV6|rank.*previous|same.*score|tie/i,
-    'Ranking boundary phải có logic đồng hạng khi cùng điểm.',
+const rankingContext = vm.createContext({});
+vm.runInContext(rankingSource, rankingContext, {
+    filename: 'competition-ranking-columns-v6.js',
+});
+
+const rankingApi = rankingContext.CompetitionRankingColumnsV6;
+assert.ok(rankingApi, 'Ranking V6 API phải được expose.');
+assert.deepEqual(
+    rankingApi.calculateRanks([91, 81, 81, 81, 80]),
+    [1, 2, 2, 2, 5],
+    'Cùng điểm phải đồng hạng theo competition ranking.',
 );
 
 console.log('PASS: V6 competition regressions contract');
