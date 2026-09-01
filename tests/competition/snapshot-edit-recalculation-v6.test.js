@@ -32,7 +32,7 @@ const loaderSource = fs.readFileSync(
 
 assert.match(
     snapshotSource,
-    /Xem sau/, 
+    /Xem sau/,
     'Snapshot phải có nút Xem sau.',
 );
 assert.match(
@@ -79,6 +79,7 @@ assert.match(
 const context = {
     console,
     Date,
+    Math,
     Set,
     Map,
     Object,
