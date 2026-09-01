@@ -89,6 +89,10 @@ const APPLICATION_MODULES = [
         'competition-ranking-columns-v6-script',
         'competition-ranking-columns-v6.js',
     ],
+    [
+        'student-autocomplete-v6-script',
+        'student-autocomplete-v6.js',
+    ],
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
 ];
 
