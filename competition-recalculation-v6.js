@@ -97,17 +97,21 @@ async function recalculateCompetitionFromWeekV6(startWeek) {
     const normalizedStartWeek = normalizeCompetitionRecalculationWeekV6(
         startWeek,
     );
+    let records = globalThis.supabaseCache?.competitionRecords || [];
+    let studentsList =
+        Array.isArray(globalThis.students) ? globalThis.students : [];
 
     if (typeof window.loadCompetitionHistoryFromSupabase === 'function') {
-        await window.loadCompetitionHistoryFromSupabase();
+        records = await window.loadCompetitionHistoryFromSupabase();
     }
 
-    const records = globalThis.supabaseCache?.competitionRecords || [];
-    const studentsList =
-        Array.isArray(globalThis.students) ? globalThis.students : [];
+    if (typeof window.loadStudentsFromSupabase === 'function') {
+        studentsList = await window.loadStudentsFromSupabase();
+    }
+
     const result = calculateCompetitionRecalculationV6(
-        records,
-        studentsList,
+        records || [],
+        studentsList || [],
         normalizedStartWeek,
     );
 
