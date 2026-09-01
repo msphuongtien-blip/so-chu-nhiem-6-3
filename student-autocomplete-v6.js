@@ -7,6 +7,7 @@
  * - Giữ nguyên id field cũ dưới dạng hidden value để submit handler hiện tại
  *   tiếp tục hoạt động.
  * - Hỗ trợ Enter, ArrowUp/ArrowDown và Escape.
+ * - Form tạo mới luôn bắt buộc GVCN chọn rõ một học sinh; không tự chọn HS đầu.
  */
 
 const STUDENT_AUTOCOMPLETE_V6_MAX_RESULTS = 8;
@@ -19,6 +20,10 @@ const STUDENT_AUTOCOMPLETE_V6_TARGETS = Object.freeze({
     lStudent: 'id',
     msgStudent: 'user_id',
 });
+
+const STUDENT_AUTOCOMPLETE_V6_PRESERVE_INITIAL_VALUE = new Set([
+    'eStudent',
+]);
 
 function getStudentAutocompleteSourceV6() {
     if (typeof students !== 'undefined' && Array.isArray(students)) {
@@ -141,7 +146,11 @@ function mountStudentAutocompleteV6(select) {
         return false;
     }
 
-    const currentValue = select.value;
+    const currentValue = STUDENT_AUTOCOMPLETE_V6_PRESERVE_INITIAL_VALUE.has(
+        fieldId,
+    )
+        ? select.value
+        : '';
     const label = parent.querySelector('label');
     const wrapper = document.createElement('div');
 
