@@ -3,14 +3,13 @@
  * FILE: tests/competition/record-form-v6.test.js
  *
  * Mục đích:
- * Regression test cho form Ghi nhận Thi đua V6.
+ * Regression test cho form Ghi nhận Thi đua V6 và clean boundary.
  *
  * Contract:
- * - Form không được còn các card criteria nhóm 1-5 dạng duplicate.
- * - Form phải có select Nhóm tiêu chí và Tiêu chí riêng.
- * - Helper nhóm phải nhận đầy đủ category từ dữ liệu bên ngoài.
- * - Category 6 phải được render nếu database trả về category 6.
- * - Người dùng chỉ chọn Ngày; Tuần phải được hệ thống tự suy ra.
+ * - Form vẫn có Nhóm tiêu chí và Tiêu chí.
+ * - Category 6 vẫn được hỗ trợ.
+ * - Người dùng không nhập Ngày hoặc Tuần.
+ * - Ngày hiện tại và Tuần tương ứng được tự suy ra khi submit.
  */
 
 const assert = require('node:assert/strict');
@@ -19,7 +18,9 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
 const formPath = path.join(root, 'competition-record-form-v6.js');
+const cleanPath = path.join(root, 'competition-record-form-clean-v6.js');
 const source = fs.readFileSync(formPath, 'utf8');
+const cleanSource = fs.readFileSync(cleanPath, 'utf8');
 
 assert.match(
     source,
@@ -51,16 +52,28 @@ assert.doesNotMatch(
     'Form V6 không được render block criteria cards duplicate.',
 );
 
-assert.doesNotMatch(
-    source,
-    /id="fWeekV6"/,
-    'Form V6 không được cho người dùng chọn Tuần thủ công.',
+assert.match(
+    cleanSource,
+    /fDateV6.*closest\('\.field'\).*remove/s,
+    'Clean boundary phải loại field Ngày khỏi UI.',
 );
 
 assert.match(
-    source,
-    /CompetitionCalculationV6\.getMonday/,
-    'Submit V6 phải tự suy ra tuần từ Ngày bằng calculation engine.',
+    cleanSource,
+    /fWeekV6.*closest\('\.field'\).*remove/s,
+    'Clean boundary phải loại field Tuần khỏi UI.',
 );
 
-console.log('PASS: Competition Record Form V6 contract');
+assert.match(
+    cleanSource,
+    /const date = localDate\(\)/,
+    'Ngày ghi nhận phải tự lấy ngày hiện tại.',
+);
+
+assert.match(
+    cleanSource,
+    /CompetitionCalculationV6\?\.getMonday/,
+    'Tuần ghi nhận phải tự suy ra từ Ngày bằng calculation engine.',
+);
+
+console.log('PASS: Competition Record Form V6 clean-boundary contract');
