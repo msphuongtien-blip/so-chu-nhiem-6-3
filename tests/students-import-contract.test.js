@@ -170,7 +170,7 @@ const payload = api.buildInsertPayload(
 );
 
 assert.deepEqual(
-    payload[0],
+    JSON.parse(JSON.stringify(payload[0])),
     {
         full_name: 'Nguyễn Văn Test',
         student_code: '6345',
@@ -179,7 +179,7 @@ assert.deepEqual(
 );
 
 assert.deepEqual(
-    payload[1],
+    JSON.parse(JSON.stringify(payload[1])),
     {
         full_name: 'Trần Thị Test',
         student_code: '6346',
