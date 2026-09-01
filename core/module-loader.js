@@ -91,6 +91,10 @@ const APPLICATION_MODULES = [
         'competition-ranking-ui-v6.js',
     ],
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
+    [
+        'competition-legacy-boundary-v6-script',
+        'competition-legacy-boundary-v6.js',
+    ],
 ];
 
 APPLICATION_MODULES.forEach(([scriptId, source]) => {
