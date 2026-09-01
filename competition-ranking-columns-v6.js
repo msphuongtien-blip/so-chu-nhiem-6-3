@@ -2,7 +2,17 @@
  * FILE: competition-ranking-columns-v6.js
  *
  * Mục đích:
- * Loại các cột điểm tháng và nhóm điểm cũ khỏi bảng xếp hạng.
+ * Loại hoàn toàn các trường presentation legacy khỏi bảng xếp hạng V6.
+ *
+ * Không hiển thị:
+ * - Điểm tháng.
+ * - Nhóm điểm/tier cũ.
+ * - Xu hướng.
+ *
+ * Chỉ giữ:
+ * - Hạng.
+ * - Học sinh.
+ * - Điểm tuần.
  *
  * Trách nhiệm:
  * - Chỉ xử lý presentation boundary trong thời gian app.js legacy còn tồn tại.
@@ -12,6 +22,7 @@
 const RANKING_HIDDEN_HEADERS_V6 = Object.freeze([
     'Điểm tháng',
     'Nhóm',
+    'Xu hướng',
 ]);
 
 function hideLegacyRankingColumnsV6() {
@@ -62,9 +73,6 @@ function installRankingColumnBoundaryV6() {
     return true;
 }
 
-/**
- * Browser bootstrap only. Node contract tests use the exported API directly.
- */
 if (typeof window !== 'undefined' && window.document) {
     const startedAt = Date.now();
     const timer = window.setInterval(() => {
