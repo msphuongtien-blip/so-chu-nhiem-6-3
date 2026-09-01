@@ -3,7 +3,9 @@
  * FILE: tests/students/student-import-8col.test.js
  *
  * Mục đích:
- * Kiểm tra contract của CSV 8 cột đang dùng trong website.
+ * Kiểm tra contract của CSV 8 cột legacy đang dùng trong website.
+ *
+ * Đây là regression guard cho module cũ; không mở rộng thêm field mới.
  */
 
 const assert = require('node:assert/strict');
@@ -44,7 +46,7 @@ const api = context.window.StudentsImportV6;
 
 assert.ok(api, 'StudentsImportV6 phải được export.');
 assert.deepEqual(
-    api.CSV_HEADERS,
+    Array.from(api.CSV_HEADERS),
     [
         'STT',
         'Họ tên',
@@ -115,7 +117,7 @@ assert.equal(
     api.createTemplateCsv()
         .replace(/^\uFEFF/, '')
         .trim(),
-    api.CSV_HEADERS.join(','),
+    Array.from(api.CSV_HEADERS).join(','),
 );
 
 console.log('Student CSV 8-column contract tests: PASS');
