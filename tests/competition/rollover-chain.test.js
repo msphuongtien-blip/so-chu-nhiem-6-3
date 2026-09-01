@@ -41,8 +41,8 @@ assert.equal(
 );
 assert.equal(
     api.calculateWeekScore(history86, 's1', week2),
-    86,
-    'Tuần kế tiếp không có record phải giữ rollover start 81 và final 81; contract chain phải được tính từ tuần trước.',
+    81,
+    'Tuần kế tiếp không có record phải bắt đầu từ rollover 81 và giữ 81.',
 );
 
 const history92 = [
@@ -55,9 +55,9 @@ assert.equal(
     'Sau khi sửa history Week 1, final phải thành 92.',
 );
 assert.equal(
-    api.rolloverStart(92),
+    api.calculateWeekScore(history92, 's1', week2),
     91,
-    'Week 2 start phải rollover từ 92 xuống 91.',
+    'Week 2 phải nhận rollover 91 từ Week 1 final 92.',
 );
 
 const historyChain = [
