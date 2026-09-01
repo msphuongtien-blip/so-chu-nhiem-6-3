@@ -17,16 +17,26 @@
  * - Thay đổi database schema/RLS.
  */
 
+const COMPETITION_WRITE_BOUNDARY_SCORES_V6 = Object.freeze([
+    -5,
+    -4,
+    -3,
+    -2,
+    -1,
+    1,
+    2,
+    3,
+    4,
+    5,
+]);
+
 /**
  * Chuẩn hóa signature legacy thành input cho Record Service V6.
- *
- * @param {object} input Dữ liệu từ addCompetition() legacy.
- * @returns {object} Input chuẩn của Record Service.
  */
 function buildLegacyCompetitionRecordInputV6(input) {
     const points = Number(input.points);
 
-    if (![-5, -4, -3, -2, -1, 1, 2, 3, 4, 5].includes(points)) {
+    if (!COMPETITION_WRITE_BOUNDARY_SCORES_V6.includes(points)) {
         throw new Error(
             'Điểm chỉ được chọn từ -5 đến -1 hoặc +1 đến +5.',
         );
@@ -59,35 +69,49 @@ function buildLegacyCompetitionRecordInputV6(input) {
     };
 }
 
-/**
- * Lấy Supabase Core client.
- */
 function getCompetitionWriteBoundaryClientV6() {
     return globalThis.SNCoreSupabase?.client || null;
 }
 
 /**
- * Resolve criteria theo id để bảo đảm history liên kết với criteria thật.
+ * Resolve criteria theo id hoặc theo tên + category.
+ * Tên criteria chỉ là compatibility fallback.
  */
-async function resolveCompetitionCriteriaV6(criteriaId) {
+async function resolveCompetitionCriteriaV6(
+    criteriaId,
+    criteriaName,
+    categoryId,
+) {
     const client = getCompetitionWriteBoundaryClientV6();
 
     if (!client) {
         throw new Error('Supabase Core chưa sẵn sàng. Vui lòng thử lại.');
     }
 
-    const { data, error } = await client
+    let query = client
         .from('competition_criteria')
-        .select('id, name, active')
-        .eq('id', criteriaId)
-        .single();
+        .select('id, name, active, category_id')
+        .eq('active', true);
+
+    if (criteriaId) {
+        query = query.eq('id', criteriaId);
+    } else {
+        query = query
+            .eq('name', String(criteriaName || '').trim())
+            .eq('category_id', Number(categoryId));
+    }
+
+    const { data, error } = await query.single();
 
     if (error || !data) {
         throw new Error('Không tìm thấy tiêu chí đã chọn.');
     }
 
-    if (!data.active) {
-        throw new Error('Tiêu chí đã được tắt.');
+    if (
+        categoryId &&
+        String(data.category_id) !== String(categoryId)
+    ) {
+        throw new Error('Tiêu chí không thuộc nhóm đang chọn.');
     }
 
     return data;
@@ -95,7 +119,6 @@ async function resolveCompetitionCriteriaV6(criteriaId) {
 
 /**
  * Replacement cho addCompetition() legacy.
- *
  * Signature được giữ nguyên để không phá các caller hiện tại.
  */
 async function addCompetitionThroughV6Boundary(
@@ -111,13 +134,15 @@ async function addCompetitionThroughV6Boundary(
 
     try {
         const criteria = await resolveCompetitionCriteriaV6(
-            globalThis.__competitionCriteriaIdForLegacyWrite || '',
+            '',
+            criteriaName,
+            categoryId,
         );
 
         const input = buildLegacyCompetitionRecordInputV6({
             studentId,
             points,
-            criteriaName: criteria.name || criteriaName,
+            criteriaName: criteria.name,
             note,
             categoryId,
             week,
@@ -151,20 +176,9 @@ async function addCompetitionThroughV6Boundary(
     }
 }
 
-/**
- * Vì signature legacy chỉ truyền tên criteria, module dùng một setter tạm
- * để submitCompetitionV6 có thể truyền criteria id trước khi gọi boundary.
- */
-function setLegacyCompetitionCriteriaIdV6(criteriaId) {
-    globalThis.__competitionCriteriaIdForLegacyWrite = criteriaId;
-}
-
-/**
- * Public API cho Test Center và các module V6.
- */
 globalThis.CompetitionRecordWriteBoundaryV6 = Object.freeze({
+    COMPETITION_WRITE_BOUNDARY_SCORES_V6,
     buildLegacyCompetitionRecordInputV6,
     resolveCompetitionCriteriaV6,
     addCompetitionThroughV6Boundary,
-    setLegacyCompetitionCriteriaIdV6,
 });
