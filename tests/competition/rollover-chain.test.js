@@ -29,24 +29,24 @@ assert.ok(api, 'Calculation V6 API phải được expose.');
 
 const week1 = '2026-08-24';
 const week2 = '2026-08-31';
+const week3 = '2026-09-07';
 
 const history86 = [
     { student_id: 's1', week: week1, score: 5 },
 ];
 
-assert.equal(
-    api.calculateWeekScore(history86, 's1', week1),
-    86,
-    'Week 1 phải kết thúc 86.',
-);
+assert.equal(api.calculateWeekScore(history86, 's1', week1), 86);
 assert.equal(
     api.calculateWeekScore(history86, 's1', week2),
     81,
-    'Tuần kế tiếp không có record phải bắt đầu từ rollover 81 và giữ 81.',
+    'Tuần không có record phải giữ rollover start 81.',
 );
 
 const history92 = [
-    { student_id: 's1', week: week1, score: 11 },
+    { student_id: 's1', week: week1, score: 5 },
+    { student_id: 's1', week: week1, score: 5 },
+    { student_id: 's1', week: week1, score: 1 },
+    { student_id: 's1', week: week1, score: 1 },
 ];
 
 assert.equal(
@@ -61,10 +61,10 @@ assert.equal(
 );
 
 const historyChain = [
-    { student_id: 's1', week: week1, score: 11 },
+    ...history92,
     { student_id: 's1', week: week2, score: 2 },
 ];
-const week3 = '2026-09-07';
+
 assert.equal(
     api.calculateWeekScore(historyChain, 's1', week2),
     93,
