@@ -137,21 +137,14 @@ async function getPreviousCompetitionSnapshotV6() {
     };
 }
 
-function renderSnapshotRowsV6(rows, week) {
+function renderSnapshotRowsV6(rows) {
     return rows.map((row) => {
         const points = Number(row.points);
         const sign = points > 0 ? '+' : '';
-        const snapshotId = (globalThis.CompetitionSnapshotNotificationV6
-            ?.snapshotIdForRecord)
-            ? globalThis.CompetitionSnapshotNotificationV6.snapshotIdForRecord(
-                row.student_id,
-                week,
-            )
-            : '';
 
         return `
             <tr>
-                <td>${escapeSnapshotHtmlV6(row.date || week)}</td>
+                <td>${escapeSnapshotHtmlV6(row.date || '')}</td>
                 <td>${escapeSnapshotHtmlV6(snapshotStudentNameV6(row.student_id))}</td>
                 <td>${escapeSnapshotHtmlV6(row.group_name || '')}</td>
                 <td>${escapeSnapshotHtmlV6(row.criteria || '')}</td>
@@ -159,7 +152,7 @@ function renderSnapshotRowsV6(rows, week) {
                 <td>${escapeSnapshotHtmlV6(row.note || '')}</td>
                 <td>
                     <button class="btn small" type="button"
-                        onclick="createCompetitionIssueFromSnapshotV6('${escapeSnapshotHtmlV6(row.id)}','${escapeSnapshotHtmlV6(row.student_id)}','${escapeSnapshotHtmlV6(week)}','${escapeSnapshotHtmlV6(snapshotId)}')">
+                        onclick="createCompetitionIssueFromSnapshotV6('${escapeSnapshotHtmlV6(row.id)}','${escapeSnapshotHtmlV6(row.student_id)}','${escapeSnapshotHtmlV6(row.week)}')">
                         Tạo task sửa điểm
                     </button>
                 </td>
@@ -196,7 +189,7 @@ function showCompetitionSnapshotV6(rows, week) {
                             <th>Đối chiếu</th>
                         </tr>
                     </thead>
-                    <tbody>${renderSnapshotRowsV6(rows, week)}</tbody>
+                    <tbody>${renderSnapshotRowsV6(rows)}</tbody>
                 </table>
             </div>
         `
