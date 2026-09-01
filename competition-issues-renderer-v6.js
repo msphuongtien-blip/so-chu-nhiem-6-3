@@ -1,0 +1,274 @@
+/**
+ * FILE: competition-issues-renderer-v6.js
+ *
+ * Mục đích:
+ * Hiển thị notification cho các task sửa điểm đang OPEN.
+ *
+ * Trách nhiệm:
+ * - Hiển thị số task cần GVCN xử lý.
+ * - Cho GVCN mở record gốc trong màn hình lịch sử để sửa.
+ * - Cho GVCN ghi nhận đã xử lý và chuyển task sang RESOLVED.
+ *
+ * Không chỉnh sửa competition_records trực tiếp.
+ */
+
+function competitionIssueServiceV6() {
+    return globalThis.CompetitionIssuesServiceV6 || null;
+}
+
+function competitionIssuesEscapeHtmlV6(value) {
+    return String(value ?? '').replace(
+        /[&<>"']/g,
+        (character) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;',
+        }[character]),
+    );
+}
+
+function competitionIssuesStudentNameV6(studentId) {
+    const list =
+        typeof students !== 'undefined' && Array.isArray(students)
+            ? students
+            : globalThis.students;
+    const student = (list || []).find(
+        (item) => String(item.id) === String(studentId),
+    );
+
+    return student?.full_name || student?.name || String(studentId);
+}
+
+function competitionIssuesNoticeElementV6() {
+    let notice = document.getElementById('competitionIssuesNoticeV6');
+
+    if (notice) {
+        return notice;
+    }
+
+    const competitionPage = document.getElementById('competition');
+    const firstCard = competitionPage?.querySelector('.grid.two');
+
+    if (!firstCard) {
+        return null;
+    }
+
+    notice = document.createElement('div');
+    notice.id = 'competitionIssuesNoticeV6';
+    notice.className = 'notice section';
+    firstCard.insertAdjacentElement('afterend', notice);
+    return notice;
+}
+
+/**
+ * Mở task để GVCN quay về record lịch sử và sửa bằng flow hiện có.
+ * @param {string} recordId ID competition_record.
+ */
+function openCompetitionIssueRecordV6(recordId) {
+    if (typeof globalThis.editCompetitionRecord === 'function') {
+        globalThis.editCompetitionRecord(recordId);
+        return;
+    }
+
+    alert('Màn hình sửa bản ghi thi đua chưa sẵn sàng.');
+}
+
+/**
+ * Hiển thị danh sách task OPEN trong modal dùng chung.
+ * @param {Array} issues Danh sách issue.
+ */
+function showCompetitionIssuesV6(issues) {
+    const modal = document.getElementById('modal');
+    const title = document.getElementById('modalTitle');
+    const body = document.getElementById('modalBody');
+
+    if (!modal || !title || !body) {
+        return false;
+    }
+
+    title.textContent = 'Task sửa điểm thi đua';
+    body.innerHTML = issues.length
+        ? issues.map((issue) => `
+            <div class="notice" style="margin-bottom:10px">
+                <b>${competitionIssuesEscapeHtmlV6(competitionIssuesStudentNameV6(issue.student_id))}</b>
+                <div class="mini">Tuần ${competitionIssuesEscapeHtmlV6(issue.week)} · OPEN</div>
+                <div style="margin:6px 0">${competitionIssuesEscapeHtmlV6(issue.description)}</div>
+                <div class="actions">
+                    <button class="btn small" type="button"
+                        onclick="openCompetitionIssueRecordV6('${competitionIssuesEscapeHtmlV6(issue.competition_record_id || '')}')">
+                        Mở bản ghi để sửa
+                    </button>
+                    <button class="btn small" type="button"
+                        onclick="resolveCompetitionIssueV6('${competitionIssuesEscapeHtmlV6(issue.id)}')">
+                        Đã sửa — đóng task
+                    </button>
+                </div>
+            </div>
+        `).join('')
+        : '<div class="notice">Không còn task sửa điểm đang mở.</div>';
+
+    modal.classList.remove('hidden');
+    return true;
+}
+
+/**
+ * Refresh notification task sửa điểm.
+ */
+async function refreshCompetitionIssuesNotificationV6() {
+    const service = competitionIssueServiceV6();
+    const notice = competitionIssuesNoticeElementV6();
+
+    if (!service || !notice) {
+        return;
+    }
+
+    try {
+        const issues = await service.listOpenIssues();
+
+        if (!issues.length) {
+            notice.classList.add('hidden');
+            return;
+        }
+
+        notice.innerHTML = `
+            <div>
+                <b>Có ${issues.length} task cần sửa điểm thi đua.</b>
+                <div class="mini">Các task này sẽ còn thông báo cho đến khi GVCN xử lý và đóng task.</div>
+            </div>
+            <div class="actions">
+                <button class="btn primary" type="button" onclick="openCompetitionIssuesV6()">
+                    Xem task
+                </button>
+            </div>
+        `;
+        notice.classList.remove('hidden');
+    } catch (error) {
+        console.error('refreshCompetitionIssuesNotificationV6:', error);
+    }
+}
+
+async function openCompetitionIssuesV6() {
+    const service = competitionIssueServiceV6();
+
+    if (!service) {
+        alert('Luồng task sửa điểm chưa sẵn sàng.');
+        return false;
+    }
+
+    try {
+        return showCompetitionIssuesV6(await service.listOpenIssues());
+    } catch (error) {
+        alert(`Không thể tải task sửa điểm: ${error.message}`);
+        return false;
+    }
+}
+
+async function createCompetitionIssueFromSnapshotV6(
+    competitionRecordId,
+    studentId,
+    week,
+    snapshotId = '',
+) {
+    const service = competitionIssueServiceV6();
+
+    if (!service) {
+        alert('Luồng task sửa điểm chưa sẵn sàng.');
+        return false;
+    }
+
+    const description = window.prompt(
+        'Nhập nội dung cần kiểm tra/sửa cho bản ghi này:',
+        'Kiểm tra lại thông tin điểm cộng/trừ đã nhập.',
+    );
+
+    if (!description?.trim()) {
+        return false;
+    }
+
+    try {
+        await service.createIssue({
+            competitionRecordId,
+            studentId,
+            week,
+            snapshotId,
+            description: description.trim(),
+        });
+        await refreshCompetitionIssuesNotificationV6();
+        alert('Đã tạo task sửa điểm. Hệ thống sẽ nhắc cho đến khi task được xử lý.');
+        return true;
+    } catch (error) {
+        alert(`Không thể tạo task: ${error.message}`);
+        return false;
+    }
+}
+
+async function resolveCompetitionIssueV6(issueId) {
+    const service = competitionIssueServiceV6();
+
+    if (!service) {
+        return false;
+    }
+
+    const resolutionNote = window.prompt(
+        'Ghi chú xử lý task (ví dụ: đã sửa ngày/điểm/tiêu chí):',
+        'Đã kiểm tra và sửa dữ liệu.',
+    );
+
+    if (resolutionNote === null) {
+        return false;
+    }
+
+    try {
+        await service.resolveIssue(issueId, resolutionNote);
+        await refreshCompetitionIssuesNotificationV6();
+        await openCompetitionIssuesV6();
+        return true;
+    } catch (error) {
+        alert(`Không thể đóng task: ${error.message}`);
+        return false;
+    }
+}
+
+function installCompetitionIssuesNotificationV6() {
+    if (globalThis.__competitionIssuesNotificationV6Installed) {
+        return false;
+    }
+
+    const render = globalThis.renderCompetition;
+    if (typeof render !== 'function') {
+        return false;
+    }
+
+    globalThis.renderCompetition = async function renderCompetitionWithIssuesV6(...args) {
+        const result = await render(...args);
+        await refreshCompetitionIssuesNotificationV6();
+        return result;
+    };
+
+    globalThis.__competitionIssuesNotificationV6Installed = true;
+    void refreshCompetitionIssuesNotificationV6();
+    return true;
+}
+
+if (typeof window !== 'undefined' && window.document) {
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+        if (installCompetitionIssuesNotificationV6()) {
+            window.clearInterval(timer);
+            return;
+        }
+
+        if (Date.now() - startedAt >= 15000) {
+            window.clearInterval(timer);
+        }
+    }, 100);
+}
+
+globalThis.CompetitionIssuesRendererV6 = Object.freeze({
+    refresh: refreshCompetitionIssuesNotificationV6,
+    open: openCompetitionIssuesV6,
+    createFromSnapshot: createCompetitionIssueFromSnapshotV6,
+    resolve: resolveCompetitionIssueV6,
+});
