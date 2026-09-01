@@ -11,12 +11,6 @@
  * - Không thay đổi calculation engine hay database schema.
  */
 
-/**
- * Tính ngày thứ Hai của tuần chứa ngày đã chọn.
- *
- * @param {string} dateValue Ngày dạng YYYY-MM-DD.
- * @returns {string} Tuần bắt đầu dạng YYYY-MM-DD.
- */
 function getEditedRecordWeekFromDateV6(dateValue) {
     const date = new Date(`${dateValue}T00:00:00`);
 
@@ -31,9 +25,6 @@ function getEditedRecordWeekFromDateV6(dateValue) {
     return date.toISOString().slice(0, 10);
 }
 
-/**
- * Đồng bộ field tuần nội bộ và hiển thị thông tin tuần suy ra.
- */
 function syncEditedRecordWeekV6() {
     const dateInput = document.getElementById('eDate');
     const weekInput = document.getElementById('eWeek');
@@ -46,7 +37,9 @@ function syncEditedRecordWeekV6() {
         dateInput.value,
     );
 
-    weekInput.value = derivedWeek;
+    if (weekInput.value !== derivedWeek) {
+        weekInput.value = derivedWeek;
+    }
 
     let helper = document.getElementById(
         'eWeekDerivedNoticeV6',
@@ -59,17 +52,19 @@ function syncEditedRecordWeekV6() {
         weekInput.parentElement?.appendChild(helper);
     }
 
-    helper.textContent = derivedWeek
+    const helperText = derivedWeek
         ? `Tuần thi đua: ${derivedWeek} (hệ thống tự xác định)`
         : 'Tuần thi đua sẽ được hệ thống tự xác định.';
+
+    // MutationObserver theo dõi modalBody. Không ghi text nếu nội dung đã
+    // đúng, tránh tự tạo mutation mới và lặp vô hạn khi mở form Sửa.
+    if (helper.textContent !== helperText) {
+        helper.textContent = helperText;
+    }
 
     return true;
 }
 
-/**
- * Ẩn input tuần legacy nhưng vẫn duy trì giá trị để save function cũ
- * nhận đúng dữ liệu.
- */
 function hideEditedRecordWeekFieldV6() {
     const weekInput = document.getElementById('eWeek');
 
@@ -86,9 +81,6 @@ function hideEditedRecordWeekFieldV6() {
     return syncEditedRecordWeekV6();
 }
 
-/**
- * Gắn listener ngày một lần cho form Sửa.
- */
 function bindEditedRecordDateChangeV6() {
     const dateInput = document.getElementById('eDate');
 
@@ -103,11 +95,6 @@ function bindEditedRecordDateChangeV6() {
     dateInput.dataset.weekSyncBoundV6 = 'true';
 }
 
-/**
- * Theo dõi modal để áp dụng date-only mỗi khi form Sửa được render.
- *
- * MutationObserver phù hợp hơn polling ở đây vì modal được tạo động.
- */
 function bootstrapEditedRecordDateV6() {
     const modalBody = document.getElementById('modalBody');
 
