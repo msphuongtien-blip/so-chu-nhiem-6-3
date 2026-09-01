@@ -2,31 +2,41 @@
  * FILE: competition-record-form-clean-v6.js
  *
  * Mục đích:
- * Chặn hoàn toàn việc người dùng phải nhập Ngày hoặc Tuần khi ghi nhận
- * thi đua. Hệ thống dùng ngày hiện tại và tự suy ra thứ Hai của tuần.
+ * Giữ Ngày do giáo viên chọn và loại hoàn toàn việc chọn Tuần thủ công.
+ * Hệ thống tự tính tuần từ Ngày trước khi lưu record.
  *
- * Không thay đổi:
- * - Cấu trúc 6 nhóm tiêu chí.
- * - Danh sách tiêu chí.
- * - Thang điểm -5…-1 và +1…+5.
- * - competition_records schema.
+ * Trách nhiệm:
+ * - Giữ field Ngày cho người dùng.
+ * - Xóa field Tuần khỏi UI.
+ * - Tính week từ date bằng Calculation Engine V6.
+ *
+ * Không chịu trách nhiệm:
+ * - Quản lý category/criteria.
+ * - Tính ranking.
+ * - Thay đổi database schema.
  */
 
-function removeManualCompetitionDatesV6() {
-    document.getElementById('fDateV6')?.closest('.field')?.remove();
+/**
+ * Loại duy nhất field Tuần khỏi form V6.
+ * Field Ngày vẫn được giữ để giáo viên chọn ngày ghi nhận.
+ */
+function removeManualCompetitionWeekV6() {
     document.getElementById('fWeekV6')?.closest('.field')?.remove();
 }
 
+/**
+ * Submit record với tuần được hệ thống suy ra từ Ngày.
+ */
 async function submitCompetitionCleanV6() {
     const studentId = document.getElementById('fStudentV6')?.value;
+    const date = document.getElementById('fDateV6')?.value;
     const categoryId = document.getElementById('fGroupV6')?.value;
     const criteriaId = document.getElementById('fCriteriaV6')?.value;
     const points = Number(document.getElementById('fPointsV6')?.value);
     const note = document.getElementById('fNoteV6')?.value.trim() || '';
-    const date = localDate();
     const week = globalThis.CompetitionCalculationV6?.getMonday?.(date) || '';
 
-    if (!studentId || !categoryId || !criteriaId || !date || !week) {
+    if (!studentId || !date || !categoryId || !criteriaId || !week) {
         alert('Không thể xác định đầy đủ dữ liệu ghi nhận. Vui lòng thử lại.');
         return;
     }
@@ -75,17 +85,19 @@ async function submitCompetitionCleanV6() {
     await renderDashboard();
 }
 
-async function openCompetitionFormCleanV6() {
-    await globalThis.openCompetitionFormV6();
-    removeManualCompetitionDatesV6();
-}
-
+/**
+ * Replace legacy entry points after the V6 form has loaded.
+ */
 function installCleanCompetitionRecordFormV6() {
     if (typeof globalThis.openCompetitionFormV6 !== 'function') {
         return false;
     }
 
-    globalThis.openCompetitionForm = openCompetitionFormCleanV6;
+    globalThis.openCompetitionForm = async function openCompetitionFormCleanV6() {
+        await globalThis.openCompetitionFormV6();
+        removeManualCompetitionWeekV6();
+    };
+
     globalThis.submitCompetitionV6 = submitCompetitionCleanV6;
     globalThis.__cleanCompetitionRecordFormV6Installed = true;
     return true;
@@ -104,7 +116,7 @@ const timer = window.setInterval(() => {
 }, 100);
 
 globalThis.CompetitionRecordFormCleanV6 = Object.freeze({
-    removeManualDates: removeManualCompetitionDatesV6,
+    removeWeek: removeManualCompetitionWeekV6,
     submit: submitCompetitionCleanV6,
     install: installCleanCompetitionRecordFormV6,
 });
