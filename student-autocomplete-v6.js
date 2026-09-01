@@ -332,6 +332,22 @@ function mountAllStudentAutocompletesV6(root = document) {
     );
 }
 
+function loadStudentAutocompleteStylesV6() {
+    if (
+        document.querySelector(
+            'link[data-student-autocomplete-v6-style]',
+        )
+    ) {
+        return;
+    }
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'student-autocomplete-v6.css';
+    link.dataset.studentAutocompleteV6Style = 'true';
+    document.head.appendChild(link);
+}
+
 function bootstrapStudentAutocompleteV6() {
     if (
         typeof document === 'undefined' ||
@@ -339,6 +355,8 @@ function bootstrapStudentAutocompleteV6() {
     ) {
         return;
     }
+
+    loadStudentAutocompleteStylesV6();
 
     const observer = new MutationObserver(() => {
         mountAllStudentAutocompletesV6();
