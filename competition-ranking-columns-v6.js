@@ -62,17 +62,22 @@ function installRankingColumnBoundaryV6() {
     return true;
 }
 
-const startedAt = Date.now();
-const timer = window.setInterval(() => {
-    if (installRankingColumnBoundaryV6()) {
-        window.clearInterval(timer);
-        return;
-    }
+/**
+ * Browser bootstrap only. Node contract tests use the exported API directly.
+ */
+if (typeof window !== 'undefined' && window.document) {
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+        if (installRankingColumnBoundaryV6()) {
+            window.clearInterval(timer);
+            return;
+        }
 
-    if (Date.now() - startedAt >= 15000) {
-        window.clearInterval(timer);
-    }
-}, 100);
+        if (Date.now() - startedAt >= 15000) {
+            window.clearInterval(timer);
+        }
+    }, 100);
+}
 
 globalThis.CompetitionRankingColumnsV6 = Object.freeze({
     hiddenHeaders: RANKING_HIDDEN_HEADERS_V6,
