@@ -182,3 +182,6 @@ globalThis.CompetitionRecordWriteBoundaryV6 = Object.freeze({
     resolveCompetitionCriteriaV6,
     addCompetitionThroughV6Boundary,
 });
+
+// Active boundary: all callers now resolve to the V6 record service.
+globalThis.addCompetition = addCompetitionThroughV6Boundary;
