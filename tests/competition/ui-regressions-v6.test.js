@@ -61,6 +61,24 @@ assert.match(
 );
 
 assert.match(
+    finalFormSource,
+    /function removeDuplicateCompetitionFormCloseButtonV6[\s\S]*Đóng[\s\S]*remove\(\)/,
+    'Form chỉ giữ nút X của modal, không được tạo thêm nút Đóng ở footer.',
+);
+
+assert.match(
+    finalFormSource,
+    /submitCompetitionFinalV6[\s\S]*CompetitionRecordWriteBoundaryV6[\s\S]*addCompetitionThroughV6Boundary/,
+    'Luồng Lưu phải đi qua write boundary V6 duy nhất.',
+);
+
+assert.match(
+    finalFormSource,
+    /resolveStudentIdFromCompetitionFormV6[\s\S]*fStudentV6DisplayV6[\s\S]*student_code/,
+    'Submit phải có fallback xác định HS từ ô tìm kiếm hiển thị khi hidden id bị mất.',
+);
+
+assert.match(
     indexSource,
     /<section id="messagesTeacher"[\s\S]*<\/div><\/section>/,
     'Index phải giữ cấu trúc đóng đầy đủ cho section Tin nhắn.',
