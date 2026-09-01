@@ -34,3 +34,6 @@ jobs:
             -not -path './node_modules/*' \
             -not -path './.git/*' \
             -print0 | xargs -0 -n1 node --check
+
+      - name: Quality gate marker
+        run: echo "V6 quality gate executed against the current branch state."
