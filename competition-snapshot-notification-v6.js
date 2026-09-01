@@ -4,20 +4,14 @@
  * Mục đích:
  * Thông báo đầu tuần và cho GVCN xem lại lịch sử cộng/trừ của tuần trước.
  *
- * Trách nhiệm:
- * - Kiểm tra snapshot tuần trước đã được server lưu.
- * - Đọc các competition_records thực tế thuộc tuần đó để đối chiếu.
- * - Chỉ hiển thị record có phát sinh điểm, không render 44 học sinh.
- * - Snapshot là read-only; nếu sai, GVCN tạo task sửa điểm.
- * - Refresh notification ngay sau khi module được cài đặt.
+ * Snapshot là bản chụp read-only của các lần cộng/trừ đã xảy ra trong tuần.
+ * Không đọc lại competition_records hiện tại để tránh việc sửa/xóa sau đó
+ * làm thay đổi lịch sử mà GVCN cần đối chiếu.
  *
- * Không chịu trách nhiệm:
- * - Tạo snapshot.
- * - Sửa/xóa competition_records.
+ * Nếu phát hiện sai, GVCN tạo task sửa điểm; snapshot không có nút sửa trực tiếp.
  */
 
 const COMPETITION_SNAPSHOT_TABLE_V6 = 'competition_weekly_snapshots';
-const COMPETITION_RECORD_TABLE_V6 = 'competition_records';
 const COMPETITION_SNAPSHOT_VIEWED_PREFIX_V6 = 'competition-snapshot-viewed:';
 
 function snapshotLocalDateV6() {
@@ -110,7 +104,7 @@ async function getPreviousCompetitionSnapshotV6() {
 
     const snapshotResult = await client
         .from(COMPETITION_SNAPSHOT_TABLE_V6)
-        .select('id, student_id, week')
+        .select('id, student_id, week, record_history')
         .eq('week', week);
 
     if (snapshotResult.error) {
@@ -122,18 +116,22 @@ async function getPreviousCompetitionSnapshotV6() {
         };
     }
 
-    const recordResult = await client
-        .from(COMPETITION_RECORD_TABLE_V6)
-        .select('id, student_id, week, date, group_name, criteria, points, note')
-        .eq('week', week)
-        .order('date', { ascending: true })
-        .order('created_at', { ascending: true });
+    const rows = (snapshotResult.data || []).flatMap((snapshot) =>
+        Array.isArray(snapshot.record_history)
+            ? snapshot.record_history.map((record) => ({
+                ...record,
+                student_id: record.student_id || snapshot.student_id,
+                week: snapshot.week,
+                snapshot_id: snapshot.id,
+            }))
+            : [],
+    );
 
     return {
         week,
-        rows: recordResult.data || [],
+        rows,
         snapshotRows: snapshotResult.data || [],
-        error: recordResult.error,
+        error: null,
     };
 }
 
@@ -152,7 +150,7 @@ function renderSnapshotRowsV6(rows) {
                 <td>${escapeSnapshotHtmlV6(row.note || '')}</td>
                 <td>
                     <button class="btn small" type="button"
-                        onclick="createCompetitionIssueFromSnapshotV6('${escapeSnapshotHtmlV6(row.id)}','${escapeSnapshotHtmlV6(row.student_id)}','${escapeSnapshotHtmlV6(row.week)}')">
+                        onclick="createCompetitionIssueFromSnapshotV6('${escapeSnapshotHtmlV6(row.id)}','${escapeSnapshotHtmlV6(row.student_id)}','${escapeSnapshotHtmlV6(row.week)}','${escapeSnapshotHtmlV6(row.snapshot_id)}')">
                         Tạo task sửa điểm
                     </button>
                 </td>
@@ -170,11 +168,11 @@ function showCompetitionSnapshotV6(rows, week) {
         return false;
     }
 
-    title.textContent = `Lịch sử thi đua — tuần ${week}`;
+    title.textContent = `Lịch sử cộng/trừ — tuần ${week}`;
     body.innerHTML = rows.length
         ? `
             <div class="mini" style="margin-bottom:10px">
-                Chỉ hiển thị các lần cộng/trừ đã ghi nhận trong tuần. Snapshot không thể chỉnh sửa trực tiếp.
+                Đây là bản chụp read-only của các lần cộng/trừ trong tuần. Không sửa trực tiếp tại snapshot.
             </div>
             <div class="tablewrap">
                 <table class="table">
@@ -243,14 +241,14 @@ function renderCompetitionSnapshotNoticeV6(week, count) {
 
     notice.innerHTML = `
         <div>
-            <b>Đã lưu lịch sử thi đua tuần trước.</b>
+            <b>Đã lưu lịch sử cộng/trừ tuần trước.</b>
             <div class="mini">${count} lần cộng/trừ · Tuần ${escapeSnapshotHtmlV6(week)}</div>
         </div>
         <div class="actions">
-            <button class="btn primary" onclick="openPreviousCompetitionSnapshotV6('${escapeSnapshotHtmlV6(week)}')">
+            <button class="btn primary" type="button" onclick="openPreviousCompetitionSnapshotV6('${escapeSnapshotHtmlV6(week)}')">
                 Xem snapshot
             </button>
-            <button class="btn" onclick="hideCompetitionSnapshotNoticeV6()">
+            <button class="btn" type="button" onclick="hideCompetitionSnapshotNoticeV6()">
                 Xem sau
             </button>
         </div>
