@@ -6,9 +6,9 @@
  * Contract test cho bảng xếp hạng Thi đua V6.
  *
  * Contract:
- * - Không hiển thị cột Điểm tháng.
- * - Không để lại cell monthly trong từng row.
- * - Giữ nguyên Điểm tuần, Nhóm và Xu hướng.
+ * - Không hiển thị Điểm tháng.
+ * - Không hiển thị Nhóm điểm cũ.
+ * - Giữ Hạng, Học sinh, Điểm tuần và Xu hướng.
  */
 
 const assert = require('node:assert/strict');
@@ -18,19 +18,11 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const source = fs.readFileSync(
-    path.join(root, 'competition-ranking-ui-v6.js'),
+    path.join(root, 'competition-ranking-columns-v6.js'),
     'utf8',
 );
 
-const rows = [
-    '<tr><th>Hạng</th><th>Học sinh</th><th>Điểm tuần</th><th>Điểm tháng</th><th>Nhóm</th><th>Xu hướng</th></tr>',
-    '<tr><td>1</td><td>A</td><td><b>91</b></td><td>91</td><td>Vàng</td><td>↗ Tăng</td></tr>',
-];
-
 const document = {
-    querySelectorAll() {
-        return [];
-    },
     getElementById() {
         return null;
     },
@@ -39,38 +31,47 @@ const document = {
 const context = vm.createContext({
     console,
     document,
-    window: {},
-    setTimeout,
+    window: {
+        setInterval,
+        clearInterval,
+    },
+    globalThis: null,
 });
+
+context.globalThis = context;
 
 vm.runInContext(source, context, {
-    filename: 'competition-ranking-ui-v6.js',
+    filename: 'competition-ranking-columns-v6.js',
 });
 
-const api = context.CompetitionRankingUIV6;
+const api = context.CompetitionRankingColumnsV6;
 
-assert.ok(api, 'CompetitionRankingUIV6 phải được expose.');
-assert.equal(
-    api.MONTHLY_SCORE_LABEL,
-    'Điểm tháng',
+assert.ok(api, 'CompetitionRankingColumnsV6 phải được expose.');
+assert.deepEqual(
+    Array.from(api.hiddenHeaders),
+    ['Điểm tháng', 'Nhóm'],
 );
 
-const cleanedHeader = api.removeMonthlyScoreColumn(rows[0]);
-const cleanedRow = api.removeMonthlyScoreColumn(rows[1]);
+const headers = [
+    '<th>Hạng</th>',
+    '<th>Học sinh</th>',
+    '<th>Điểm tuần</th>',
+    '<th>Điểm tháng</th>',
+    '<th>Nhóm</th>',
+    '<th>Xu hướng</th>',
+];
 
-assert.doesNotMatch(
-    cleanedHeader,
-    /Điểm tháng/,
-    'Header ranking không được hiển thị Điểm tháng.',
+assert.deepEqual(
+    headers.filter((header) => {
+        const text = header.replace(/<[^>]+>/g, '').trim();
+        return !api.hiddenHeaders.includes(text);
+    }),
+    [
+        '<th>Hạng</th>',
+        '<th>Học sinh</th>',
+        '<th>Điểm tuần</th>',
+        '<th>Xu hướng</th>',
+    ],
 );
 
-assert.doesNotMatch(
-    cleanedRow,
-    /<td>91<\/td><td>Vàng/,
-    'Row ranking không được giữ monthly score cell.',
-);
-
-assert.match(cleanedRow, /<td>Vàng<\/td>/);
-assert.match(cleanedRow, /<td>↗ Tăng<\/td>/);
-
-console.log('PASS: monthly-score-free ranking contract');
+console.log('PASS: monthly/group-free ranking contract');
