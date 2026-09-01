@@ -105,6 +105,10 @@ const APPLICATION_MODULES = [
         'competition-ranking-columns-v6.js',
     ],
     [
+        'competition-snapshot-notification-v6-script',
+        'competition-snapshot-notification-v6.js',
+    ],
+    [
         'student-autocomplete-v6-script',
         'student-autocomplete-v6.js',
     ],
