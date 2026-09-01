@@ -2,26 +2,20 @@
  * FILE: competition-calculation-v6.js
  *
  * Mục đích:
- * Cung cấp calculation engine thuần cho module Thi đua – Xếp hạng.
+ * Calculation engine thuần cho Thi đua – Xếp hạng V6.
  *
- * Quy tắc chính thức:
- * - Điểm nền của Week 1 là 81.
- * - Week 1 chính thức của năm học 2026-2027 bắt đầu ngày 07/09/2026.
- * - Record trước 07/09/2026 là test data và không tham gia phép tính
- *   chính thức sau mốc này.
- * - Rollover chỉ bắt đầu từ tuần sau Week 1.
- * - Điểm mỗi record chỉ được là -5…-1 hoặc +1…+5.
- * - Điểm tuần bị giới hạn trong khoảng 0…100.
+ * Trách nhiệm:
+ * - Tính điểm tuần từ competition_records.
+ * - Suy ra tuần đầu tiên từ history thay vì một ngày lịch cố định.
+ * - Áp dụng rollover cho các tuần tiếp theo.
  *
- * Thiết kế:
- * - Các hàm tính toán là pure function để dễ kiểm thử.
- * - Không đọc DOM.
- * - Không gọi Supabase.
- * - Không tự ghi điểm tổng vào database.
+ * Không chịu trách nhiệm:
+ * - Đọc DOM.
+ * - Gọi Supabase.
+ * - Ghi điểm tổng vào database.
  */
 
 const COMPETITION_CALCULATION_V6 = Object.freeze({
-    OFFICIAL_FIRST_WEEK: '2026-09-07',
     BASE_SCORE: 81,
     MIN_SCORE: 0,
     MAX_SCORE: 100,
@@ -40,10 +34,10 @@ const COMPETITION_CALCULATION_V6 = Object.freeze({
 });
 
 /**
- * Chuẩn hóa ngày theo dạng YYYY-MM-DD.
+ * Chuẩn hóa ngày về YYYY-MM-DD.
  *
  * @param {string|Date} value Ngày đầu vào.
- * @returns {string} Ngày chuẩn hóa.
+ * @returns {string} Ngày chuẩn hóa hoặc chuỗi rỗng nếu không hợp lệ.
  */
 function normalizeCompetitionCalculationDateV6(value) {
     if (value instanceof Date) {
@@ -54,17 +48,10 @@ function normalizeCompetitionCalculationDateV6(value) {
 }
 
 /**
- * Kiểm tra một ngày có nằm trong giai đoạn chính thức hay chưa.
- */
-function isOfficialCompetitionWeekV6(week) {
-    return (
-        normalizeCompetitionCalculationDateV6(week) >=
-        COMPETITION_CALCULATION_V6.OFFICIAL_FIRST_WEEK
-    );
-}
-
-/**
- * Chuẩn hóa về đầu tuần theo quy ước Monday của hệ thống.
+ * Chuẩn hóa một ngày về thứ Hai đầu tuần.
+ *
+ * @param {string|Date} value Ngày bất kỳ trong tuần.
+ * @returns {string} Ngày thứ Hai theo YYYY-MM-DD.
  */
 function getMondayForCompetitionWeekV6(value) {
     const normalized = normalizeCompetitionCalculationDateV6(value);
@@ -82,9 +69,10 @@ function getMondayForCompetitionWeekV6(value) {
 }
 
 /**
- * Tính điểm bắt đầu của tuần kế tiếp từ điểm kết thúc tuần hiện tại.
+ * Tính điểm bắt đầu của tuần sau từ điểm kết thúc tuần hiện tại.
  *
- * Các ngưỡng này được giữ đúng theo rule rollover hiện tại của hệ thống.
+ * @param {number} endScore Điểm cuối tuần.
+ * @returns {number} Điểm bắt đầu tuần sau theo contract rollover.
  */
 function getCompetitionRolloverStartV6(endScore) {
     const score = Number(endScore);
@@ -109,30 +97,45 @@ function getCompetitionRolloverStartV6(endScore) {
 }
 
 /**
- * Giới hạn điểm trong khoảng 0…100.
+ * Giới hạn điểm tuần trong 0–100.
+ *
+ * @param {number} score Điểm cần giới hạn.
+ * @returns {number} Điểm hợp lệ trong khoảng 0–100.
  */
 function clampCompetitionScoreV6(score) {
+    const numericScore = Number(score);
+
+    if (!Number.isFinite(numericScore)) {
+        return COMPETITION_CALCULATION_V6.BASE_SCORE;
+    }
+
     return Math.max(
         COMPETITION_CALCULATION_V6.MIN_SCORE,
         Math.min(
             COMPETITION_CALCULATION_V6.MAX_SCORE,
-            Number(score) || 0,
+            numericScore,
         ),
     );
 }
 
 /**
- * Tính tổng điểm thay đổi của một HS trong một tuần.
+ * Lấy tổng điểm cộng/trừ của một học sinh trong một tuần.
  *
- * Chỉ lấy record đúng student_id và week.
+ * @param {Array<object>} records Competition records.
+ * @param {string} studentId Học sinh cần tính.
+ * @param {string} weekStart Ngày thứ Hai của tuần.
+ * @returns {number} Tổng thay đổi điểm trong tuần.
  */
-function sumCompetitionWeekChangeV6(records, studentId, week) {
+function sumCompetitionWeekChangeV6(records, studentId, weekStart) {
     return records
         .filter((record) => {
+            const recordWeek = getMondayForCompetitionWeekV6(
+                record.week || record.week_start || record.date,
+            );
+
             return (
                 String(record.student_id) === String(studentId) &&
-                String(record.week || record.week_start || '') ===
-                    String(week)
+                recordWeek === weekStart
             );
         })
         .reduce((sum, record) => {
@@ -141,71 +144,81 @@ function sumCompetitionWeekChangeV6(records, studentId, week) {
 }
 
 /**
- * Lấy các tuần chính thức có dữ liệu của một HS.
+ * Lấy toàn bộ tuần có history của một học sinh.
  *
- * Record test trước 07/09/2026 được loại khỏi chuỗi chính thức.
+ * @param {Array<object>} records Competition records.
+ * @param {string} studentId Học sinh cần tìm.
+ * @returns {string[]} Danh sách tuần tăng dần.
  */
-function getOfficialCompetitionWeeksV6(records, studentId) {
+function getCompetitionHistoryWeeksV6(records, studentId) {
     return [
         ...new Set(
             records
                 .filter((record) => {
-                    const week = getMondayForCompetitionWeekV6(
+                    return String(record.student_id) === String(studentId);
+                })
+                .map((record) => {
+                    return getMondayForCompetitionWeekV6(
                         record.week || record.week_start || record.date,
-                    );
-
-                    return (
-                        String(record.student_id) === String(studentId) &&
-                        week >=
-                            COMPETITION_CALCULATION_V6.OFFICIAL_FIRST_WEEK
                     );
                 })
-                .map((record) =>
-                    getMondayForCompetitionWeekV6(
-                        record.week || record.week_start || record.date,
-                    ),
-                ),
+                .filter(Boolean),
         ),
     ].sort();
 }
 
 /**
- * Tính điểm tuần chính thức cho một HS.
+ * Tương thích API cũ: mọi tuần hợp lệ đều thuộc calculation cycle.
+ * Không còn khái niệm "official week" dựa trên một ngày cố định.
  *
- * Trước 07/09/2026:
- * - Dùng BASE_SCORE + thay đổi của chính tuần test.
- * - Không áp dụng rollover giữa các tuần test.
+ * @param {string|Date} week Tuần cần kiểm tra.
+ * @returns {boolean} True khi tuần có thể chuẩn hóa.
+ */
+function isOfficialCompetitionWeekV6(week) {
+    return Boolean(getMondayForCompetitionWeekV6(week));
+}
+
+/**
+ * Tính điểm của một tuần từ toàn bộ history.
  *
- * Từ 07/09/2026:
- * - Week 1 bắt đầu từ 81.
- * - Mỗi tuần sau nhận start score từ rollover của tuần trước.
+ * Quy trình:
+ * 1. Nếu chưa có history trước hoặc trong target week, điểm là 81.
+ * 2. Tuần đầu tiên có history bắt đầu từ 81.
+ * 3. Mỗi tuần sau cộng thay đổi của tuần đó rồi áp dụng rollover cho tuần kế.
+ * 4. Tuần không có record vẫn được đi qua để giữ rollover.
+ *
+ * @param {Array<object>} records Competition records.
+ * @param {string} studentId Học sinh cần tính.
+ * @param {string|Date} targetWeek Tuần cần lấy điểm.
+ * @returns {number} Điểm cuối của target week.
  */
 function calculateCompetitionWeekScoreV6(
     records,
     studentId,
     targetWeek,
 ) {
-    const normalizedTargetWeek =
-        getMondayForCompetitionWeekV6(targetWeek);
+    const normalizedTargetWeek = getMondayForCompetitionWeekV6(targetWeek);
 
     if (!normalizedTargetWeek) {
         return COMPETITION_CALCULATION_V6.BASE_SCORE;
     }
 
-    if (!isOfficialCompetitionWeekV6(normalizedTargetWeek)) {
-        return clampCompetitionScoreV6(
-            COMPETITION_CALCULATION_V6.BASE_SCORE +
-                sumCompetitionWeekChangeV6(
-                    records,
-                    studentId,
-                    normalizedTargetWeek,
-                ),
-        );
+    const historyWeeks = getCompetitionHistoryWeeksV6(
+        records,
+        studentId,
+    );
+
+    const firstHistoryWeek = historyWeeks.find((week) => {
+        return week <= normalizedTargetWeek;
+    });
+
+    // Không có history trong hoặc trước target week: vẫn dùng điểm nền.
+    if (!firstHistoryWeek) {
+        return COMPETITION_CALCULATION_V6.BASE_SCORE;
     }
 
     let startScore = COMPETITION_CALCULATION_V6.BASE_SCORE;
-    let currentWeek =
-        COMPETITION_CALCULATION_V6.OFFICIAL_FIRST_WEEK;
+    let currentWeek = firstHistoryWeek;
 
     while (currentWeek <= normalizedTargetWeek) {
         const totalChange = sumCompetitionWeekChangeV6(
@@ -230,10 +243,13 @@ function calculateCompetitionWeekScoreV6(
 }
 
 /**
- * Cộng 7 ngày mà không phụ thuộc timezone của trình duyệt.
+ * Cộng đúng 7 ngày theo UTC để tránh lệch ngày do timezone.
+ *
+ * @param {string} value Ngày YYYY-MM-DD.
+ * @returns {string} Ngày sau 7 ngày.
  */
 function addSevenDaysCompetitionV6(value) {
-    const date = new Date(`${value}T00:00:00`);
+    const date = new Date(`${value}T00:00:00Z`);
 
     date.setUTCDate(date.getUTCDate() + 7);
 
@@ -241,37 +257,37 @@ function addSevenDaysCompetitionV6(value) {
 }
 
 /**
- * Tính tổng cộng/trừ của một HS trong một tuần.
+ * Tóm tắt cộng/trừ và điểm cuối của một tuần.
+ *
+ * @param {Array<object>} records Competition records.
+ * @param {string} studentId Học sinh cần tính.
+ * @param {string|Date} week Tuần cần tóm tắt.
+ * @returns {object} Tổng cộng, tổng trừ và điểm tuần.
  */
-function summarizeCompetitionWeekV6(
-    records,
-    studentId,
-    week,
-) {
+function summarizeCompetitionWeekV6(records, studentId, week) {
     const weekStart = getMondayForCompetitionWeekV6(week);
     const rows = records.filter((record) => {
+        const recordWeek = getMondayForCompetitionWeekV6(
+            record.week || record.week_start || record.date,
+        );
+
         return (
             String(record.student_id) === String(studentId) &&
-            String(record.week || record.week_start || '') ===
-                weekStart
+            recordWeek === weekStart
         );
     });
 
     const totalPlus = rows
         .filter((record) => Number(record.score ?? record.points) > 0)
-        .reduce(
-            (sum, record) =>
-                sum + Number(record.score ?? record.points ?? 0),
-            0,
-        );
+        .reduce((sum, record) => {
+            return sum + Number(record.score ?? record.points ?? 0);
+        }, 0);
 
     const totalMinus = rows
         .filter((record) => Number(record.score ?? record.points) < 0)
-        .reduce(
-            (sum, record) =>
-                sum + Number(record.score ?? record.points ?? 0),
-            0,
-        );
+        .reduce((sum, record) => {
+            return sum + Number(record.score ?? record.points ?? 0);
+        }, 0);
 
     const weeklyScore = calculateCompetitionWeekScoreV6(
         records,
@@ -289,7 +305,7 @@ function summarizeCompetitionWeekV6(
 }
 
 /**
- * Public API dùng chung cho module khác và regression test.
+ * Public API dùng chung cho runtime V6 và Test Center.
  */
 globalThis.CompetitionCalculationV6 = Object.freeze({
     CONFIG: COMPETITION_CALCULATION_V6,
@@ -299,7 +315,7 @@ globalThis.CompetitionCalculationV6 = Object.freeze({
     clampScore: clampCompetitionScoreV6,
     rolloverStart: getCompetitionRolloverStartV6,
     sumWeekChange: sumCompetitionWeekChangeV6,
-    getOfficialWeeks: getOfficialCompetitionWeeksV6,
+    getOfficialWeeks: getCompetitionHistoryWeeksV6,
     calculateWeekScore: calculateCompetitionWeekScoreV6,
     summarizeWeek: summarizeCompetitionWeekV6,
 });
