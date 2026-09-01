@@ -21,7 +21,7 @@ function removeCompetitionWeekFieldFinalV6() {
  * một nút Đóng thứ hai.
  */
 function removeDuplicateCompetitionFormCloseButtonV6() {
-    const modal = document.querySelector('.modal, .modalbox, [role="dialog"]');
+    const modal = document.getElementById('modal');
 
     if (!modal) {
         return;
@@ -104,7 +104,17 @@ async function submitCompetitionFinalV6() {
         return false;
     }
 
-    const { data: selectedCriteria, error } = await sb
+    const client =
+        globalThis.SNCoreSupabase?.client ||
+        globalThis.sb ||
+        null;
+
+    if (!client) {
+        alert('Supabase Core chưa sẵn sàng. Vui lòng thử lại.');
+        return false;
+    }
+
+    const { data: selectedCriteria, error } = await client
         .from('competition_criteria')
         .select('id, name, active, category_id')
         .eq('id', criteriaId)
