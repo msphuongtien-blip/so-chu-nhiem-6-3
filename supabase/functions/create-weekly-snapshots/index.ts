@@ -1,22 +1,9 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 /**
- * FILE: supabase/functions/create-weekly-snapshots/index.ts
- *
- * Mục đích:
- * Edge Function server-side tạo/upsert snapshot Thi đua của tuần đã hoàn tất.
- *
- * Trách nhiệm:
- * - Xác định tuần đã hoàn tất theo Asia/Ho_Chi_Minh.
- * - Đọc students + competition_records bằng service role server-side.
- * - Tính lại điểm tuần từ history, áp dụng rollover.
- * - Tính đồng hạng và huy hiệu.
- * - Upsert đúng một snapshot cho mỗi student_id + week.
- *
- * Không chịu trách nhiệm:
- * - Nhận secret từ browser.
- * - Ghi điểm tổng vào students.
- * - Cho phép client chỉ định tùy ý tuần cần snapshot.
+ * Server-side weekly snapshot.
+ * record_history is an immutable copy of valid +/- records for audit/review.
+ * The browser never edits snapshot rows.
  */
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -27,18 +14,14 @@ const VALID_SCORES = new Set([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
 
 function localDate(): string {
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(new Date())
 }
 
 function monday(value: string): string {
   const date = new Date(`${value}T00:00:00Z`)
   const day = date.getUTCDay()
-  const diff = day === 0 ? -6 : 1 - day
-  date.setUTCDate(date.getUTCDate() + diff)
+  date.setUTCDate(date.getUTCDate() + (day === 0 ? -6 : 1 - day))
   return date.toISOString().slice(0, 10)
 }
 
@@ -70,10 +53,8 @@ function recordWeek(record: Record<string, unknown>): string {
 
 function historyWeeks(records: Record<string, unknown>[], studentId: string): string[] {
   return [...new Set(
-    records
-      .filter((record) => String(record.student_id) === String(studentId))
-      .map(recordWeek)
-      .filter(Boolean),
+    records.filter((r) => String(r.student_id) === String(studentId))
+      .map(recordWeek).filter(Boolean),
   )].sort()
 }
 
@@ -82,13 +63,8 @@ function validScore(record: Record<string, unknown>): number | null {
   return VALID_SCORES.has(score) ? score : null
 }
 
-function calculateWeekScore(
-  records: Record<string, unknown>[],
-  studentId: string,
-  targetWeek: string,
-): { startScore: number; totalPlus: number; totalMinus: number; totalChange: number; finalScore: number } {
+function calculateWeekScore(records: Record<string, unknown>[], studentId: string, targetWeek: string) {
   const weeks = historyWeeks(records, studentId).filter((week) => week <= targetWeek)
-
   if (!weeks.length) {
     return { startScore: BASE_SCORE, totalPlus: 0, totalMinus: 0, totalChange: 0, finalScore: BASE_SCORE }
   }
@@ -97,21 +73,18 @@ function calculateWeekScore(
   let currentWeek = weeks[0]
 
   while (currentWeek <= targetWeek) {
-    const validRows = records.filter((record) => {
-      return String(record.student_id) === String(studentId) && recordWeek(record) === currentWeek && validScore(record) !== null
-    })
-
+    const validRows = records.filter((record) =>
+      String(record.student_id) === String(studentId) &&
+      recordWeek(record) === currentWeek && validScore(record) !== null,
+    )
     const totalChange = validRows.reduce((sum, record) => sum + Number(validScore(record)), 0)
     const endScore = clamp(startScore + totalChange)
 
     if (currentWeek === targetWeek) {
-      const totalPlus = validRows
-        .filter((record) => Number(validScore(record)) > 0)
-        .reduce((sum, record) => sum + Number(validScore(record)), 0)
-      const totalMinus = validRows
-        .filter((record) => Number(validScore(record)) < 0)
-        .reduce((sum, record) => sum + Number(validScore(record)), 0)
-
+      const totalPlus = validRows.filter((r) => Number(validScore(r)) > 0)
+        .reduce((sum, r) => sum + Number(validScore(r)), 0)
+      const totalMinus = validRows.filter((r) => Number(validScore(r)) < 0)
+        .reduce((sum, r) => sum + Number(validScore(r)), 0)
       return { startScore, totalPlus, totalMinus, totalChange, finalScore: endScore }
     }
 
@@ -133,7 +106,6 @@ function groupForScore(score: number): string {
 function rankScores(scores: number[]): number[] {
   let previous: number | null = null
   let rank = 0
-
   return scores.map((score, index) => {
     if (index === 0 || score !== previous) {
       rank = index + 1
@@ -153,12 +125,8 @@ async function supabaseFetch(path: string, init: RequestInit = {}): Promise<any>
       ...(init.headers || {}),
     },
   })
-
   const text = await response.text()
-  if (!response.ok) {
-    throw new Error(`Supabase ${response.status}: ${text}`)
-  }
-
+  if (!response.ok) throw new Error(`Supabase ${response.status}: ${text}`)
   if (!text.trim()) return null
   return JSON.parse(text)
 }
@@ -166,8 +134,7 @@ async function supabaseFetch(path: string, init: RequestInit = {}): Promise<any>
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'POST required' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      status: 405, headers: { 'Content-Type': 'application/json' },
     })
   }
 
@@ -177,9 +144,7 @@ Deno.serve(async (req) => {
   try {
     const [students, records] = await Promise.all([
       supabaseFetch('students?select=id&order=id.asc'),
-      supabaseFetch(
-        `competition_records?select=student_id,score,points,week,week_start,date&or=(week.lte.${targetWeek},week_start.lte.${targetWeek},date.lte.${weekEnd})`,
-      ),
+      supabaseFetch(`competition_records?select=id,student_id,score,points,week,week_start,date,group_name,category_id,criteria,note,created_at,updated_at&or=(week.lte.${targetWeek},week_start.lte.${targetWeek},date.lte.${weekEnd})`),
     ])
 
     const calculations = students.map((student: { id: string }) => ({
@@ -187,24 +152,46 @@ Deno.serve(async (req) => {
       ...calculateWeekScore(records, student.id, targetWeek),
     }))
 
-    const ordered = [...calculations].sort((a, b) => {
-      return b.finalScore - a.finalScore || String(a.studentId).localeCompare(String(b.studentId))
-    })
+    const ordered = [...calculations].sort((a, b) =>
+      b.finalScore - a.finalScore || String(a.studentId).localeCompare(String(b.studentId)),
+    )
     const ranks = rankScores(ordered.map((row) => row.finalScore))
     const rankByStudent = new Map(ordered.map((row, index) => [row.studentId, ranks[index]]))
 
-    const snapshots = calculations.map((row) => ({
-      student_id: row.studentId,
-      week: targetWeek,
-      week_end: weekEnd,
-      start_score: row.startScore,
-      total_plus: row.totalPlus,
-      total_minus: row.totalMinus,
-      total_change: row.totalChange,
-      final_score: row.finalScore,
-      group_name: groupForScore(row.finalScore),
-      rank: rankByStudent.get(row.studentId) ?? null,
-    }))
+    const snapshots = calculations.map((row) => {
+      const recordHistory = records
+        .filter((record: Record<string, unknown>) =>
+          String(record.student_id) === String(row.studentId) &&
+          recordWeek(record) === targetWeek &&
+          validScore(record) !== null,
+        )
+        .map((record: Record<string, unknown>) => ({
+          id: record.id,
+          student_id: record.student_id,
+          date: record.date,
+          group_name: record.group_name,
+          category_id: record.category_id,
+          criteria: record.criteria,
+          points: validScore(record),
+          note: record.note,
+          created_at: record.created_at,
+          updated_at: record.updated_at,
+        }))
+
+      return {
+        student_id: row.studentId,
+        week: targetWeek,
+        week_end: weekEnd,
+        start_score: row.startScore,
+        total_plus: row.totalPlus,
+        total_minus: row.totalMinus,
+        total_change: row.totalChange,
+        final_score: row.finalScore,
+        group_name: groupForScore(row.finalScore),
+        rank: rankByStudent.get(row.studentId) ?? null,
+        record_history: recordHistory,
+      }
+    })
 
     if (snapshots.length) {
       await supabaseFetch('competition_weekly_snapshots?on_conflict=student_id%2Cweek', {
@@ -220,18 +207,13 @@ Deno.serve(async (req) => {
       week_end: weekEnd,
       students: snapshots.length,
       snapshots_upserted: snapshots.length,
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
+      records_snapshotted: snapshots.reduce((sum, row) => sum + row.record_history.length, 0),
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })
   } catch (error) {
     console.error('[create-weekly-snapshots]', error)
     return new Response(JSON.stringify({
       ok: false,
       error: error instanceof Error ? error.message : String(error),
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }
 })
