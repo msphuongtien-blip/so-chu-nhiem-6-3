@@ -2,26 +2,26 @@
  * FILE: competition-ranking-columns-v6.js
  *
  * Mục đích:
- * Loại hoàn toàn các trường presentation legacy khỏi bảng xếp hạng V6.
+ * Loại các trường presentation legacy không còn dùng khỏi bảng xếp hạng.
  *
  * Không hiển thị:
  * - Điểm tháng.
- * - Nhóm điểm/tier cũ.
  * - Xu hướng.
  *
- * Chỉ giữ:
+ * Vẫn hiển thị:
  * - Hạng.
  * - Học sinh.
  * - Điểm tuần.
+ * - Huy hiệu theo điểm tuần: Kim cương, Vàng, Bạc, Đồng, Sắt.
  *
- * Trách nhiệm:
- * - Chỉ xử lý presentation boundary trong thời gian app.js legacy còn tồn tại.
- * - Không thay đổi competition_records hoặc dữ liệu điểm nguồn.
+ * Không chịu trách nhiệm:
+ * - Tính điểm.
+ * - Xóa dữ liệu Tổ học sinh.
+ * - Thay đổi competition_records.
  */
 
 const RANKING_HIDDEN_HEADERS_V6 = Object.freeze([
     'Điểm tháng',
-    'Nhóm',
     'Xu hướng',
 ]);
 
