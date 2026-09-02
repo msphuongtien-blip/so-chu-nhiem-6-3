@@ -4,7 +4,7 @@
  *
  * Snapshot UI chỉ hiển thị các record cộng/trừ đã được chụp vào snapshot,
  * không phải bảng xếp hạng 44 học sinh. Snapshot audit vẫn bất biến; trạng
- * thái Đã cập nhật/Đã xóa được đối chiếu với competition_records hiện tại.
+ * thái Đã cập nhật được đối chiếu với competition_records hiện tại.
  */
 
 const assert = require('node:assert/strict');
@@ -44,8 +44,19 @@ assert.match(
     /\.from\(['"]competition_records['"]\)/,
     'Snapshot phải đối chiếu trạng thái với competition_records hiện tại.',
 );
+assert.match(source, /filterSnapshotRowsToLiveRecordsV6/);
+assert.match(source, /week_start|week/);
+assert.match(
+    source,
+    /!result\.snapshotRows\.length \|\| !result\.rows\.length/,
+    'Không có record nguồn hiện tại thì không được mở snapshot.',
+);
 assert.match(source, /Đã cập nhật/);
-assert.match(source, /Đã xóa/);
+assert.doesNotMatch(
+    source,
+    /label:\s*['"]Đã xóa['"]/,
+    'Record đã xóa không được đưa vào snapshot UI.',
+);
 assert.match(source, /showWithCurrentStatus/);
 assert.match(source, /editCompetitionRecord|openCompetitionSnapshotRecordEditorV6/);
 assert.doesNotMatch(
@@ -67,7 +78,7 @@ assert.doesNotMatch(
     'Snapshot viewer không được tự sửa/xóa dữ liệu thi đua.',
 );
 assert.match(source, /refreshCompetitionSnapshotNotificationV6\(\)/);
-assert.match(source, /isSnapshotViewedV6\(result\.week\)/);
+assert.match(source, /isSnapshotViewedV6\(result\.week, result\.snapshotRows\)/);
 assert.match(
     source,
     /function deferCompetitionSnapshotV6[\s\S]*hideCompetitionSnapshotNoticeV6/,
@@ -100,4 +111,4 @@ assert.match(
     /competition-issues-service-v6-script[\s\S]*competition-issues-renderer-v6-script[\s\S]*competition-snapshot-notification-v6-script/,
 );
 
-console.log('PASS: snapshot review, edit status, and acknowledgement contract');
+console.log('PASS: snapshot review requires live records in the previous week');
