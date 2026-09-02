@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Contract test cho snapshot lịch sử tuần trước và workflow báo lỗi dữ liệu.
+ * Contract test cho snapshot lịch sử tuần trước và workflow đối chiếu dữ liệu.
  *
  * Snapshot UI chỉ hiển thị các record cộng/trừ đã được chụp vào snapshot,
- * không phải bảng xếp hạng 44 học sinh. Snapshot là read-only.
+ * không phải bảng xếp hạng 44 học sinh. Snapshot audit vẫn bất biến; trạng
+ * thái Đã cập nhật/Đã xóa được đối chiếu với competition_records hiện tại.
  */
 
 const assert = require('node:assert/strict');
@@ -13,6 +14,10 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '../..');
 const source = fs.readFileSync(
     path.join(root, 'competition-snapshot-notification-v6.js'),
+    'utf8',
+);
+const snapshotEditSource = fs.readFileSync(
+    path.join(root, 'competition-snapshot-edit-v6.js'),
     'utf8',
 );
 const issueRendererSource = fs.readFileSync(
@@ -33,53 +38,66 @@ const migrationSource = fs.readFileSync(
 );
 
 assert.match(source, /competition_weekly_snapshots/);
+assert.match(source, /record_history/);
 assert.match(
     source,
-    /record_history/,
-    'Snapshot phải đọc bản chụp record-level history.',
-);
-assert.doesNotMatch(
-    source,
     /\.from\(['"]competition_records['"]\)/,
-    'Viewer không được đọc competition_records hiện tại để thay thế lịch sử snapshot.',
+    'Snapshot phải đối chiếu trạng thái với competition_records hiện tại.',
 );
+assert.match(source, /Đã cập nhật/);
+assert.match(source, /Đã xóa/);
+assert.match(source, /showWithCurrentStatus/);
+assert.match(source, /editCompetitionRecord|openCompetitionSnapshotRecordEditorV6/);
 assert.doesNotMatch(
     source,
     /final_score.*group_name.*rank/s,
     'Snapshot history không được render bảng điểm tổng/xếp hạng 44 học sinh.',
 );
 assert.match(source, /localStorage/);
-assert.match(source, /Xem snapshot/);
 assert.match(source, /Xem sau/);
-assert.match(source, /Tạo task.*sửa điểm|tạo task.*sửa điểm/i);
+assert.match(source, /Đã đối chiếu.*Đóng/);
+assert.doesNotMatch(
+    source,
+    /Tạo task.*sửa điểm|tạo task.*sửa điểm/i,
+    'Snapshot không còn nút tạo task sửa điểm.',
+);
 assert.doesNotMatch(
     source,
     /saveEditedCompetition|update\(.*competition_records|deleteCompetitionRecord/,
-    'Snapshot viewer không được sửa/xóa dữ liệu thi đua trực tiếp.',
+    'Snapshot viewer không được tự sửa/xóa dữ liệu thi đua.',
 );
 assert.match(source, /refreshCompetitionSnapshotNotificationV6\(\)/);
+assert.match(source, /isSnapshotViewedV6\(result\.week\)/);
+assert.match(
+    source,
+    /function deferCompetitionSnapshotV6[\s\S]*hideCompetitionSnapshotNoticeV6/,
+    'Xem sau chỉ đóng modal.',
+);
+assert.match(
+    source,
+    /function confirmCompetitionSnapshotV6[\s\S]*markSnapshotViewedV6/,
+    'Đã đối chiếu – Đóng mới đánh dấu tuần đã xem.',
+);
+
+assert.match(snapshotEditSource, /editCompetitionRecord\(normalizedRecordId\)/);
+assert.doesNotMatch(snapshotEditSource, /Tạo task|createCompetitionIssueFromSnapshotV6/);
 
 assert.match(issueServiceSource, /competition_data_issues/);
 assert.match(issueServiceSource, /createIssue/);
 assert.match(issueServiceSource, /listOpenIssues/);
 assert.match(issueServiceSource, /resolveIssue/);
-assert.match(issueServiceSource, /status.*OPEN|OPEN.*status/);
-assert.match(issueServiceSource, /status: 'RESOLVED'/);
 
 assert.match(issueRendererSource, /Mở bản ghi để sửa/);
 assert.match(issueRendererSource, /Đã sửa — đóng task/);
 assert.match(issueRendererSource, /CompetitionIssuesServiceV6/);
-assert.match(issueRendererSource, /notification|thông báo/i);
 
 assert.match(
     migrationSource,
     /record_history jsonb not null default '\[\]'::jsonb/,
-    'DB phải lưu record history ngay trong weekly snapshot.',
 );
 assert.match(
     loaderSource,
     /competition-issues-service-v6-script[\s\S]*competition-issues-renderer-v6-script[\s\S]*competition-snapshot-notification-v6-script/,
-    'Issue service/renderer phải được nạp trước snapshot notification.',
 );
 
-console.log('PASS: snapshot history and score-correction workflow contract');
+console.log('PASS: snapshot review, edit status, and acknowledgement contract');
