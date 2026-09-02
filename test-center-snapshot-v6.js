@@ -33,7 +33,7 @@
         }
     });
 
-    addTest('Snapshot & sửa điểm', 'Snapshot chỉ hiển thị record cộng/trừ thực tế và chỉ có nút Sửa', () => {
+    addTest('Snapshot & sửa điểm', 'Snapshot chỉ hiển thị record cộng/trừ thực tế và chỉ có nút Sửa', async () => {
         const api = requireApi('CompetitionSnapshotNotificationV6');
         const fixture = makeModalFixture();
 
@@ -41,28 +41,16 @@
             window.students = [{ id: 's1', full_name: 'HS Test' }];
             const rows = [
                 {
-                    id: 'r1',
-                    student_id: 's1',
-                    date: '2026-08-25',
-                    week: '2026-08-24',
-                    criteria: 'QA cộng',
-                    points: 5,
-                    note: 'fixture',
-                    group_name: 'Học tập',
+                    id: 'r1', student_id: 's1', date: '2026-08-25', week: '2026-08-24',
+                    criteria: 'QA cộng', points: 5, note: 'fixture', group_name: 'Học tập',
                 },
                 {
-                    id: 'r2',
-                    student_id: 's1',
-                    date: '2026-08-26',
-                    week: '2026-08-24',
-                    criteria: 'QA trừ',
-                    points: -2,
-                    note: 'fixture',
-                    group_name: 'Nề nếp',
+                    id: 'r2', student_id: 's1', date: '2026-08-26', week: '2026-08-24',
+                    criteria: 'QA trừ', points: -2, note: 'fixture', group_name: 'Nề nếp',
                 },
             ];
 
-            if (!api.show(rows, '2026-08-24')) {
+            if (!await api.show(rows, '2026-08-24')) {
                 throw new Error('Không render được snapshot fixture.');
             }
 
@@ -90,19 +78,15 @@
         }
     });
 
-    addTest('Snapshot & sửa điểm', 'Snapshot viewer không tự ghi competition_records', () => {
+    addTest('Snapshot & sửa điểm', 'Snapshot viewer không tự ghi competition_records', async () => {
         const api = requireApi('CompetitionSnapshotNotificationV6');
         const fixture = makeModalFixture();
 
         try {
-            api.show([
+            await api.show([
                 {
-                    id: 'r1',
-                    student_id: 's1',
-                    date: '2026-08-25',
-                    week: '2026-08-24',
-                    criteria: 'QA',
-                    points: 1,
+                    id: 'r1', student_id: 's1', date: '2026-08-25', week: '2026-08-24',
+                    criteria: 'QA', points: 1,
                 },
             ], '2026-08-24');
 
@@ -124,7 +108,7 @@
         }
     });
 
-    addTest('Snapshot & sửa điểm', 'Xem sau đóng modal nhưng không đánh dấu đã đối chiếu', () => {
+    addTest('Snapshot & sửa điểm', 'Xem sau đóng modal nhưng không đánh dấu đã đối chiếu', async () => {
         const api = requireApi('CompetitionSnapshotNotificationV6');
         const fixture = makeModalFixture();
         const week = '2026-08-24';
@@ -132,7 +116,7 @@
         localStorage.removeItem(key);
 
         try {
-            api.show([
+            await api.show([
                 { id: 'r1', student_id: 's1', date: week, week, criteria: 'QA', points: 1 },
             ], week);
 
@@ -153,7 +137,7 @@
         }
     });
 
-    addTest('Snapshot & sửa điểm', 'Đã đối chiếu đóng modal và không prompt lại cùng tuần', () => {
+    addTest('Snapshot & sửa điểm', 'Đã đối chiếu đóng modal và không prompt lại cùng tuần', async () => {
         const api = requireApi('CompetitionSnapshotNotificationV6');
         const fixture = makeModalFixture();
         const week = '2026-08-24';
@@ -161,7 +145,7 @@
         localStorage.removeItem(key);
 
         try {
-            api.show([
+            await api.show([
                 { id: 'r1', student_id: 's1', date: week, week, criteria: 'QA', points: 1 },
             ], week);
 
@@ -190,13 +174,8 @@
         try {
             const currentRecords = [
                 {
-                    id: 'r1',
-                    student_id: 's1',
-                    date: '2026-08-25',
-                    criteria: 'Đã sửa',
-                    points: -1,
-                    note: 'sau sửa',
-                    category_id: 6,
+                    id: 'r1', student_id: 's1', date: '2026-08-25', criteria: 'Đã sửa',
+                    points: -1, note: 'sau sửa', category_id: 6,
                 },
             ];
             window.SNCoreSupabase = {
@@ -209,7 +188,7 @@
                         return {
                             select() {
                                 return {
-                                    eq() {
+                                    in() {
                                         return Promise.resolve({ data: currentRecords, error: null });
                                     },
                                 };
