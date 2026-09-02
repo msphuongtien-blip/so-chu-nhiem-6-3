@@ -1,7 +1,7 @@
 /*
  * FILE: test-center-snapshot-v6.js
  *
- * Test Center tests for the newly added snapshot -> correction -> recalculation flow.
+ * Test Center tests for the snapshot -> review -> edit -> recalculation flow.
  * All tests here are fixture-only and never write production data.
  */
 
@@ -33,7 +33,7 @@
         }
     });
 
-    addTest('Snapshot & sửa điểm', 'Snapshot chỉ hiển thị record cộng/trừ thực tế', () => {
+    addTest('Snapshot & sửa điểm', 'Snapshot chỉ hiển thị record cộng/trừ thực tế và chỉ có nút Sửa', () => {
         const api = requireApi('CompetitionSnapshotNotificationV6');
         const fixture = makeModalFixture();
 
@@ -78,8 +78,11 @@
             if (body.textContent.includes('Điểm tuần') || body.textContent.includes('Hạng')) {
                 throw new Error('Snapshot không được biến thành bảng ranking.');
             }
-            if (!body.textContent.includes('Tạo task sửa điểm')) {
-                throw new Error('Snapshot thiếu nút tạo task sửa điểm.');
+            if (!body.textContent.includes('Sửa')) {
+                throw new Error('Snapshot phải có nút Sửa.');
+            }
+            if (body.textContent.includes('Tạo task')) {
+                throw new Error('Snapshot không còn nút tạo task sửa điểm.');
             }
         } finally {
             fixture.remove();
@@ -111,13 +114,138 @@
         }
     });
 
-    addTest('Snapshot & sửa điểm', 'Correction task service có đủ create/list/resolve', () => {
-        const service = requireApi('CompetitionIssuesServiceV6');
-        ['createIssue', 'listOpenIssues', 'resolveIssue'].forEach((method) => {
-            if (typeof service[method] !== 'function') {
-                throw new Error(`Thiếu ${method}().`);
+    addTest('Snapshot & sửa điểm', 'Correction task service không còn là dependency của Snapshot', () => {
+        const api = requireApi('CompetitionSnapshotNotificationV6');
+        if (typeof api.createIssue === 'function' || typeof window.createCompetitionIssueFromSnapshotV6 === 'function') {
+            throw new Error('Snapshot không được phụ thuộc vào correction task.');
+        }
+        if (typeof api.show !== 'function') {
+            throw new Error('Snapshot API không còn show().');
+        }
+    });
+
+    addTest('Snapshot & sửa điểm', 'Xem sau đóng modal nhưng không đánh dấu đã đối chiếu', () => {
+        const api = requireApi('CompetitionSnapshotNotificationV6');
+        const fixture = makeModalFixture();
+        const week = '2026-08-24';
+        const key = `competition-snapshot-viewed:${week}`;
+        localStorage.removeItem(key);
+
+        try {
+            api.show([
+                { id: 'r1', student_id: 's1', date: week, week, criteria: 'QA', points: 1 },
+            ], week);
+
+            if (typeof window.deferCompetitionSnapshotV6 !== 'function') {
+                throw new Error('Thiếu hành động Xem sau.');
             }
-        });
+            window.deferCompetitionSnapshotV6();
+
+            if (!fixture.querySelector('#modal').classList.contains('hidden')) {
+                throw new Error('Xem sau phải đóng snapshot.');
+            }
+            if (localStorage.getItem(key) === '1') {
+                throw new Error('Xem sau không được đánh dấu đã đối chiếu.');
+            }
+        } finally {
+            fixture.remove();
+            localStorage.removeItem(key);
+        }
+    });
+
+    addTest('Snapshot & sửa điểm', 'Đã đối chiếu đóng modal và không prompt lại cùng tuần', () => {
+        const api = requireApi('CompetitionSnapshotNotificationV6');
+        const fixture = makeModalFixture();
+        const week = '2026-08-24';
+        const key = `competition-snapshot-viewed:${week}`;
+        localStorage.removeItem(key);
+
+        try {
+            api.show([
+                { id: 'r1', student_id: 's1', date: week, week, criteria: 'QA', points: 1 },
+            ], week);
+
+            if (typeof window.confirmCompetitionSnapshotV6 !== 'function') {
+                throw new Error('Thiếu hành động Đã đối chiếu – Đóng.');
+            }
+            window.confirmCompetitionSnapshotV6(week);
+
+            if (!fixture.querySelector('#modal').classList.contains('hidden')) {
+                throw new Error('Đã đối chiếu phải đóng snapshot.');
+            }
+            if (localStorage.getItem(key) !== '1') {
+                throw new Error('Đã đối chiếu phải ghi nhận tuần đã xem.');
+            }
+        } finally {
+            fixture.remove();
+            localStorage.removeItem(key);
+        }
+    });
+
+    addTest('Snapshot & sửa điểm', 'Snapshot phản ánh bản ghi đã sửa hoặc đã xóa', async () => {
+        const api = requireApi('CompetitionSnapshotNotificationV6');
+        const originalClient = window.SNCoreSupabase?.client;
+        const fixture = makeModalFixture();
+
+        try {
+            const currentRecords = [
+                {
+                    id: 'r1',
+                    student_id: 's1',
+                    date: '2026-08-25',
+                    criteria: 'Đã sửa',
+                    points: -1,
+                    note: 'sau sửa',
+                    category_id: 6,
+                },
+            ];
+            window.SNCoreSupabase = {
+                ...(window.SNCoreSupabase || {}),
+                client: {
+                    from(table) {
+                        if (table !== 'competition_records') {
+                            throw new Error(`Unexpected table: ${table}`);
+                        }
+                        return {
+                            select() {
+                                return {
+                                    eq() {
+                                        return Promise.resolve({ data: currentRecords, error: null });
+                                    },
+                                };
+                            },
+                        };
+                    },
+                },
+            };
+
+            const rows = [
+                {
+                    id: 'r1', student_id: 's1', date: '2026-08-25', week: '2026-08-24',
+                    criteria: 'Cũ', points: 1, note: 'trước sửa', category_id: 1,
+                },
+                {
+                    id: 'r2', student_id: 's1', date: '2026-08-26', week: '2026-08-24',
+                    criteria: 'Bản ghi bị xóa', points: -1, note: '', category_id: 1,
+                },
+            ];
+
+            if (typeof api.showWithCurrentStatus !== 'function') {
+                throw new Error('Thiếu API reflect trạng thái sau sửa/xóa.');
+            }
+            await api.showWithCurrentStatus(rows, '2026-08-24');
+
+            const body = fixture.querySelector('#modalBody');
+            if (!body.textContent.includes('Đã cập nhật')) {
+                throw new Error('Bản ghi đã sửa phải hiện trạng thái Đã cập nhật.');
+            }
+            if (!body.textContent.includes('Đã xóa')) {
+                throw new Error('Bản ghi đã xóa phải hiện trạng thái Đã xóa.');
+            }
+        } finally {
+            fixture.remove();
+            window.SNCoreSupabase = { ...(window.SNCoreSupabase || {}), client: originalClient };
+        }
     });
 
     addTest('Snapshot & sửa điểm', 'Historical correction recalculates toàn bộ chuỗi tuần sau', () => {
@@ -144,21 +272,6 @@
         }
         if (JSON.stringify(afterScores) !== JSON.stringify([76, 76, 66])) {
             throw new Error(`Chuỗi sau sửa sai: ${JSON.stringify(afterScores)}.`);
-        }
-    });
-
-    addTest('Snapshot & sửa điểm', 'Xem sau không đánh dấu snapshot đã xem', () => {
-        const source = window.CompetitionSnapshotNotificationV6;
-        const week = source.previousWeek();
-        const key = `competition-snapshot-viewed:${week}`;
-        localStorage.removeItem(key);
-
-        if (typeof window.hideCompetitionSnapshotNoticeV6 !== 'undefined') {
-            throw new Error('hide handler không nên là API công khai cần gọi từ Test Center.');
-        }
-
-        if (localStorage.getItem(key) === '1') {
-            throw new Error('Snapshot đã bị đánh dấu viewed trước khi mở.');
         }
     });
 })();
