@@ -2,13 +2,13 @@
  * FILE: competition-snapshot-notification-v6.js
  *
  * Mục đích:
- * Thông báo đầu tuần và cho GVCN xem lại lịch sử cộng/trừ của tuần trước.
+ * Thông báo giữa màn hình để GVCN đối chiếu lịch sử cộng/trừ của tuần trước.
  *
- * Snapshot là bản chụp read-only của các lần cộng/trừ đã xảy ra trong tuần.
- * Không đọc lại competition_records hiện tại để tránh việc sửa/xóa sau đó
- * làm thay đổi lịch sử mà GVCN cần đối chiếu.
+ * Snapshot là bản chụp read-only. Nút Sửa chỉ mở luồng sửa chuẩn của
+ * competition_records; snapshot không bị ghi đè.
  *
- * Nếu phát hiện sai, GVCN tạo task sửa điểm; snapshot không có nút sửa trực tiếp.
+ * GVCN có thể Xem sau hoặc đối chiếu ngay. Xem sau không đánh dấu hoàn tất.
+ * Chỉ "Đã đối chiếu – Đóng" mới ngăn prompt lại cho cùng một tuần.
  */
 
 const COMPETITION_SNAPSHOT_TABLE_V6 = 'competition_weekly_snapshots';
@@ -135,10 +135,77 @@ async function getPreviousCompetitionSnapshotV6() {
     };
 }
 
-function renderSnapshotRowsV6(rows) {
+async function getCurrentCompetitionRecordsForSnapshotV6(rows) {
+    const client = snapshotClientV6();
+    const ids = [...new Set(
+        (rows || [])
+            .map((row) => String(row.id || '').trim())
+            .filter(Boolean),
+    )];
+
+    if (!client || !ids.length) {
+        return new Map();
+    }
+
+    const result = await client
+        .from('competition_records')
+        .select('id, student_id, date, criteria, points, note, category_id')
+        .in('id', ids);
+
+    if (result.error) {
+        console.error('[Competition V6] Không tải được trạng thái record snapshot:', result.error);
+        return new Map();
+    }
+
+    return new Map(
+        (result.data || []).map((record) => [String(record.id), record]),
+    );
+}
+
+function snapshotRecordStatusV6(snapshotRow, currentRecord) {
+    if (!currentRecord) {
+        return {
+            label: 'Đã xóa',
+            className: 'snapshot-status-deleted',
+        };
+    }
+
+    const fields = ['student_id', 'date', 'criteria', 'points', 'note', 'category_id'];
+    const changed = fields.some((field) =>
+        String(currentRecord[field] ?? '') !== String(snapshotRow[field] ?? ''),
+    );
+
+    return changed
+        ? { label: 'Đã cập nhật', className: 'snapshot-status-updated' }
+        : { label: 'Chưa thay đổi', className: 'snapshot-status-pending' };
+}
+
+function openCompetitionSnapshotRecordEditorV6(recordId) {
+    const normalizedRecordId = String(recordId || '').trim();
+
+    if (!normalizedRecordId) {
+        alert('Snapshot không có mã bản ghi để sửa.');
+        return false;
+    }
+
+    if (typeof globalThis.editCompetitionRecord !== 'function') {
+        alert('Màn hình sửa bản ghi thi đua chưa sẵn sàng.');
+        return false;
+    }
+
+    globalThis.editCompetitionRecord(normalizedRecordId);
+    return true;
+}
+
+function renderSnapshotRowsV6(rows, currentRecords = new Map()) {
     return rows.map((row) => {
         const points = Number(row.points);
         const sign = points > 0 ? '+' : '';
+        const status = snapshotRecordStatusV6(
+            row,
+            currentRecords.get(String(row.id || '')),
+        );
+        const recordId = escapeSnapshotHtmlV6(row.id || '');
 
         return `
             <tr>
@@ -149,9 +216,12 @@ function renderSnapshotRowsV6(rows) {
                 <td>${escapeSnapshotHtmlV6(`${sign}${points}`)}</td>
                 <td>${escapeSnapshotHtmlV6(row.note || '')}</td>
                 <td>
-                    <button class="btn small" type="button"
-                        onclick="createCompetitionIssueFromSnapshotV6('${escapeSnapshotHtmlV6(row.id)}','${escapeSnapshotHtmlV6(row.student_id)}','${escapeSnapshotHtmlV6(row.week)}','${escapeSnapshotHtmlV6(row.snapshot_id)}')">
-                        Tạo task sửa điểm
+                    <span class="mini ${status.className}">${status.label}</span>
+                </td>
+                <td>
+                    <button class="btn small primary" type="button"
+                        onclick="openCompetitionSnapshotRecordEditorV6('${recordId}')">
+                        Sửa
                     </button>
                 </td>
             </tr>
@@ -159,7 +229,30 @@ function renderSnapshotRowsV6(rows) {
     }).join('');
 }
 
-function showCompetitionSnapshotV6(rows, week) {
+function hideCompetitionSnapshotNoticeV6() {
+    const notice = document.getElementById('competitionSnapshotNoticeV6');
+
+    if (notice) {
+        notice.classList.add('hidden');
+    }
+
+    const modal = document.getElementById('modal');
+
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function deferCompetitionSnapshotV6() {
+    hideCompetitionSnapshotNoticeV6();
+}
+
+function confirmCompetitionSnapshotV6(week) {
+    markSnapshotViewedV6(week);
+    hideCompetitionSnapshotNoticeV6();
+}
+
+async function showCompetitionSnapshotWithStatusV6(rows, week) {
     const modal = document.getElementById('modal');
     const title = document.getElementById('modalTitle');
     const body = document.getElementById('modalBody');
@@ -168,11 +261,14 @@ function showCompetitionSnapshotV6(rows, week) {
         return false;
     }
 
-    title.textContent = `Lịch sử cộng/trừ — tuần ${week}`;
+    const currentRecords = await getCurrentCompetitionRecordsForSnapshotV6(rows);
+
+    title.textContent = `Đối chiếu thi đua tuần ${week}`;
     body.innerHTML = rows.length
         ? `
             <div class="mini" style="margin-bottom:10px">
-                Đây là bản chụp read-only của các lần cộng/trừ trong tuần. Không sửa trực tiếp tại snapshot.
+                Kiểm tra các lần cộng/trừ của tuần trước. Nếu đúng, chọn
+                <b>Đã đối chiếu – Đóng</b>. Nếu sai, chọn <b>Sửa</b> để mở luồng sửa chuẩn.
             </div>
             <div class="tablewrap">
                 <table class="table">
@@ -184,17 +280,30 @@ function showCompetitionSnapshotV6(rows, week) {
                             <th>Tiêu chí</th>
                             <th>Điểm</th>
                             <th>Ghi chú</th>
-                            <th>Đối chiếu</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody>${renderSnapshotRowsV6(rows)}</tbody>
+                    <tbody>${renderSnapshotRowsV6(rows, currentRecords)}</tbody>
                 </table>
+            </div>
+            <div class="actions" style="margin-top:14px; justify-content:flex-end">
+                <button class="btn" type="button" onclick="deferCompetitionSnapshotV6()">
+                    Xem sau
+                </button>
+                <button class="btn primary" type="button" onclick="confirmCompetitionSnapshotV6('${escapeSnapshotHtmlV6(week)}')">
+                    Đã đối chiếu – Đóng
+                </button>
             </div>
         `
         : '<div class="notice">Tuần trước không có phát sinh điểm cộng/trừ.</div>';
 
     modal.classList.remove('hidden');
     return true;
+}
+
+async function showCompetitionSnapshotV6(rows, week) {
+    return showCompetitionSnapshotWithStatusV6(rows, week);
 }
 
 async function openPreviousCompetitionSnapshotV6(week) {
@@ -205,56 +314,12 @@ async function openPreviousCompetitionSnapshotV6(week) {
         return false;
     }
 
-    if (!result.snapshotRows.length) {
-        alert(`Chưa có snapshot cho tuần ${week || result.week}.`);
+    if (!result.snapshotRows.length || !result.rows.length) {
+        alert(`Tuần ${week || result.week} không có phát sinh cộng/trừ để đối chiếu.`);
         return false;
     }
 
-    markSnapshotViewedV6(result.week);
-    return showCompetitionSnapshotV6(result.rows, result.week);
-}
-
-function hideCompetitionSnapshotNoticeV6() {
-    const notice = document.getElementById('competitionSnapshotNoticeV6');
-
-    if (notice) {
-        notice.classList.add('hidden');
-    }
-}
-
-function renderCompetitionSnapshotNoticeV6(week, count) {
-    let notice = document.getElementById('competitionSnapshotNoticeV6');
-
-    if (!notice) {
-        const competitionPage = document.getElementById('competition');
-        const firstCard = competitionPage?.querySelector('.grid.two');
-
-        if (!firstCard) {
-            return;
-        }
-
-        notice = document.createElement('div');
-        notice.id = 'competitionSnapshotNoticeV6';
-        notice.className = 'notice section';
-        firstCard.insertAdjacentElement('afterend', notice);
-    }
-
-    notice.innerHTML = `
-        <div>
-            <b>Đã lưu lịch sử cộng/trừ tuần trước.</b>
-            <div class="mini">${count} lần cộng/trừ · Tuần ${escapeSnapshotHtmlV6(week)}</div>
-        </div>
-        <div class="actions">
-            <button class="btn primary" type="button" onclick="openPreviousCompetitionSnapshotV6('${escapeSnapshotHtmlV6(week)}')">
-                Xem snapshot
-            </button>
-            <button class="btn" type="button" onclick="hideCompetitionSnapshotNoticeV6()">
-                Xem sau
-            </button>
-        </div>
-    `;
-
-    notice.classList.remove('hidden');
+    return showCompetitionSnapshotWithStatusV6(result.rows, result.week);
 }
 
 async function refreshCompetitionSnapshotNotificationV6() {
@@ -267,12 +332,13 @@ async function refreshCompetitionSnapshotNotificationV6() {
     if (
         result.error ||
         !result.snapshotRows.length ||
-        !result.rows.length
+        !result.rows.length ||
+        isSnapshotViewedV6(result.week)
     ) {
         return;
     }
 
-    renderCompetitionSnapshotNoticeV6(result.week, result.rows.length);
+    await showCompetitionSnapshotWithStatusV6(result.rows, result.week);
 }
 
 function installCompetitionSnapshotNotificationV6() {
@@ -314,7 +380,11 @@ globalThis.CompetitionSnapshotNotificationV6 = Object.freeze({
     previousWeek: previousCompetitionSnapshotWeekV6,
     load: getPreviousCompetitionSnapshotV6,
     show: showCompetitionSnapshotV6,
+    showWithCurrentStatus: showCompetitionSnapshotWithStatusV6,
     open: openPreviousCompetitionSnapshotV6,
     refresh: refreshCompetitionSnapshotNotificationV6,
     markViewed: markSnapshotViewedV6,
+    defer: deferCompetitionSnapshotV6,
+    confirm: confirmCompetitionSnapshotV6,
+    getCurrentRecords: getCurrentCompetitionRecordsForSnapshotV6,
 });
