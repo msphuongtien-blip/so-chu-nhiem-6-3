@@ -8,7 +8,7 @@
  * competition_records; snapshot không bị ghi đè.
  *
  * GVCN có thể Xem sau hoặc đối chiếu ngay. Xem sau không đánh dấu hoàn tất.
- * Chỉ "Đã đối chiếu – Đóng" mới ngăn prompt lại cho cùng một tuần.
+ * Chỉ "Đã đối chiếu – Đóng" mới ngăn prompt lại cho đúng phiên bản snapshot đã xem.
  */
 
 const COMPETITION_SNAPSHOT_TABLE_V6 = 'competition_weekly_snapshots';
@@ -40,16 +40,21 @@ function previousCompetitionSnapshotWeekV6() {
     return date.toISOString().slice(0, 10);
 }
 
-function snapshotViewedKeyV6(week) {
-    return `${COMPETITION_SNAPSHOT_VIEWED_PREFIX_V6}${week}`;
+function snapshotViewedKeyV6(week, snapshotRows = []) {
+    const fingerprint = (snapshotRows || [])
+        .map((row) => `${row.id}:${row.updated_at || ''}`)
+        .sort()
+        .join('|');
+
+    return `${COMPETITION_SNAPSHOT_VIEWED_PREFIX_V6}${week}:${fingerprint}`;
 }
 
-function isSnapshotViewedV6(week) {
-    return localStorage.getItem(snapshotViewedKeyV6(week)) === '1';
+function isSnapshotViewedV6(week, snapshotRows = []) {
+    return localStorage.getItem(snapshotViewedKeyV6(week, snapshotRows)) === '1';
 }
 
-function markSnapshotViewedV6(week) {
-    localStorage.setItem(snapshotViewedKeyV6(week), '1');
+function markSnapshotViewedV6(week, snapshotRows = []) {
+    localStorage.setItem(snapshotViewedKeyV6(week, snapshotRows), '1');
 }
 
 function escapeSnapshotHtmlV6(value) {
@@ -104,7 +109,7 @@ async function getPreviousCompetitionSnapshotV6() {
 
     const snapshotResult = await client
         .from(COMPETITION_SNAPSHOT_TABLE_V6)
-        .select('id, student_id, week, record_history')
+        .select('id, student_id, week, record_history, updated_at')
         .eq('week', week);
 
     if (snapshotResult.error) {
@@ -215,15 +220,8 @@ function renderSnapshotRowsV6(rows, currentRecords = new Map()) {
                 <td>${escapeSnapshotHtmlV6(row.criteria || '')}</td>
                 <td>${escapeSnapshotHtmlV6(`${sign}${points}`)}</td>
                 <td>${escapeSnapshotHtmlV6(row.note || '')}</td>
-                <td>
-                    <span class="mini ${status.className}">${status.label}</span>
-                </td>
-                <td>
-                    <button class="btn small primary" type="button"
-                        onclick="openCompetitionSnapshotRecordEditorV6('${recordId}')">
-                        Sửa
-                    </button>
-                </td>
+                <td><span class="mini ${status.className}">${status.label}</span></td>
+                <td><button class="btn small primary" type="button" onclick="openCompetitionSnapshotRecordEditorV6('${recordId}')">Sửa</button></td>
             </tr>
         `;
     }).join('');
@@ -247,12 +245,12 @@ function deferCompetitionSnapshotV6() {
     hideCompetitionSnapshotNoticeV6();
 }
 
-function confirmCompetitionSnapshotV6(week) {
-    markSnapshotViewedV6(week);
+function confirmCompetitionSnapshotV6(week, snapshotRows = []) {
+    markSnapshotViewedV6(week, snapshotRows);
     hideCompetitionSnapshotNoticeV6();
 }
 
-async function showCompetitionSnapshotWithStatusV6(rows, week) {
+async function showCompetitionSnapshotWithStatusV6(rows, week, snapshotRows = []) {
     const modal = document.getElementById('modal');
     const title = document.getElementById('modalTitle');
     const body = document.getElementById('modalBody');
@@ -266,34 +264,11 @@ async function showCompetitionSnapshotWithStatusV6(rows, week) {
     title.textContent = `Đối chiếu thi đua tuần ${week}`;
     body.innerHTML = rows.length
         ? `
-            <div class="mini" style="margin-bottom:10px">
-                Kiểm tra các lần cộng/trừ của tuần trước. Nếu đúng, chọn
-                <b>Đã đối chiếu – Đóng</b>. Nếu sai, chọn <b>Sửa</b> để mở luồng sửa chuẩn.
-            </div>
-            <div class="tablewrap">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Ngày</th>
-                            <th>Học sinh</th>
-                            <th>Nhóm</th>
-                            <th>Tiêu chí</th>
-                            <th>Điểm</th>
-                            <th>Ghi chú</th>
-                            <th>Trạng thái</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>${renderSnapshotRowsV6(rows, currentRecords)}</tbody>
-                </table>
-            </div>
+            <div class="mini" style="margin-bottom:10px">Kiểm tra các lần cộng/trừ của tuần trước. Nếu đúng, chọn <b>Đã đối chiếu – Đóng</b>. Nếu sai, chọn <b>Sửa</b> để mở luồng sửa chuẩn.</div>
+            <div class="tablewrap"><table class="table"><thead><tr><th>Ngày</th><th>Học sinh</th><th>Nhóm</th><th>Tiêu chí</th><th>Điểm</th><th>Ghi chú</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${renderSnapshotRowsV6(rows, currentRecords)}</tbody></table></div>
             <div class="actions" style="margin-top:14px; justify-content:flex-end">
-                <button class="btn" type="button" onclick="deferCompetitionSnapshotV6()">
-                    Xem sau
-                </button>
-                <button class="btn primary" type="button" onclick="confirmCompetitionSnapshotV6('${escapeSnapshotHtmlV6(week)}')">
-                    Đã đối chiếu – Đóng
-                </button>
+                <button class="btn" type="button" onclick="deferCompetitionSnapshotV6()">Xem sau</button>
+                <button class="btn primary" type="button" onclick='confirmCompetitionSnapshotV6(${JSON.stringify(week)}, ${JSON.stringify(snapshotRows)})'>Đã đối chiếu – Đóng</button>
             </div>
         `
         : '<div class="notice">Tuần trước không có phát sinh điểm cộng/trừ.</div>';
@@ -302,8 +277,8 @@ async function showCompetitionSnapshotWithStatusV6(rows, week) {
     return true;
 }
 
-async function showCompetitionSnapshotV6(rows, week) {
-    return showCompetitionSnapshotWithStatusV6(rows, week);
+async function showCompetitionSnapshotV6(rows, week, snapshotRows = []) {
+    return showCompetitionSnapshotWithStatusV6(rows, week, snapshotRows);
 }
 
 async function openPreviousCompetitionSnapshotV6(week) {
@@ -319,7 +294,7 @@ async function openPreviousCompetitionSnapshotV6(week) {
         return false;
     }
 
-    return showCompetitionSnapshotWithStatusV6(result.rows, result.week);
+    return showCompetitionSnapshotWithStatusV6(result.rows, result.week, result.snapshotRows);
 }
 
 async function refreshCompetitionSnapshotNotificationV6() {
@@ -333,12 +308,12 @@ async function refreshCompetitionSnapshotNotificationV6() {
         result.error ||
         !result.snapshotRows.length ||
         !result.rows.length ||
-        isSnapshotViewedV6(result.week)
+        isSnapshotViewedV6(result.week, result.snapshotRows)
     ) {
         return;
     }
 
-    await showCompetitionSnapshotWithStatusV6(result.rows, result.week);
+    await showCompetitionSnapshotWithStatusV6(result.rows, result.week, result.snapshotRows);
 }
 
 function installCompetitionSnapshotNotificationV6() {
