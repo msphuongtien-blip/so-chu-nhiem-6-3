@@ -9,6 +9,12 @@
  *
  * GVCN có thể Xem sau hoặc đối chiếu ngay. Xem sau không đánh dấu hoàn tất.
  * Chỉ "Đã đối chiếu – Đóng" mới ngăn prompt lại cho đúng phiên bản snapshot đã xem.
+ *
+ * Quy tắc nguồn dữ liệu:
+ * - record_history chỉ là lịch sử audit.
+ * - Chỉ hiển thị record nếu record gốc vẫn tồn tại trong competition_records
+ *   và vẫn thuộc đúng tuần snapshot.
+ * - Nếu toàn bộ record gốc của snapshot đã bị xóa/chuyển tuần, không hiện snapshot.
  */
 
 const COMPETITION_SNAPSHOT_TABLE_V6 = 'competition_weekly_snapshots';
@@ -94,6 +100,55 @@ function snapshotStudentNameV6(studentId) {
     return student?.full_name || student?.name || String(studentId);
 }
 
+function snapshotRecordWeekV6(record) {
+    const value = record?.week || record?.week_start || record?.date || '';
+
+    if (!value) {
+        return '';
+    }
+
+    return snapshotMondayV6(String(value));
+}
+
+async function getCurrentCompetitionRecordsForSnapshotV6(rows) {
+    const client = snapshotClientV6();
+    const ids = [...new Set(
+        (rows || [])
+            .map((row) => String(row.id || '').trim())
+            .filter(Boolean),
+    )];
+
+    if (!client || !ids.length) {
+        return new Map();
+    }
+
+    const result = await client
+        .from('competition_records')
+        .select('id, student_id, date, week, week_start, criteria, points, note, category_id')
+        .in('id', ids);
+
+    if (result.error) {
+        console.error('[Competition V6] Không tải được trạng thái record snapshot:', result.error);
+        return new Map();
+    }
+
+    return new Map(
+        (result.data || []).map((record) => [String(record.id), record]),
+    );
+}
+
+function filterSnapshotRowsToLiveRecordsV6(rows, week, currentRecords) {
+    return (rows || []).filter((snapshotRow) => {
+        const currentRecord = currentRecords.get(String(snapshotRow.id || ''));
+
+        if (!currentRecord) {
+            return false;
+        }
+
+        return snapshotRecordWeekV6(currentRecord) === snapshotRecordWeekV6({ week });
+    });
+}
+
 async function getPreviousCompetitionSnapshotV6() {
     const client = snapshotClientV6();
     const week = previousCompetitionSnapshotWeekV6();
@@ -121,7 +176,8 @@ async function getPreviousCompetitionSnapshotV6() {
         };
     }
 
-    const rows = (snapshotResult.data || []).flatMap((snapshot) =>
+    const snapshotRows = snapshotResult.data || [];
+    const rows = snapshotRows.flatMap((snapshot) =>
         Array.isArray(snapshot.record_history)
             ? snapshot.record_history.map((record) => ({
                 ...record,
@@ -132,49 +188,23 @@ async function getPreviousCompetitionSnapshotV6() {
             : [],
     );
 
+    const currentRecords = await getCurrentCompetitionRecordsForSnapshotV6(rows);
+    const liveRows = filterSnapshotRowsToLiveRecordsV6(
+        rows,
+        week,
+        currentRecords,
+    );
+
     return {
         week,
-        rows,
-        snapshotRows: snapshotResult.data || [],
+        rows: liveRows,
+        snapshotRows,
+        currentRecords,
         error: null,
     };
 }
 
-async function getCurrentCompetitionRecordsForSnapshotV6(rows) {
-    const client = snapshotClientV6();
-    const ids = [...new Set(
-        (rows || [])
-            .map((row) => String(row.id || '').trim())
-            .filter(Boolean),
-    )];
-
-    if (!client || !ids.length) {
-        return new Map();
-    }
-
-    const result = await client
-        .from('competition_records')
-        .select('id, student_id, date, criteria, points, note, category_id')
-        .in('id', ids);
-
-    if (result.error) {
-        console.error('[Competition V6] Không tải được trạng thái record snapshot:', result.error);
-        return new Map();
-    }
-
-    return new Map(
-        (result.data || []).map((record) => [String(record.id), record]),
-    );
-}
-
 function snapshotRecordStatusV6(snapshotRow, currentRecord) {
-    if (!currentRecord) {
-        return {
-            label: 'Đã xóa',
-            className: 'snapshot-status-deleted',
-        };
-    }
-
     const fields = ['student_id', 'date', 'criteria', 'points', 'note', 'category_id'];
     const changed = fields.some((field) =>
         String(currentRecord[field] ?? '') !== String(snapshotRow[field] ?? ''),
@@ -206,10 +236,8 @@ function renderSnapshotRowsV6(rows, currentRecords = new Map()) {
     return rows.map((row) => {
         const points = Number(row.points);
         const sign = points > 0 ? '+' : '';
-        const status = snapshotRecordStatusV6(
-            row,
-            currentRecords.get(String(row.id || '')),
-        );
+        const currentRecord = currentRecords.get(String(row.id || ''));
+        const status = snapshotRecordStatusV6(row, currentRecord);
         const recordId = escapeSnapshotHtmlV6(row.id || '');
 
         return `
@@ -250,7 +278,7 @@ function confirmCompetitionSnapshotV6(week, snapshotRows = []) {
     hideCompetitionSnapshotNoticeV6();
 }
 
-async function showCompetitionSnapshotWithStatusV6(rows, week, snapshotRows = []) {
+async function showCompetitionSnapshotWithStatusV6(rows, week, snapshotRows = [], currentRecords = null) {
     const modal = document.getElementById('modal');
     const title = document.getElementById('modalTitle');
     const body = document.getElementById('modalBody');
@@ -259,19 +287,22 @@ async function showCompetitionSnapshotWithStatusV6(rows, week, snapshotRows = []
         return false;
     }
 
-    const currentRecords = await getCurrentCompetitionRecordsForSnapshotV6(rows);
+    const recordsMap = currentRecords || await getCurrentCompetitionRecordsForSnapshotV6(rows);
+    const liveRows = filterSnapshotRowsToLiveRecordsV6(rows, week, recordsMap);
+
+    if (!liveRows.length) {
+        return false;
+    }
 
     title.textContent = `Đối chiếu thi đua tuần ${week}`;
-    body.innerHTML = rows.length
-        ? `
-            <div class="mini" style="margin-bottom:10px">Kiểm tra các lần cộng/trừ của tuần trước. Nếu đúng, chọn <b>Đã đối chiếu – Đóng</b>. Nếu sai, chọn <b>Sửa</b> để mở luồng sửa chuẩn.</div>
-            <div class="tablewrap"><table class="table"><thead><tr><th>Ngày</th><th>Học sinh</th><th>Nhóm</th><th>Tiêu chí</th><th>Điểm</th><th>Ghi chú</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${renderSnapshotRowsV6(rows, currentRecords)}</tbody></table></div>
-            <div class="actions" style="margin-top:14px; justify-content:flex-end">
-                <button class="btn" type="button" onclick="deferCompetitionSnapshotV6()">Xem sau</button>
-                <button class="btn primary" type="button" onclick='confirmCompetitionSnapshotV6(${JSON.stringify(week)}, ${JSON.stringify(snapshotRows)})'>Đã đối chiếu – Đóng</button>
-            </div>
-        `
-        : '<div class="notice">Tuần trước không có phát sinh điểm cộng/trừ.</div>';
+    body.innerHTML = `
+        <div class="mini" style="margin-bottom:10px">Kiểm tra các lần cộng/trừ của tuần trước. Nếu đúng, chọn <b>Đã đối chiếu – Đóng</b>. Nếu sai, chọn <b>Sửa</b> để mở luồng sửa chuẩn.</div>
+        <div class="tablewrap"><table class="table"><thead><tr><th>Ngày</th><th>Học sinh</th><th>Nhóm</th><th>Tiêu chí</th><th>Điểm</th><th>Ghi chú</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${renderSnapshotRowsV6(liveRows, recordsMap)}</tbody></table></div>
+        <div class="actions" style="margin-top:14px; justify-content:flex-end">
+            <button class="btn" type="button" onclick="deferCompetitionSnapshotV6()">Xem sau</button>
+            <button class="btn primary" type="button" onclick='confirmCompetitionSnapshotV6(${JSON.stringify(week)}, ${JSON.stringify(snapshotRows)})'>Đã đối chiếu – Đóng</button>
+        </div>
+    `;
 
     modal.classList.remove('hidden');
     return true;
@@ -294,7 +325,12 @@ async function openPreviousCompetitionSnapshotV6(week) {
         return false;
     }
 
-    return showCompetitionSnapshotWithStatusV6(result.rows, result.week, result.snapshotRows);
+    return showCompetitionSnapshotWithStatusV6(
+        result.rows,
+        result.week,
+        result.snapshotRows,
+        result.currentRecords,
+    );
 }
 
 async function refreshCompetitionSnapshotNotificationV6() {
@@ -313,7 +349,12 @@ async function refreshCompetitionSnapshotNotificationV6() {
         return;
     }
 
-    await showCompetitionSnapshotWithStatusV6(result.rows, result.week, result.snapshotRows);
+    await showCompetitionSnapshotWithStatusV6(
+        result.rows,
+        result.week,
+        result.snapshotRows,
+        result.currentRecords,
+    );
 }
 
 function installCompetitionSnapshotNotificationV6() {
