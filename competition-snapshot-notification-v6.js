@@ -267,8 +267,7 @@ async function refreshCompetitionSnapshotNotificationV6() {
     if (
         result.error ||
         !result.snapshotRows.length ||
-        !result.rows.length ||
-        isSnapshotViewedV6(result.week)
+        !result.rows.length
     ) {
         return;
     }
