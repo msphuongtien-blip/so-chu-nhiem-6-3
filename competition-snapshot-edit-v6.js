@@ -4,7 +4,8 @@
  * Compatibility wrapper for the snapshot edit API.
  *
  * Snapshot rendering is owned by competition-snapshot-notification-v6.js.
- * This module intentionally does not override the viewer or create correction tasks.
+ * The Sửa action opens the existing competition_records editor flow; this
+ * module intentionally does not override the viewer or create correction tasks.
  */
 
 function openCompetitionSnapshotRecordEditorV6(recordId) {
