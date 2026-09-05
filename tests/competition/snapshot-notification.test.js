@@ -13,7 +13,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
 const source = fs.readFileSync(
-    path.join(root, 'competition-snapshot-notification-v6.js'),
+    path.join(root, 'competition-history-v6.js'),
     'utf8',
 );
 const snapshotEditSource = fs.readFileSync(
