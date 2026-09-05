@@ -15,7 +15,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const source = fs.readFileSync(
-    path.join(root, 'students-import-v6-8col.js'),
+    path.join(root, '../../modules/students/students-import-v6-8col.js'),
     'utf8',
 );
 
@@ -39,7 +39,7 @@ const context = vm.createContext({
 });
 
 vm.runInContext(source, context, {
-    filename: 'students-import-v6-8col.js',
+    filename: '../../modules/students/students-import-v6-8col.js',
 });
 
 const api = context.window.StudentsImportV6;
