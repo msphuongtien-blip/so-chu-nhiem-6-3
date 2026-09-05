@@ -50,3 +50,7 @@ assert.equal(assigned.length, 44);
 assert.equal(new Set(assigned).size, 44);
 
 console.log('PASS: seating chart contract tests');
+
+// Layout contract: each team is represented by 12 positions in 2 rows × 6 tables.
+assert(source.includes('SEATS_PER_TEAM = 12'), 'Each team must have 12 seating positions');
+assert(source.includes('Dãy ${seat.row_number} · Bàn ${seat.column_number}'), 'Seat UI must identify row and table');
