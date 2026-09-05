@@ -20,7 +20,7 @@ const loader = fs.readFileSync(
     'utf8',
 );
 const pipeline = fs.readFileSync(
-    path.join(root, 'modules/competition/competition-render-pipeline-v6.js'),
+    path.join(root, 'modules/competition/competition-renderer-v6.js'),
     'utf8',
 );
 
@@ -49,7 +49,7 @@ assert.match(
     'Consolidated pipeline phải là renderer duy nhất.',
 );
 
-const pipelineIndex = loader.indexOf('modules/competition/competition-render-pipeline-v6.js');
+const pipelineIndex = loader.indexOf('modules/competition/competition-renderer-v6.js');
 const testCenterIndex = loader.indexOf("'test-center-entry-v6.js'");
 assert.ok(pipelineIndex > 0, 'Pipeline phải được khai báo trong module-loader.');
 assert.ok(
