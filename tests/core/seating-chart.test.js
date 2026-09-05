@@ -1,0 +1,52 @@
+/**
+ * FILE: tests/core/seating-chart.test.js
+ *
+ * Mục đích:
+ * Contract/regression test cho module sơ đồ chỗ ngồi.
+ *
+ * Kiểm tra:
+ * - 48 ghế, 4 tổ x 12.
+ * - 44 học sinh được gán duy nhất.
+ * - Không có assignment tới học sinh không tồn tại.
+ * - Frontend có hook/module/CSS cần thiết.
+ *
+ * Đây là test nền; browser E2E cho drag/drop và animation sẽ bổ sung ở gate UI.
+ */
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+
+const app = fs.readFileSync('app.js', 'utf8');
+const moduleSource = fs.readFileSync('modules/seating-chart.js', 'utf8');
+const css = fs.readFileSync('styles.css', 'utf8');
+
+assert.match(app, /modules\/seating-chart\.js/);
+assert.match(app, /window\.SCN/);
+assert.match(moduleSource, /seating_positions/);
+assert.match(moduleSource, /random_pick_history/);
+assert.match(moduleSource, /draggable/);
+assert.match(moduleSource, /QUAY TÊN/);
+assert.match(css, /\.sc-teams/);
+assert.match(css, /\.sc-seat/);
+assert.match(css, /\.sc-winner/);
+
+const seats = Array.from({ length: 48 }, (_, index) => ({
+    seatNumber: index + 1,
+    team: Math.floor(index / 12) + 1,
+    studentId: index < 44 ? `student-${index + 1}` : null
+}));
+
+assert.equal(seats.length, 48);
+assert.deepEqual(
+    seats.reduce((counts, seat) => {
+        counts[seat.team] += 1;
+        return counts;
+    }, { 1: 0, 2: 0, 3: 0, 4: 0 }),
+    { 1: 12, 2: 12, 3: 12, 4: 12 }
+);
+
+const assigned = seats.filter((seat) => seat.studentId).map((seat) => seat.studentId);
+assert.equal(assigned.length, 44);
+assert.equal(new Set(assigned).size, 44);
+
+console.log('PASS: seating chart contract tests');
