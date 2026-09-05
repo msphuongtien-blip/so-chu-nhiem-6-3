@@ -50,7 +50,7 @@
 .sc-team-head>div{display:flex;align-items:center;gap:7px;color:var(--ink);font-size:14px}
 .sc-team-dot{width:9px;height:9px;border-radius:50%;background:var(--brand)}
 .sc-team-1 .sc-team-dot{background:#e77b71}.sc-team-2 .sc-team-dot{background:#5b86dc}.sc-team-3 .sc-team-dot{background:#4aa47b}.sc-team-4 .sc-team-dot{background:#d3a33c}
-.sc-seat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sc-seat-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
 .sc-seat{position:relative;min-width:0;min-height:112px;border:1px solid #e2e7ef;border-radius:13px;background:#fff;padding:8px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 3px 10px rgba(20,34,60,.045);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;touch-action:manipulation}
 .sc-seat:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(20,34,60,.09)}
 .sc-seat:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
