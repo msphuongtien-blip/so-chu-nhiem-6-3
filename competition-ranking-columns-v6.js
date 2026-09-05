@@ -134,24 +134,9 @@ function hideLegacyRankingColumnsV6() {
 }
 
 function installRankingColumnBoundaryV6() {
-    const render = globalThis.renderCompetition;
-
-    if (
-        typeof render !== 'function' ||
-        globalThis.__rankingColumnBoundaryV6Installed
-    ) {
-        return false;
-    }
-
-    globalThis.renderCompetition = async function renderCompetitionWithColumnBoundaryV6(...args) {
-        const result = await render(...args);
-        hideLegacyRankingColumnsV6();
-        return result;
-    };
-
-    globalThis.__rankingColumnBoundaryV6Installed = true;
-    hideLegacyRankingColumnsV6();
-    return true;
+    // The consolidated Competition renderer emits the canonical ranking.
+    // Column normalization is invoked explicitly by that pipeline.
+    return typeof globalThis.renderCompetition === 'function';
 }
 
 if (typeof window !== 'undefined' && window.document) {
