@@ -292,6 +292,9 @@
 
             renderTeacherDesk();
             renderSeats(document.getElementById('scViewMode')?.value || 'all');
+            if (state.students.length === SEAT_COUNT - 4) {
+                validateTeamAssignments();
+            }
             renderHistory();
         } catch (error) {
             console.error('Seating chart load failed:', error);
@@ -309,6 +312,22 @@
         return positions
             .filter((seat) => seat.team === team)
             .sort((a, b) => a.column_number - b.column_number);
+    }
+
+    /**
+     * The students.team field is the source of truth for team membership.
+     * A seat is only a visual container; it must not silently create a
+     * different team assignment.
+     */
+    function validateTeamAssignments() {
+        const mismatches = positions.filter((seat) => {
+            const student = studentById(seat.student_id);
+            return student && Number(student.team) !== Number(seat.team);
+        });
+
+        if (mismatches.length) {
+            throw new Error('Có học sinh đang nằm sai tổ. Hãy tải lại sơ đồ để đồng bộ theo hồ sơ học sinh.');
+        }
     }
 
     function renderTeacherDesk() {
@@ -496,10 +515,17 @@
         selectedSeat = null;
 
         renderSeats(document.getElementById('scViewMode')?.value || 'all');
-        setStatus('Đã đổi chỗ trên sơ đồ. Nhấn “Lưu sơ đồ” để ghi vào hệ thống.');
 
-        // Lưu ngay để tránh UX kiểu “đổi rồi nhưng quên lưu”.
-        await persistAssignments([source, target]);
+        try {
+            await persistAssignments(positions);
+            setStatus('Đã đổi chỗ và lưu sơ đồ thành công.');
+        } catch (error) {
+            // Restore the in-memory state when the database rejects the change.
+            source.student_id = sourceStudent || null;
+            target.student_id = targetStudent || null;
+            renderSeats(document.getElementById('scViewMode')?.value || 'all');
+            setStatus(`Không thể đổi chỗ: ${error.message || error}`, true);
+        }
     }
 
     /**
@@ -508,9 +534,21 @@
      * Không dùng chuỗi UPDATE từ trình duyệt nữa: nếu một update lỗi,
      * toàn bộ transaction được rollback để không bao giờ mất một phần lớp.
      */
-    async function persistAssignments(changedSeats) {
+    async function persistAssignments(snapshot = positions) {
         const app = getApp();
-        const payload = changedSeats.map((seat) => ({
+
+        if (!Array.isArray(snapshot) || snapshot.length !== SEAT_COUNT) {
+            throw new Error(`Sơ đồ phải có đúng ${SEAT_COUNT} vị trí.`);
+        }
+
+        const assignedIds = snapshot.map((seat) => seat.student_id).filter(Boolean);
+        const uniqueIds = new Set(assignedIds);
+
+        if (assignedIds.length !== state.students.length || uniqueIds.size !== assignedIds.length) {
+            throw new Error('Sơ đồ phải chứa đủ 44 học sinh và không được trùng học sinh.');
+        }
+
+        const payload = snapshot.map((seat) => ({
             id: seat.id,
             student_id: seat.student_id || null,
             note: seat.note || null,
@@ -524,12 +562,11 @@
 
         if (error) throw error;
 
-        const expectedAssignedCount = payload.filter((seat) => seat.student_id).length;
-        if (Number(data) !== expectedAssignedCount) {
-            throw new Error('Dữ liệu sau khi lưu không khớp với sơ đồ đang hiển thị.');
+        if (Number(data) !== assignedIds.length) {
+            throw new Error('Dữ liệu sau khi lưu không khớp với 44 học sinh đang hiển thị.');
         }
 
-        setStatus(`Đã lưu sơ đồ thành công: ${expectedAssignedCount} học sinh.`);
+        setStatus(`Đã lưu sơ đồ thành công: ${assignedIds.length} học sinh.`);
         return data;
     }
 
@@ -578,19 +615,39 @@
     async function shuffleSeats() {
         if (!state.students.length) return;
 
-        const available = positions.slice();
-        const shuffledStudents = state.students.slice().sort(() => Math.random() - 0.5);
+        /*
+         * Random chỉ đổi vị trí trong đúng tổ của từng học sinh.
+         * Vì students.team là source of truth, thao tác này không làm
+         * thay đổi tổ của bất kỳ học sinh nào.
+         */
+        const nextPositions = positions.map((seat) => ({ ...seat, student_id: null }));
 
-        // 48 ghế được giữ nguyên; nếu lớp có ít hơn 48 HS thì phần dư để trống.
-        positions = available.map((seat, index) => ({
-            ...seat,
-            student_id: shuffledStudents[index]?.id || null
-        }));
+        for (let team = 1; team <= TEAM_COUNT; team += 1) {
+            const teamSeats = nextPositions.filter((seat) => Number(seat.team) === team);
+            const teamStudents = state.students
+                .filter((student) => Number(student.team) === team)
+                .sort(() => Math.random() - 0.5);
 
+            if (teamStudents.length > teamSeats.length) {
+                throw new Error(`Tổ ${team} có ${teamStudents.length} học sinh nhưng chỉ có ${teamSeats.length} chỗ.`);
+            }
+
+            teamStudents.forEach((student, index) => {
+                teamSeats[index].student_id = student.id;
+            });
+        }
+
+        positions = nextPositions;
         selectedSeat = null;
         renderSeats(document.getElementById('scViewMode')?.value || 'all');
-        await savePositions();
-        setStatus('Đã xáo trộn ngẫu nhiên và lưu sơ đồ.');
+
+        try {
+            await savePositions();
+            setStatus('Đã xáo trộn vị trí trong từng tổ và lưu thành công.');
+        } catch (error) {
+            await loadAndRender();
+            setStatus(`Không thể xáo trộn: ${error.message || error}`, true);
+        }
     }
 
     async function handleAvatarUpload(event) {
