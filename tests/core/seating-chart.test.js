@@ -84,6 +84,9 @@ assert.match(css, /\.sc-student-card\{display:flex;flex-direction:column/);
 assert.match(css, /\.sc-student-info strong\{display:block;font-size:14px/);
 
 assert.match(moduleSource, /scWinnerAvatar/);
+assert.match(moduleSource, /const avatarElement = document\.getElementById\('scWinnerAvatar'\)/);
+assert.match(moduleSource, /finally \{\s*randomBusy = false;/);
+assert.doesNotMatch(moduleSource, /if \(avatarElement\) \{/g);
 assert.match(moduleSource, /renderWinnerAvatar/);
 assert.match(moduleSource, /studentDisplayName\(winner\.full_name\)/);
 assert.match(moduleSource, /gameShowSoundEnabled/);
