@@ -427,7 +427,7 @@ function loadCompetitionUxStylesV6() {
 
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'competition-ux-v6.css';
+    link.href = 'modules/competition/competition-ux-v6.css';
     link.dataset.competitionUxV6Style = 'true';
 
     document.head.appendChild(link);
