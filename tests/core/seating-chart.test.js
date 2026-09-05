@@ -62,6 +62,8 @@ assert.match(moduleSource, /visualColumn = Math\.floor\(\(Number\(seat\.column_n
 assert.match(moduleSource, /visualDesk = \(\(Number\(seat\.column_number\) - 1\) % 6\) \+ 1/);
 assert.match(moduleSource, /Cột \$\{visualColumn\} · Bàn \$\{visualDesk\}/);
 assert.match(moduleSource, /studentDisplayName/);
+assert.match(moduleSource, /parts\.slice\(-2\)\.join\(' '\)/);
+assert.doesNotMatch(moduleSource, /parts\.slice\(1\)\.join\(' '\)/);
 assert.match(moduleSource, /parts\.slice\(1\)\.join\(' '\)/);
 assert.match(moduleSource, /data-upload-student/);
 assert.match(moduleSource, /student-avatars/);
