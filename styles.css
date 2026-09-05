@@ -936,3 +936,7 @@ button {
 @media(max-width:1200px){.sc-teams{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-random-grid{grid-template-columns:1fr}}
 
 @media(max-width:700px){.sc-toolbar{flex-direction:column}.sc-actions{width:100%}.sc-actions>*{flex:1}.sc-classroom{padding:12px}.sc-teams{grid-template-columns:1fr}.sc-seat{min-height:105px}.sc-random-grid{grid-template-columns:1fr}.sc-winner-name{font-size:26px}}
+
+
+.competition-student-multiselect { min-height: 9rem; width: 100%; }
+.competition-student-multiselect option:checked { font-weight: 600; }
