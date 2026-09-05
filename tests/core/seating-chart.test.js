@@ -56,7 +56,7 @@ assert.equal(new Set(assigned).size, 44);
 console.log('PASS: seating chart contract tests');
 
 assert.match(moduleSource, /SEATS_PER_TEAM = 12/);
-assert.match(moduleSource, /seat\.seat_number/);
+assert.match(moduleSource, /order\('seat_number'\)/);
 assert.match(moduleSource, /seat\.column_number/);
 assert.match(moduleSource, /visualColumn = Math\.floor\(\(Number\(seat\.column_number\) - 1\) \/ 6\) \+ 1/);
 assert.match(moduleSource, /visualDesk = \(\(Number\(seat\.column_number\) - 1\) % 6\) \+ 1/);
