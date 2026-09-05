@@ -60,7 +60,7 @@ const vm = require('node:vm');
 
     const expected = Array.from(
         context.ApplicationModuleLoaderV6.APPLICATION_MODULES,
-        ([, src]) => src,
+        ([, src]) => `${src}?v=20260905-competition-history-3`,
     );
 
     assert.deepEqual(appended, expected);
