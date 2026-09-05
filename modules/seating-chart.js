@@ -625,11 +625,6 @@
                 renderSeats(document.getElementById('scViewMode')?.value || 'all');
                 setStatus('Đã cập nhật ảnh học sinh.');
             }
-                const student = studentById(studentId);
-                if (student) student.avatar_url = avatarUrl;
-                renderSeats(document.getElementById('scViewMode')?.value || 'all');
-                setStatus('Đã cập nhật ảnh học sinh.');
-            }
         } catch (error) {
             console.error('Student avatar upload failed:', error);
             setStatus(`Không thể cập nhật ảnh: ${error.message || error}`, true);
