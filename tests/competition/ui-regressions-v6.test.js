@@ -1,4 +1,3 @@
-const fs = require('node:fs');
 #!/usr/bin/env node
 /** Regression tests for V6 ranking, student picker, and record form UI. */
 
