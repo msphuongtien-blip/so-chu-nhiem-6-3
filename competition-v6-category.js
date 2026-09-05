@@ -431,7 +431,7 @@ function renderCompetitionCategoryFilterV6() {
  * UI/business logic vẫn nằm trong file riêng.
  */
 (function loadCompetitionCriteriaSettingsModuleV6() {
-    const scriptId = 'competition-criteria-settings-v6-script';
+    const scriptId = 'competition-criteria-v6-script';
 
     if (document.getElementById(scriptId)) {
         return;
@@ -451,7 +451,7 @@ function renderCompetitionCategoryFilterV6() {
  * và các hàm refresh dữ liệu hiện có.
  */
 (function loadCompetitionRecordFormModuleV6() {
-    const scriptId = 'competition-record-form-v6-script';
+    const scriptId = 'competition-records-v6-script';
 
     if (document.getElementById(scriptId)) {
         return;
