@@ -89,3 +89,163 @@
 @keyframes scStageSpin{to{transform:rotate(360deg)}}@keyframes scWinnerPop{0%{transform:scale(.96)}55%{transform:scale(1.015)}100%{transform:scale(1)}}
 @media(max-width:1200px){.sc-teams{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-random-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.sc-toolbar{flex-direction:column}.sc-actions{width:100%}.sc-actions>*{flex:1}.sc-classroom{padding:12px}.sc-teams{grid-template-columns:1fr}.sc-seat{min-height:105px}.sc-random-grid{grid-template-columns:1fr}.sc-winner-name{font-size:26px}}
+
+
+/* =========================================================
+   FINAL DESKTOP CLASSROOM LAYOUT
+   - Mỗi tổ ôm sát 2 dãy bàn.
+   - GVCN nằm góc trái, ngay phía trên Tổ 1.
+   - CSS module-specific được giữ trong file này.
+   ========================================================= */
+
+.sc-classroom{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    align-items:start;
+    gap:12px;
+}
+
+.sc-teacher-desk{
+    grid-column:1;
+    grid-row:1;
+    width:min(280px,100%);
+    margin:0 0 2px;
+    padding:10px 14px;
+    border:2px solid #d8dee9;
+    border-radius:16px;
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:10px;
+    box-shadow:0 5px 14px rgba(20,34,60,.07);
+}
+
+.sc-teacher-avatar-button{
+    border:0;
+    background:transparent;
+    padding:0;
+    border-radius:50%;
+    cursor:pointer;
+    line-height:0;
+}
+
+.sc-teacher-avatar-button:focus-visible{
+    outline:2px solid var(--brand);
+    outline-offset:3px;
+}
+
+.sc-teacher-avatar{
+    width:52px;
+    height:52px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    overflow:hidden;
+    background:var(--soft);
+    color:var(--brand);
+    font-size:15px;
+    font-weight:900;
+}
+
+.sc-teacher-avatar img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.sc-teacher-info{
+    text-align:left;
+}
+
+.sc-teacher-info span{
+    display:block;
+    font-size:10px;
+    color:var(--muted);
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+
+.sc-teacher-info strong{
+    display:block;
+    margin-top:2px;
+    font-size:16px;
+    line-height:1.2;
+}
+
+.sc-teams{
+    grid-column:1 / -1;
+    grid-row:2;
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+}
+
+.sc-seat-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:repeat(6,minmax(92px,1fr));
+    grid-auto-flow:column;
+    gap:8px;
+}
+
+.sc-seat{
+    min-height:92px;
+}
+
+.sc-save-status{
+    min-width:92px;
+    font-size:11px;
+    font-weight:750;
+    color:var(--muted);
+    white-space:nowrap;
+}
+
+.sc-save-status.success{
+    color:#23834b;
+}
+
+.sc-save-status.error{
+    color:var(--danger);
+}
+
+#scSave[disabled]{
+    cursor:wait;
+    opacity:.78;
+}
+
+@media(max-width:1200px){
+    .sc-classroom{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .sc-teams{
+        grid-column:1 / -1;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
+@media(max-width:700px){
+    .sc-classroom{
+        grid-template-columns:1fr;
+    }
+
+    .sc-teacher-desk{
+        grid-column:1;
+    }
+
+    .sc-teams{
+        grid-column:1;
+        grid-template-columns:1fr;
+    }
+
+    .sc-seat-grid{
+        grid-template-rows:repeat(6,minmax(88px,1fr));
+    }
+
+    .sc-save-status{
+        width:100%;
+        min-width:0;
+    }
+}
