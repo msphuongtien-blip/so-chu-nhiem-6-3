@@ -10,8 +10,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
-const servicePath = path.join(root, '../../modules/competition/competition-issues-service-v6.js');
-const rendererPath = path.join(root, '../../modules/competition/competition-issues-renderer-v6.js');
+const servicePath = path.join(root, 'modules/competition/competition-issues-service-v6.js');
+const rendererPath = path.join(root, 'modules/competition/competition-issues-renderer-v6.js');
 
 assert.equal(fs.existsSync(servicePath), true, 'Phải có service quản lý issue.');
 assert.equal(fs.existsSync(rendererPath), true, 'Phải có renderer quản lý issue.');
