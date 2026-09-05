@@ -96,35 +96,108 @@ function setRole(newRole) {
 }
 
 
-async function startSession(user){if(!user)return false;currentUser=user;const p=await sb.from('profiles').select('*').eq('id',user.id).single();if(p.error){await sb.auth.signOut();$('loginMsg').textContent='Tài khoản chưa có hồ sơ trong profiles.';return false}currentProfile=p.data;role=currentProfile.role;$('login').classList.add('hidden');$('app').classList.remove('hidden');setupUI();await loadAll();return true}
-async function login() {
-    // Lấy vùng hiển thị thông báo đăng nhập.
-    const msg = $('loginMsg');
+async function startSession(user){
+    if(!user)return false;
 
-    // Xóa thông báo cũ.
-    msg.textContent = '';
+    currentUser=user;
+    const p=await sb.from('profiles').select('*').eq('id',user.id).single();
 
-    // Giai đoạn 2 chỉ duy trì đăng nhập GVCN bằng Supabase Auth.
-    // Đăng nhập học sinh bằng Mã HS sẽ được hoàn thiện ở Giai đoạn 3.
-    if (role === 'student') {
-        msg.textContent =
-            'Đăng nhập học sinh bằng Mã HS sẽ được triển khai ở Giai đoạn 3.';
+    if(p.error){
+        await sb.auth.signOut();
+        $('loginMsg').textContent='Tài khoản chưa có hồ sơ trong profiles.';
+        return false;
+    }
+
+    currentProfile=p.data;
+    role=currentProfile.role;
+    $('login').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    setupUI();
+
+    if(role==='student' && user.user_metadata?.force_password_change){
+        openForcedStudentPasswordChange();
+        return true;
+    }
+
+    await loadAll();
+    return true;
+}
+
+function openForcedStudentPasswordChange(){
+    openModal(
+        'Đổi mật khẩu lần đầu',
+        '<div class="notice">Mật khẩu tạm thời phải được đổi trước khi sử dụng hệ thống.</div>'+
+        '<div class="field"><label>Mật khẩu mới</label><input id="forcedNewPass" type="password" autocomplete="new-password"></div>'+
+        '<div class="field"><label>Nhập lại mật khẩu mới</label><input id="forcedNewPass2" type="password" autocomplete="new-password"></div>'+
+        '<div id="forcedPassMsg" class="mini" role="alert" aria-live="polite"></div>'+
+        '<button class="btn primary" onclick="submitForcedStudentPassword()">Lưu mật khẩu mới</button>',
+    );
+}
+
+async function submitForcedStudentPassword(){
+    const password=$('forcedNewPass').value;
+    const confirmation=$('forcedNewPass2').value;
+    const msg=$('forcedPassMsg');
+
+    if(password.length<8){
+        msg.textContent='Mật khẩu mới phải có ít nhất 8 ký tự.';
         return;
     }
 
-    // Đăng nhập GVCN bằng email của tài khoản giáo viên trong Supabase Auth.
+    if(password===String(currentUser.user_metadata?.student_code||'')){
+        msg.textContent='Mật khẩu mới không được trùng Mã HS.';
+        return;
+    }
+
+    if(password!==confirmation){
+        msg.textContent='Hai mật khẩu chưa trùng nhau.';
+        return;
+    }
+
+    const {error}=await sb.auth.updateUser({
+        password,
+        data:{
+            ...currentUser.user_metadata,
+            force_password_change:false,
+        },
+    });
+
+    if(error){
+        msg.textContent=error.message;
+        return;
+    }
+
+    currentUser={
+        ...currentUser,
+        user_metadata:{
+            ...currentUser.user_metadata,
+            force_password_change:false,
+        },
+    };
+
+    closeModal();
+    await loadAll();
+}
+
+async function login() {
+    const msg = $('loginMsg');
+    msg.textContent = '';
+
+    const loginIdentifier = $('email').value.trim();
+    const authEmail = role === 'student'
+        ? loginIdentifier.toLowerCase() + '@student.so-chu-nhiem.local'
+        : loginIdentifier;
+
     const { data, error } = await sb.auth.signInWithPassword({
-        email: $('email').value.trim(),
+        email: authEmail,
         password: $('password').value
     });
 
-    // Hiển thị lỗi nếu đăng nhập thất bại.
     if (error) {
         msg.textContent = error.message;
         return;
     }
 
-    // Khởi tạo phiên làm việc sau khi đăng nhập thành công.
     await startSession(data.user);
 }
 sb.auth.getSession().then(async ({data})=>{if(data.session)await startSession(data.session.user)});
