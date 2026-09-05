@@ -63,6 +63,21 @@ const autocomplete = read('modules/students/student-autocomplete-v6.js');
 assert.match(rankingUi, /type="checkbox"/);
 assert.match(rankingUi, /placeholder="Gõ tên hoặc Mã HS\.\.\."/);
 assert.match(rankingUi, /StudentAutocompleteV6\?\.filterStudents/);
+assert.match(
+    rankingUi,
+    /!competitionStudentFilterStateV6\.has\(String\(student\.id\)\)/,
+    'Selected students must be hidden from picker results.',
+);
+assert.match(
+    rankingUi,
+    /\.slice\(0, 6\)/,
+    'Picker must show a small initial set before search.',
+);
+assert.match(
+    rankingUi,
+    /getCompetitionStudentFilterSourceV6/,
+    'Picker must use the live students source.',
+);
 assert.match(autocomplete, /student\.full_name/);
 assert.match(autocomplete, /student\.student_code/);
 assert.match(
