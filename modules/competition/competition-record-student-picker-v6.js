@@ -424,7 +424,7 @@ function loadStudentPickerStylesV6() {
 
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'competition-record-student-picker-v6.css';
+    link.href = 'modules/competition/competition-record-student-picker-v6.css';
     link.dataset.studentPickerV6Style = 'true';
 
     document.head.appendChild(link);
