@@ -68,21 +68,12 @@
 
     // Module dùng cùng Supabase project và Auth session với ứng dụng chính.
     // Không sửa app.js để tránh kéo module mới vào legacy boundary của file lõi.
-    let moduleSb = null;
-
     function getApp() {
-        if (!moduleSb) {
-            if (!window.supabase) {
-                throw new Error('Supabase client chưa được tải.');
-            }
-
-            moduleSb = window.supabase.createClient(
-                'https://fdyhnwklzizzbiyqqlxo.supabase.co',
-                'sb_publishable_QJeu6Jb17f6UVbvXJwuUMQ_-QfBaGDy'
-            );
+        if (typeof sb !== 'undefined' && sb?.from) {
+            return sb;
         }
 
-        return moduleSb;
+        throw new Error('Supabase client chưa sẵn sàng.');
     }
 
     async function getCurrentUserId() {
@@ -244,12 +235,12 @@
             const app = getApp();
 
             const [studentResult, positionResult, historyResult] = await Promise.all([
-                app.sb.from('students').select('*').order('full_name'),
-                app.sb.from('seating_positions')
+                app.from('students').select('*').order('full_name'),
+                app.from('seating_positions')
                     .select('*')
                     .eq('class_key', CLASS_KEY)
                     .order('seat_number'),
-                app.sb.from('random_pick_history')
+                app.from('random_pick_history')
                     .select('id,student_id,scope,scope_team,picked_at')
                     .eq('class_key', CLASS_KEY)
                     .order('picked_at', { ascending: false })
@@ -456,7 +447,7 @@
 
             // Bước 1: giải phóng các ghế bị ảnh hưởng để không vi phạm unique student_id.
             if (occupiedStudentIds.length) {
-                const { error: clearError } = await app.sb
+                const { error: clearError } = await app
                     .from('seating_positions')
                     .update({ student_id: null, updated_at: new Date().toISOString() })
                     .eq('class_key', CLASS_KEY)
@@ -467,7 +458,7 @@
 
             // Bước 2: ghi lại assignment mới.
             for (const seat of changedSeats) {
-                const { error } = await app.sb
+                const { error } = await app
                     .from('seating_positions')
                     .update({
                         student_id: seat.student_id,
@@ -640,7 +631,7 @@
                 ? Number(randomScope.replace('team', ''))
                 : null;
 
-            const { data, error } = await app.sb
+            const { data, error } = await app
                 .from('random_pick_history')
                 .insert({
                     class_key: CLASS_KEY,
@@ -732,7 +723,7 @@
 
         try {
             const app = getApp();
-            const { error } = await app.sb
+            const { error } = await app
                 .from('random_pick_history')
                 .delete()
                 .eq('id', last.id);
@@ -754,7 +745,7 @@
 
         try {
             const app = getApp();
-            const { error } = await app.sb
+            const { error } = await app
                 .from('random_pick_history')
                 .delete()
                 .eq('class_key', CLASS_KEY);
