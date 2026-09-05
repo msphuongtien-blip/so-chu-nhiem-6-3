@@ -29,6 +29,8 @@ assert.match(finalFormSource, /getMonday\?\.\(date\)/);
 assert.match(finalFormSource, /globalThis\.submitCompetitionV6 = submitCompetitionFinalV6/);
 assert.match(finalFormSource, /function removeDuplicateCompetitionFormCloseButtonV6[\s\S]*Đóng[\s\S]*remove\(\)/);
 assert.match(finalFormSource, /submitCompetitionFinalV6[\s\S]*waitForCompetitionWriteBoundaryV6[\s\S]*writeBoundary\(/);
+assert.match(finalFormSource, /writeBoundary\([\s\S]*?\);[\s\S]*?loadStudentsFromSupabase/);
+assert.match(finalFormSource, /loadStudentsFromSupabase\?\.[\s\S]*loadCompetitionHistoryFromSupabase\?\./);
 assert.match(finalFormSource, /resolveStudentIdFromCompetitionFormV6[\s\S]*fStudentV6DisplayV6[\s\S]*student_code/);
 
 console.log('PASS: UI regressions for ranking, student picker, and record form');
