@@ -98,5 +98,5 @@ console.log('Core contract tests: PASS');
  * assets. This prevents one machine from executing an older cached module.
  */
 const indexHtml = fs.readFileSync('index.html', 'utf8');
-assert.match(indexHtml, /app\.js\?v=20260905-competition-history-3/);
-assert.match(indexHtml, /core\/module-loader\.js\?v=20260905-competition-history-3/);
+assert.match(indexHtml, /app\.js\?v=20260906-competition-render-pipeline-1/);
+assert.match(indexHtml, /core\/module-loader\.js\?v=20260906-competition-render-pipeline-1/);
