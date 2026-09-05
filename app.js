@@ -410,6 +410,13 @@ async function addCompetition(studentId,points,criteria,note='',categoryId=5,wee
     =await sb.from('competition_records').insert(payload); if(error) {
         console.error(error);alert('Không thể lưu ghi nhận: '+error.message);return false;
     }
+    // Refresh both source-of-truth caches after a successful write.
+    // This prevents the history panel and the 44-student ranking from
+    // displaying stale data until the user manually refreshes the page.
+    await Promise.all([
+        loadStudentsFromSupabase(),
+        loadCompetitionHistoryFromSupabase(),
+    ]);
     return true;
 }
 async function editCompetitionRecord(id) {
@@ -431,13 +438,13 @@ async function saveEditedCompetition(id) {
     const {
         error
     }
-    =await sb.from('competition_records').update(payload).eq('id',id); if(error)return alert('Không thể sửa: '+error.message); closeModal(); await renderStudents(); await renderCompetition(); await renderDashboard();
+    =await sb.from('competition_records').update(payload).eq('id',id); if(error)return alert('Không thể sửa: '+error.message); closeModal(); await Promise.all([loadStudentsFromSupabase(),loadCompetitionHistoryFromSupabase()]); await renderStudents(); await renderCompetition(); await renderDashboard();
 }
 async function deleteCompetitionRecord(id) {
     if(!confirm('Xóa bản ghi này? Ghi chú và điểm của bản ghi sẽ bị xóa khỏi lịch sử, sau đó điểm sẽ được tính lại từ lịch sử còn lại.'))return; const {
         error
     }
-    =await sb.from('competition_records').delete().eq('id',id); if(error)return alert('Không thể xóa: '+error.message); closeModal(); await renderStudents(); await renderCompetition(); await renderDashboard();
+    =await sb.from('competition_records').delete().eq('id',id); if(error)return alert('Không thể xóa: '+error.message); closeModal(); await Promise.all([loadStudentsFromSupabase(),loadCompetitionHistoryFromSupabase()]); await renderStudents(); await renderCompetition(); await renderDashboard();
 }
 async function rolloverCompetitionWeek() {
     if(role!=='teacher')return; const {
