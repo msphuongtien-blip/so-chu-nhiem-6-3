@@ -1048,3 +1048,19 @@ window.addEventListener('keydown',e=> {
     if(e.key==='Escape')closeModal()
 }
 );
+
+
+// Public integration bridge for feature modules. Các module chỉ đọc state/service cần thiết;
+// nghiệp vụ lõi vẫn thuộc app.js để tránh tạo thêm nguồn dữ liệu song song.
+window.SCN = {
+    get sb(){ return sb; },
+    get currentUser(){ return currentUser; },
+    get students(){ return students; }
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = 'modules/seating-chart.js';
+    document.head.appendChild(script);
+}, { once: true });
