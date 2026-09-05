@@ -19,7 +19,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const source = fs.readFileSync(
-    path.join(root, '../../modules/competition/competition-record-write-boundary-v6.js'),
+    path.join(root, 'modules/competition/competition-record-write-boundary-v6.js'),
     'utf8',
 );
 
@@ -29,7 +29,7 @@ const context = vm.createContext({
 });
 
 vm.runInContext(source, context, {
-    filename: '../../modules/competition/competition-record-write-boundary-v6.js',
+    filename: 'modules/competition/competition-record-write-boundary-v6.js',
 });
 
 const api = context.CompetitionRecordWriteBoundaryV6;
