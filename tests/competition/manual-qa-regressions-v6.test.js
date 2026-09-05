@@ -48,7 +48,9 @@ assert.match(
     'Record form must initialize the score from the selected criterion default.',
 );
 
-// 4. Multi-student filter must exist in the Competition UI and history logic.
+
+// 4. Multi-student filter keeps the full 44-student ranking and exposes
+// the selected students' ranks within that full ranking.
 assert.match(index, /id="compStudentFilter"[^>]*multiple/);
 assert.match(app, /selectedStudentIds/);
 assert.match(
@@ -56,16 +58,26 @@ assert.match(
     /selectedStudentIds\.includes\(String\(record\.student_id\)\)/,
     'History must accept multiple selected students.',
 );
+assert.match(
+    app,
+    /rankingText \+ ' \/ 44'/,
+    'Selected students must keep their rank against the full 44-student ranking.',
+);
 
-// 5. Existing edit flow remains separate from the new create/save service.
+// 5. Record boundary may install only after the service is ready.
+const boundary = read('modules/competition/competition-record-boundary-v6.js');
+assert.match(boundary, /CompetitionRecordServiceV6[\s\S]*saveCompetitionRecordV6/);
+assert.match(boundary, /if \(typeof submitV6 !== 'function'\)/);
+
+// 6. Existing edit flow remains separate from the new create/save service.
 assert.match(app, /function editCompetitionRecord\(/);
 assert.match(app, /function deleteCompetitionRecord\(/);
 
-// 6. User-facing feature removals remain absent from navigation.
+// 7. User-facing feature removals remain absent from navigation.
 assert.doesNotMatch(index, /Phản hồi học sinh/);
 assert.doesNotMatch(index, /onclick="[^"]*sFeedback/);
 
-// 7. Basic syntax check for the modules touched by this QA cycle.
+// 8. Basic syntax check for the modules touched by this QA cycle.
 for (const file of [
     'core/module-loader.js',
     'modules/competition/competition-record-form-v6.js',
