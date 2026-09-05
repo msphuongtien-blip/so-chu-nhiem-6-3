@@ -305,6 +305,10 @@
         const student = studentById(seat.student_id);
         const note = seat.note || '';
         const status = seat.status || '';
+        // Mỗi tổ có 12 vị trí theo thứ tự 1→12, hiển thị thành 2 cột dọc,
+        // mỗi cột 6 bàn. Không cần thay đổi dữ liệu seat hiện có.
+        const visualColumn = Math.floor((Number(seat.column_number) - 1) / 6) + 1;
+        const visualDesk = ((Number(seat.column_number) - 1) % 6) + 1;
 
         return `
             <article
@@ -314,7 +318,7 @@
                 tabindex="0"
                 aria-label="${student ? escapeHtml(student.full_name) : 'Ghế trống'}"
             >
-                <div class="sc-seat-number">Dãy ${seat.row_number} · Bàn ${seat.column_number}</div>
+                <div class="sc-seat-number">Cột ${visualColumn} · Bàn ${visualDesk}</div>
                 ${student ? `
                     <div class="sc-student-card">
                         <div class="sc-avatar">
