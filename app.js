@@ -259,7 +259,7 @@ async function loadAll(){
         await renderHonors();
         await renderTeams();
         await renderAlerts();
-        await renderTeacherFeedback();
+        // Teacher feedback navigation has been removed.
     }else{
         await renderStudentAll();
     }
