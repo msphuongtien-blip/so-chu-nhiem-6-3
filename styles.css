@@ -940,3 +940,132 @@ button {
 
 .competition-student-multiselect { min-height: 9rem; width: 100%; }
 .competition-student-multiselect option:checked { font-weight: 600; }
+
+/* Competition V6: searchable multi-student picker */
+.competition-student-filter-v6 {
+    position: relative;
+}
+
+.competition-student-filter-trigger-v6 {
+    width: 100%;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.competition-student-filter-trigger-v6:hover,
+.competition-student-filter-trigger-v6:focus-visible {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.competition-student-filter-panel-v6 {
+    position: absolute;
+    z-index: 1200;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+}
+
+.competition-student-filter-search-v6 {
+    width: 100%;
+}
+
+.competition-student-filter-selected-v6 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.competition-student-chip-v6 {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: var(--soft);
+    font-size: 13px;
+}
+
+.competition-student-chip-v6 button {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.competition-student-filter-results-v6 {
+    max-height: 280px;
+    overflow-y: auto;
+    margin-top: 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+
+.competition-student-filter-option-v6 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+}
+
+.competition-student-filter-option-v6:last-child {
+    border-bottom: 0;
+}
+
+.competition-student-filter-option-v6:hover {
+    background: var(--soft);
+}
+
+.competition-student-filter-option-v6 input {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+}
+
+.competition-student-filter-name-v6 {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.competition-student-filter-name-v6 strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.competition-student-filter-name-v6 small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.competition-student-filter-actions-v6 {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+}
