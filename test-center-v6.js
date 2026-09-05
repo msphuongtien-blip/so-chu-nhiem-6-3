@@ -379,6 +379,78 @@ addTest('Supabase read-only', 'Students table is readable and non-empty', async 
 });
 
 /* -------------------------------------------------------------------------- */
+/* Student authentication contract                                             */
+/* -------------------------------------------------------------------------- */
+
+addTest(
+    'Student authentication',
+    'Student account module exposes provision and reset actions',
+    async () => {
+        const frame = document.getElementById('appFrame');
+
+        if (!frame?.contentWindow?.StudentAuthV6) {
+            throw new Error('StudentAuthV6 chưa được load trong ứng dụng.');
+        }
+
+        expectTrue(
+            typeof frame.contentWindow.StudentAuthV6.provision === 'function',
+            'Thiếu action provision.',
+        );
+        expectTrue(
+            typeof frame.contentWindow.StudentAuthV6.reset === 'function',
+            'Thiếu action reset.',
+        );
+    },
+);
+
+addTest(
+    'Student authentication',
+    'Student login uses Mã HS as identifier',
+    async () => {
+        const frame = document.getElementById('appFrame');
+
+        if (!frame?.contentWindow?.setRole) {
+            throw new Error('Không tìm thấy setRole trong ứng dụng.');
+        }
+
+        frame.contentWindow.setRole('student');
+
+        expectEqual(
+            frame.contentDocument.getElementById('loginIdentifierLabel')?.textContent,
+            'Mã HS',
+        );
+        expectEqual(
+            frame.contentDocument.getElementById('email')?.type,
+            'text',
+        );
+
+        frame.contentWindow.setRole('teacher');
+    },
+);
+
+addTest(
+    'Student authentication',
+    'All 44 existing students are eligible for idempotent provisioning',
+    async () => {
+        const { data, error } = await qaSupabase
+            .from('students')
+            .select('id, student_code')
+            .order('student_code');
+
+        if (error) {
+            throw error;
+        }
+
+        expectEqual(data.length, 44);
+        expectTrue(
+            data.every((student) => String(student.student_code || '').trim()),
+            'Có học sinh thiếu Mã HS.',
+        );
+    },
+);
+
+/* -------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 /* UI smoke runner                                                              */
 /* -------------------------------------------------------------------------- */
 
