@@ -50,10 +50,10 @@ assert.match(
 );
 
 const pipelineIndex = loader.indexOf('modules/competition/competition-render-pipeline-v6.js');
-const lastModuleIndex = loader.lastIndexOf("['");
+const testCenterIndex = loader.indexOf("'test-center-entry-v6.js'");
 assert.ok(pipelineIndex > 0, 'Pipeline phải được khai báo trong module-loader.');
 assert.ok(
-    pipelineIndex > lastModuleIndex,
+    pipelineIndex > testCenterIndex,
     'Pipeline phải được nạp sau các application modules khác.',
 );
 
