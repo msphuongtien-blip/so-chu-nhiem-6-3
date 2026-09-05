@@ -62,6 +62,14 @@ assert.match(moduleSource, /visualColumn = Math\.floor\(\(Number\(seat\.column_n
 assert.match(moduleSource, /visualDesk = \(\(Number\(seat\.column_number\) - 1\) % 6\) \+ 1/);
 assert.match(moduleSource, /Cột \$\{visualColumn\} · Bàn \$\{visualDesk\}/);
 assert.match(moduleSource, /studentDisplayName/);
+assert.match(moduleSource, /GVCN/);
+assert.match(moduleSource, /Phượng Tiên/);
+assert.match(moduleSource, /scTeacherAvatarButton/);
+assert.match(moduleSource, /scTeacherAvatarUrl/);
+assert.match(moduleSource, /isTeacherAvatar/);
+assert.match(moduleSource, /localStorage\.setItem\('scTeacherAvatarUrl'/);
+assert.match(css, /\.sc-teacher-desk\{/);
+assert.match(css, /\.sc-teacher-avatar\{/);
 assert.match(moduleSource, /parts\.slice\(-2\)\.join\(' '\)/);
 assert.doesNotMatch(moduleSource, /parts\.slice\(1\)\.join\(' '\)/);
 assert.match(moduleSource, /parts\.slice\(1\)\.join\(' '\)/);
