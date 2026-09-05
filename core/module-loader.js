@@ -11,7 +11,7 @@
  * - Bảo đảm module được nạp theo đúng thứ tự khai báo.
  */
 
-const V6_ASSET_VERSION = '20260905-competition-history-3';
+const V6_ASSET_VERSION = '20260906-competition-render-pipeline-1';
 
 function loadApplicationModule(scriptId, source) {
     /*
