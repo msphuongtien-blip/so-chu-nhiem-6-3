@@ -414,44 +414,10 @@ function renderCompetitionCategoryFilterV6() {
 }
 
 /**
- * Nạp module Cài đặt tiêu chí sau khi app.js và Category V6 đã sẵn sàng.
- *
- * Đây là integration bridge tạm thời cho entry point legacy.
- * UI/business logic vẫn nằm trong file riêng.
+ * Module loader V6 là owner duy nhất của dependency loading.
+ * Category không tự inject Criteria/Form để tránh load trùng sau khi refactor.
  */
-(function loadCompetitionCriteriaSettingsModuleV6() {
-    const scriptId = 'competition-criteria-settings-v6-script';
 
-    if (document.getElementById(scriptId)) {
-        return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'competition-criteria-settings-v6.js';
-
-    document.head.appendChild(script);
-})();
-
-/**
- * Nạp form Ghi nhận V6 sau khi Category V6 đã thiết lập compatibility layer.
- *
- * File riêng này thay thế UI form legacy nhưng tiếp tục dùng addCompetition()
- * và các hàm refresh dữ liệu hiện có.
- */
-(function loadCompetitionRecordFormModuleV6() {
-    const scriptId = 'competition-record-form-v6-script';
-
-    if (document.getElementById(scriptId)) {
-        return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'competition-record-form-v6.js';
-
-    document.head.appendChild(script);
-})();
 
 window.CompetitionCategoryV6 = {
     V6_VALID_SCORES,
