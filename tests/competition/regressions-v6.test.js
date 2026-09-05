@@ -25,7 +25,7 @@ const finalFormSource = fs.readFileSync(
     'utf8',
 );
 const editDateSource = fs.readFileSync(
-    path.join(root, 'competition-record-edit-date-v6.js'),
+    path.join(root, 'competition-records-v6.js'),
     'utf8',
 );
 const rankingSource = fs.readFileSync(
