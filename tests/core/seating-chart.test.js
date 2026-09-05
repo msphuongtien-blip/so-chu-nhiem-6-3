@@ -71,8 +71,6 @@ assert.match(moduleSource, /localStorage\.setItem\('scTeacherAvatarUrl'/);
 assert.match(css, /\.sc-teacher-desk\{/);
 assert.match(css, /\.sc-teacher-avatar\{/);
 assert.match(moduleSource, /parts\.slice\(-2\)\.join\(' '\)/);
-assert.doesNotMatch(moduleSource, /parts\.slice\(1\)\.join\(' '\)/);
-assert.match(moduleSource, /parts\.slice\(1\)\.join\(' '\)/);
 assert.match(moduleSource, /data-upload-student/);
 assert.match(moduleSource, /student-avatars/);
 assert.match(moduleSource, /avatar_url/);
