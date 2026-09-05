@@ -250,13 +250,85 @@ function categoryName(id){return ({1:'Giờ giấc – chuyên cần',2:'Nội q
 function categoryIdFromName(name){const n=String(name||'').toLowerCase(); if(n.includes('đúng giờ')||n.includes('đi muộn')||n.includes('chuyên cần')||n.includes('vắng'))return 1;if(n.includes('trật tự')||n.includes('nội quy'))return 2;if(n.includes('vệ sinh')||n.includes('môi trường'))return 3;if(n.includes('tác phong')||n.includes('trang phục')||n.includes('đồng phục'))return 4;return 5}
 function calculateStudentWeek(studentId,week){const rows=supabaseCache.competitionRecords.filter(r=>r.student_id===studentId);const weeks=[...new Set(rows.map(r=>r.week).filter(Boolean))].sort();let start=81,target=compWeekStart(week);for(const w of weeks){if(w>target)break;const total=rows.filter(r=>r.week===w).reduce((a,r)=>a+Number(r.score||0),0);const end=Math.max(0,Math.min(100,start+total));if(w===target)return end;start=end>=91?91:end>=81?81:end>=66?71:end>=50?61:51;}return 81;}
 function calculateStudentMonth(studentId,week){const d=new Date(week+'T00:00:00'),start=new Date(d.getFullYear(),d.getMonth(),1),next=new Date(d.getFullYear(),d.getMonth()+1,1),ss=start.toISOString().slice(0,10),nn=next.toISOString().slice(0,10);const data=supabaseCache.competitionRecords.filter(r=>r.student_id===studentId&&String(r.date||'')>=ss&&String(r.date||'')<nn);return Math.max(0,Math.min(100,81+data.reduce((a,r)=>a+Number(r.score||0),0)));}
+let competitionRenderRequestId = 0;
+
 async function renderCompetition(){
+  /*
+   * Thi đua is a live data module. Never trust an old in-memory cache when
+   * the page is opened/re-opened: always read the current students and
+   * competition history from Supabase first.
+   *
+   * The request id prevents a slower, older render from overwriting a newer
+   * render when the teacher clicks the sidebar repeatedly.
+   */
+  const requestId = ++competitionRenderRequestId;
   const week=compWeekInput();
 
-  /* Không phụ thuộc vào mảng students đã được tải ở bước trước.
-     Đọc trực tiếp 44 HS + toàn bộ lịch sử trong một lượt để tránh
-     44 request tuần tự làm bảng không render/timeout. */
-  const studentRows=supabaseCache.students; const studentError=null;
+  if ($('competitionRecent')) {
+    $('competitionRecent').innerHTML =
+      '<div class="mini">Đang tải lịch sử thi đua...</div>';
+  }
+
+  try {
+    const [studentsResult, historyResult] = await Promise.all([
+      sb.from('students').select('*').order('full_name', { ascending: true }),
+      sb.from('competition_records')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false }),
+    ]);
+
+    if (requestId !== competitionRenderRequestId) {
+      return;
+    }
+
+    if (studentsResult.error) {
+      throw studentsResult.error;
+    }
+
+    if (historyResult.error) {
+      throw historyResult.error;
+    }
+
+    supabaseCache.students = studentsResult.data || [];
+    supabaseCache.competitionRecords = historyResult.data || [];
+    supabaseCache.loadedAt = new Date();
+
+    students = supabaseCache.students.slice().sort((a,b) =>
+      String(a.full_name || '').localeCompare(
+        String(b.full_name || ''),
+        'vi',
+        { sensitivity: 'base' }
+      )
+    );
+  } catch (error) {
+    console.error('Thi đua - tải dữ liệu trực tiếp thất bại:', error);
+
+    if ($('rankBody')) {
+      $('rankBody').innerHTML =
+        '<tr><td colspan="6" class="mini">Không thể tải dữ liệu thi đua. Vui lòng thử lại.</td></tr>';
+    }
+
+    if ($('competitionRecent')) {
+      $('competitionRecent').innerHTML =
+        '<div class="mini history-empty">Không thể tải lịch sử thi đua. Vui lòng thử lại.</div>';
+    }
+
+    return;
+  }
+
+  const weekAfterFreshLoad = compWeekInput();
+  if (weekAfterFreshLoad !== week) {
+    return;
+  }
+
+  /*
+   * Data was freshly loaded above. Use only that snapshot for this render.
+   * This keeps ranking, student scores and history consistent with one
+   * Supabase read cycle.
+   */
+  const studentRows=supabaseCache.students;
+  const studentError=null;
 
   if(studentError){
     console.error('Thi đua - không tải được học sinh:',studentError);
@@ -281,8 +353,9 @@ async function renderCompetition(){
   const sf=$('compStudentFilter')?.value||'';
   const gf=$('compGroupFilter')?.value||'';
 
-  /* Lấy toàn bộ lịch sử một lần. Đây là Source of Truth cho xếp hạng. */
-  const history=supabaseCache.competitionRecords; const historyError=null;
+  /* Toàn bộ lịch sử vừa được đọc trực tiếp từ Supabase. */
+  const history=supabaseCache.competitionRecords;
+  const historyError=null;
 
   if(historyError){
     console.error('Thi đua - không tải được lịch sử:',historyError);
