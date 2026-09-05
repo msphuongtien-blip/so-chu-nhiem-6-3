@@ -19,7 +19,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const source = fs.readFileSync(
-    path.join(root, 'competition-ranking-columns-v6.js'),
+    path.join(root, 'competition-ranking-v6.js'),
     'utf8',
 );
 const appSource = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
@@ -40,7 +40,7 @@ const context = vm.createContext({
 
 context.globalThis = context;
 vm.runInContext(source, context, {
-    filename: 'competition-ranking-columns-v6.js',
+    filename: 'competition-ranking-v6.js',
 });
 
 const api = context.CompetitionRankingColumnsV6;
