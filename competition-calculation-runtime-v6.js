@@ -154,50 +154,9 @@ function installCompetitionCalculationRuntimeV6() {
         return false;
     }
 
-    competitionOriginalRenderV6 =
-        window.renderCompetition;
-
-    async function renderCompetitionWithCalculationV6(
-        ...args
-    ) {
-        const filter = document.getElementById(
-            'compWeekFilter',
-        );
-        const selectedWeek =
-            filter?.value ||
-            (typeof window.getCurrentWeekStart ===
-            'function'
-                ? window.getCurrentWeekStart()
-                : '');
-
-        const originalRecords =
-            supabaseCache.competitionRecords;
-        const calculationRecords =
-            getCalculationRecordsForWeekV6(
-                selectedWeek,
-            );
-
-        if (calculationRecords) {
-            supabaseCache.competitionRecords =
-                calculationRecords;
-        }
-
-        try {
-            return await competitionOriginalRenderV6(
-                ...args,
-            );
-        } finally {
-            supabaseCache.competitionRecords =
-                originalRecords;
-        }
-    }
-
-    renderCompetitionWithCalculationV6
-        .__calculationWrappedV6 = true;
-    window.renderCompetition =
-        renderCompetitionWithCalculationV6;
-    competitionCalculationRuntimeInstalledV6 =
-        true;
+    // Rendering is owned by the consolidated Competition render pipeline.
+    // This runtime only routes weekly calculation to the V6 engine.
+    competitionCalculationRuntimeInstalledV6 = true;
 
     return true;
 }
