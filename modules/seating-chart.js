@@ -34,6 +34,7 @@
     let randomBusy = false;
     let randomScope = 'all';
     let excludePicked = true;
+    let teacherAvatarUrl = '';
 
     const state = {
         students: [],
@@ -152,6 +153,15 @@
                         <span>BẢNG</span>
                         <small>GVCN</small>
                     </div>
+                    <div class="sc-teacher-desk">
+                        <button type="button" class="sc-teacher-avatar-button" id="scTeacherAvatarButton" title="Thêm hoặc đổi ảnh GVCN">
+                            <div id="scTeacherAvatar" class="sc-teacher-avatar"></div>
+                        </button>
+                        <div class="sc-teacher-info">
+                            <span>GVCN</span>
+                            <strong>Phượng Tiên</strong>
+                        </div>
+                    </div>
                     <div id="scTeams" class="sc-teams"></div>
                 </div>
 
@@ -223,6 +233,14 @@
         document.getElementById('scUndoPick')?.addEventListener('click', undoLastPick);
         document.getElementById('scResetHistory')?.addEventListener('click', resetPickHistory);
         document.getElementById('scAvatarInput')?.addEventListener('change', handleAvatarUpload);
+        document.getElementById('scTeacherAvatarButton')?.addEventListener('click', () => {
+            const input = document.getElementById('scAvatarInput');
+            if (!input) return;
+            input.dataset.studentId = '';
+            input.dataset.teacherAvatar = 'true';
+            input.value = '';
+            input.click();
+        });
         document.getElementById('scExcludePicked')?.addEventListener('change', (event) => {
             excludePicked = event.target.checked;
         });
@@ -261,7 +279,9 @@
             state.students = studentResult.data || [];
             positions = positionResult.data || [];
             randomHistory = historyResult.data || [];
+            teacherAvatarUrl = localStorage.getItem('scTeacherAvatarUrl') || '';
 
+            renderTeacherDesk();
             renderSeats(document.getElementById('scViewMode')?.value || 'all');
             renderHistory();
         } catch (error) {
@@ -280,6 +300,15 @@
         return positions
             .filter((seat) => seat.team === team)
             .sort((a, b) => a.column_number - b.column_number);
+    }
+
+    function renderTeacherDesk() {
+        const avatar = document.getElementById('scTeacherAvatar');
+        if (!avatar) return;
+
+        avatar.innerHTML = teacherAvatarUrl
+            ? `<img src="${escapeHtml(teacherAvatarUrl)}" alt="Ảnh GVCN">`
+            : 'PT';
     }
 
     function renderSeats(viewMode = 'all') {
@@ -528,9 +557,10 @@
     async function handleAvatarUpload(event) {
         const input = event.currentTarget;
         const studentId = input.dataset.studentId;
+        const isTeacherAvatar = input.dataset.teacherAvatar === 'true';
         const file = input.files?.[0];
 
-        if (!studentId || !file) return;
+        if ((!studentId && !isTeacherAvatar) || !file) return;
 
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
             setStatus('Ảnh không hợp lệ. Vui lòng chọn JPG, PNG hoặc WebP.', true);
@@ -566,10 +596,17 @@
 
             if (updateError) throw updateError;
 
-            const student = studentById(studentId);
-            if (student) student.avatar_url = avatarUrl;
-            renderSeats(document.getElementById('scViewMode')?.value || 'all');
-            setStatus('Đã cập nhật ảnh học sinh.');
+            if (isTeacherAvatar) {
+                teacherAvatarUrl = avatarUrl;
+                localStorage.setItem('scTeacherAvatarUrl', avatarUrl);
+                renderTeacherDesk();
+                setStatus('Đã cập nhật ảnh GVCN.');
+            } else {
+                const student = studentById(studentId);
+                if (student) student.avatar_url = avatarUrl;
+                renderSeats(document.getElementById('scViewMode')?.value || 'all');
+                setStatus('Đã cập nhật ảnh học sinh.');
+            }
         } catch (error) {
             console.error('Student avatar upload failed:', error);
             setStatus(`Không thể cập nhật ảnh: ${error.message || error}`, true);
