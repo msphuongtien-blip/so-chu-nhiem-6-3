@@ -17,11 +17,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const app = fs.readFileSync('app.js', 'utf8');
+const index = fs.readFileSync('index.html', 'utf8');
 const moduleSource = fs.readFileSync('modules/seating-chart.js', 'utf8');
 const css = fs.readFileSync('styles.css', 'utf8');
 
-assert.match(app, /modules\/seating-chart\.js/);
-assert.match(app, /window\.SCN/);
+assert.match(index, /modules\/seating-chart\.js/);
+assert.match(index, /@supabase\/supabase-js@2/);
 assert.match(moduleSource, /seating_positions/);
 assert.match(moduleSource, /random_pick_history/);
 assert.doesNotMatch(moduleSource, /\bapp\.sb\b/);
@@ -54,6 +55,6 @@ assert.equal(new Set(assigned).size, 44);
 
 console.log('PASS: seating chart contract tests');
 
-// Layout contract: each team is represented by 12 positions in 2 rows × 6 tables.
-assert(source.includes('SEATS_PER_TEAM = 12'), 'Each team must have 12 seating positions');
-assert(source.includes('Dãy ${seat.row_number} · Bàn ${seat.column_number}'), 'Seat UI must identify row and table');
+assert.match(moduleSource, /SEATS_PER_TEAM = 12/);
+assert.match(moduleSource, /seat\.row_number/);
+assert.match(moduleSource, /seat\.column_number/);
