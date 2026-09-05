@@ -91,3 +91,12 @@ assert.equal(
 );
 
 console.log('Core contract tests: PASS');
+
+
+/*
+ * Deployment contract: every browser must receive the same versioned V6
+ * assets. This prevents one machine from executing an older cached module.
+ */
+const indexHtml = fs.readFileSync('index.html', 'utf8');
+assert.match(indexHtml, /app\.js\?v=20260905-competition-history-3/);
+assert.match(indexHtml, /core\/module-loader\.js\?v=20260905-competition-history-3/);
