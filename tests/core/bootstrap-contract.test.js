@@ -37,13 +37,13 @@ const requiredScripts = [
 
 for (const script of requiredScripts) {
     assert.ok(
-        html.includes(`src="${script}"`),
+        new RegExp(`src="${script.replace(/\./g, '\\.')}(?:\\?[^\"]*)?"`).test(html),
         `index.html must load ${script}`,
     );
 }
 
 const positions = requiredScripts.map((script) =>
-    html.indexOf(`src="${script}"`),
+    html.search(new RegExp(`src="${script.replace(/\./g, '\\.')}(?:\\?[^\"]*)?"`)),
 );
 
 for (let index = 1; index < positions.length; index += 1) {
