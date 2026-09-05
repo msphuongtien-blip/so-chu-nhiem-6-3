@@ -232,38 +232,8 @@ async function resolveCompetitionIssueV6(issueId) {
 }
 
 function installCompetitionIssuesNotificationV6() {
-    if (globalThis.__competitionIssuesNotificationV6Installed) {
-        return false;
-    }
-
-    const render = globalThis.renderCompetition;
-    if (typeof render !== 'function') {
-        return false;
-    }
-
-    globalThis.renderCompetition = async function renderCompetitionWithIssuesV6(...args) {
-        const result = await render(...args);
-        await refreshCompetitionIssuesNotificationV6();
-        return result;
-    };
-
-    globalThis.__competitionIssuesNotificationV6Installed = true;
-    void refreshCompetitionIssuesNotificationV6();
-    return true;
-}
-
-if (typeof window !== 'undefined' && window.document) {
-    const startedAt = Date.now();
-    const timer = window.setInterval(() => {
-        if (installCompetitionIssuesNotificationV6()) {
-            window.clearInterval(timer);
-            return;
-        }
-
-        if (Date.now() - startedAt >= 15000) {
-            window.clearInterval(timer);
-        }
-    }, 100);
+    // Notification refresh is invoked explicitly by the consolidated renderer.
+    return typeof globalThis.CompetitionIssuesServiceV6 !== 'undefined';
 }
 
 globalThis.CompetitionIssuesRendererV6 = Object.freeze({
