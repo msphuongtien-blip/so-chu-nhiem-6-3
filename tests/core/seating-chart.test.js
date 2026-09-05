@@ -69,3 +69,4 @@ assert.match(moduleSource, /avatar_url/);
 assert.doesNotMatch(moduleSource, /Mã HS \$\{escapeHtml\(student\.student_code/);
 assert.match(css, /\.sc-seat-grid\{[^}]*grid-template-columns:repeat\(2/);
 assert.match(css, /\.sc-seat-grid\{[^}]*grid-template-rows:repeat\(6/);
+assert.match(css, /\.sc-seat-grid\{[^}]*grid-auto-flow:column/);
