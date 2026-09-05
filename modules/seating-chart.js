@@ -323,7 +323,7 @@
                 tabindex="0"
                 aria-label="${student ? escapeHtml(student.full_name) : 'Ghế trống'}"
             >
-                <div class="sc-seat-number">Ghế ${seat.column_number}</div>
+                <div class="sc-seat-number">Dãy ${seat.row_number} · Bàn ${seat.column_number}</div>
                 ${student ? `
                     <div class="sc-student-card">
                         <div class="sc-avatar">
