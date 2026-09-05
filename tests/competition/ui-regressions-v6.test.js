@@ -45,3 +45,13 @@ assert.match(appSource, /let competitionRenderRequestId = 0/);
 assert.match(appSource, /sb\.from\('students'\)\.select\('\*'\)/);
 assert.match(appSource, /sb\.from\('competition_records'\)/);
 assert.match(appSource, /competitionRenderRequestId/);
+
+
+/*
+ * Regression contract:
+ * - Ranking must use CompetitionCalculationV6 when it is available.
+ * - History must normalize week/week_start/date before filtering.
+ */
+assert.match(appSource, /CompetitionCalculationV6/);
+assert.match(appSource, /const recordWeek = compWeekStart/);
+assert.match(appSource, /String\(record\.student_id\) === String\(sf\)/);
