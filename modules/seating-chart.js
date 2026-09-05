@@ -50,7 +50,7 @@
 
     function studentDisplayName(name) {
         const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
-        return parts.length > 1 ? parts.slice(1).join(' ') : (parts[0] || '—');
+        return parts.length >= 2 ? parts.slice(-2).join(' ') : (parts[0] || '—');
     }
 
     function initials(name) {
