@@ -370,13 +370,27 @@ async function renderCompetition(){
   }
 
   if($('compStudentFilter')){
-    const old=$('compStudentFilter').value||'';
-    $('compStudentFilter').innerHTML='<option value="">Tất cả học sinh</option>'+
-      allStudents.map(s=>'<option value="'+s.id+'">'+esc(s.full_name)+'</option>').join('');
-    $('compStudentFilter').value=old;
+    const select = $('compStudentFilter');
+    const oldSelected = Array.from(select.selectedOptions || [])
+      .map(option => option.value)
+      .filter(Boolean);
+    select.innerHTML = '<option value="">Tất cả học sinh</option>' +
+      allStudents.map(s =>
+        '<option value="' + s.id + '">' + esc(s.full_name) + '</option>'
+      ).join('');
+    oldSelected.forEach(id => {
+      const option = Array.from(select.options).find(
+        item => String(item.value) === String(id),
+      );
+      if (option) option.selected = true;
+    });
   }
 
-  const sf=$('compStudentFilter')?.value||'';
+  const selectedStudentIds = Array.from(
+    $('compStudentFilter')?.selectedOptions || [],
+  )
+    .map(option => String(option.value))
+    .filter(Boolean);
   const gf=$('compGroupFilter')?.value||'';
 
   /* Toàn bộ lịch sử vừa được đọc trực tiếp từ Supabase. */
@@ -491,7 +505,9 @@ async function renderCompetition(){
 
   if($('rankBody')){
     $('rankBody').innerHTML=rows.map((s,i)=>{
-      const selected=sf&&s.id===sf?' style="background:#eff6ff"':'';
+      const selected=selectedStudentIds.includes(String(s.id))
+        ?' style="background:#eff6ff"':'';
+
       return '<tr'+selected+'>'+
         '<td><b>'+(i+1)+'</b></td>'+
         '<td><b>'+esc(s.full_name)+'</b></td>'+
@@ -503,7 +519,9 @@ async function renderCompetition(){
     }).join('');
   }
 
-  const selectedRank=sf?rows.findIndex(x=>x.id===sf)+1:null;
+  const selectedRank=selectedStudentIds.length === 1
+    ? rows.findIndex(x=>String(x.id)===selectedStudentIds[0])+1
+    : null;
   if($('compRank'))$('compRank').textContent=selectedRank||'—';
   if($('compAvg'))$('compAvg').textContent=rows.length
     ?(rows.reduce((sum,s)=>sum+s.weekly,0)/rows.length).toFixed(1)
@@ -524,7 +542,8 @@ async function renderCompetition(){
 
     return (
       (!week || recordWeek === compWeekStart(week)) &&
-      (!sf || String(record.student_id) === String(sf)) &&
+      (!selectedStudentIds.length ||
+        selectedStudentIds.includes(String(record.student_id))) &&
       (!gf || String(record.category_id) === String(gf))
     );
   });
