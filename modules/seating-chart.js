@@ -846,33 +846,14 @@
     }
 
     function playWinnerSound() {
-        try {
-            if (!gameShowSoundEnabled) return;
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContextClass) return;
+        const context = getAudioContext();
+        if (!context) return;
 
-            const context = new AudioContextClass();
-            const oscillator = context.createOscillator();
-            const gain = context.createGain();
-
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(520, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.22);
-            gain.gain.setValueAtTime(0.0001, context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + 0.03);
-            gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.28);
-
-            oscillator.connect(gain);
-            gain.connect(context.destination);
-            oscillator.start();
-            oscillator.stop(context.currentTime + 0.3);
-            [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => playTone(frequency, 0.18, 'sine', 0.035, 0.08 + index * 0.08));
-        } catch (error) {
-            // Âm thanh là enhancement; lỗi audio không được làm hỏng thao tác quay.
-            console.debug('Winner sound unavailable:', error);
-        }
+        playTone(523.25, 0.18, 'sine', 0.035);
+        playTone(659.25, 0.18, 'sine', 0.035, 0.08);
+        playTone(783.99, 0.18, 'sine', 0.035, 0.16);
+        playTone(1046.5, 0.24, 'sine', 0.04, 0.24);
     }
-
     function renderHistory() {
         const root = document.getElementById('scHistory');
         const count = document.getElementById('scHistoryCount');
