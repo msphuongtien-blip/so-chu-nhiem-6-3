@@ -17,6 +17,7 @@ jobs:
         run: |
           node --check app.js
           node --check modules/seating-chart.js
+          node tests/core/seating-chart.test.js
       - name: Check seating integration contract
         run: |
           grep -q "modules/seating-chart.js" app.js
