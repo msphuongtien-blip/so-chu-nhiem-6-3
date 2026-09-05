@@ -9,8 +9,8 @@ const root = path.resolve(__dirname, '../..');
 const rawIndexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const indexSource = rawIndexSource.replace(/\s+/g, ' ');
 const autocompleteSource = fs.readFileSync(path.join(root, 'student-autocomplete-v6.js'), 'utf8');
-const finalFormSource = fs.readFileSync(path.join(root, 'competition-record-form-final-v6.js'), 'utf8');
-const rankingColumnsSource = fs.readFileSync(path.join(root, 'competition-ranking-columns-v6.js'), 'utf8');
+const finalFormSource = fs.readFileSync(path.join(root, 'competition-records-v6.js'), 'utf8');
+const rankingColumnsSource = fs.readFileSync(path.join(root, 'competition-ranking-v6.js'), 'utf8');
 
 const rankingHeaderMatch = rankingColumnsSource.match(
     /RANKING_ALLOWED_HEADERS_V6\s*=\s*Object\.freeze\(\[([\s\S]*?)\]\)/,
