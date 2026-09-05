@@ -105,6 +105,13 @@ let competitionStudentFilterStateV6 = new Set();
 let competitionStudentFilterMountedV6 = false;
 
 function getCompetitionStudentFilterSourceV6() {
+    if (
+        typeof students !== 'undefined' &&
+        Array.isArray(students)
+    ) {
+        return students;
+    }
+
     if (Array.isArray(globalThis.students)) {
         return globalThis.students;
     }
@@ -161,7 +168,9 @@ function renderCompetitionStudentFilterSelectedV6() {
 }
 
 function renderCompetitionStudentFilterResultsV6(keyword) {
-    const root = document.getElementById('competitionStudentFilterV6');
+    const root = document.getElementById(
+        'competitionStudentFilterV6',
+    );
     const results = root?.querySelector(
         '.competition-student-filter-results-v6',
     );
@@ -173,23 +182,46 @@ function renderCompetitionStudentFilterResultsV6(keyword) {
         return;
     }
 
+    const source = getCompetitionStudentFilterSourceV6();
+    const query = String(keyword ?? '').trim();
     const filterFn =
         globalThis.StudentAutocompleteV6?.filterStudents;
 
-    const matches = filterFn
-        ? filterFn(getCompetitionStudentFilterSourceV6(), keyword)
-        : [];
+    let matches;
 
-    if (!keyword.trim()) {
-        results.innerHTML =
-            '<div class="student-autocomplete-empty-v6">Gõ tên hoặc Mã HS để tìm.</div>';
-        results.classList.remove('hidden');
-        return;
+    if (query) {
+        matches = filterFn
+            ? filterFn(source, query)
+            : [];
+    } else {
+        /*
+         * Khi chưa tìm kiếm, luôn cho xem một nhóm nhỏ học sinh
+         * chưa được chọn. Không hiển thị cả 44 em để tránh panel dài.
+         */
+        matches = source
+            .filter(
+                (student) =>
+                    !competitionStudentFilterStateV6.has(
+                        String(student.id),
+                    ),
+            )
+            .slice(0, 6);
     }
+
+    matches = matches.filter(
+        (student) =>
+            !competitionStudentFilterStateV6.has(
+                String(student.id),
+            ),
+    );
 
     if (!matches.length) {
         results.innerHTML =
-            '<div class="student-autocomplete-empty-v6">Không tìm thấy học sinh phù hợp.</div>';
+            '<div class="student-autocomplete-empty-v6">' +
+            (query
+                ? 'Không tìm thấy học sinh phù hợp.'
+                : 'Tất cả học sinh đang hiển thị đã được chọn.') +
+            '</div>';
         results.classList.remove('hidden');
         return;
     }
@@ -197,19 +229,20 @@ function renderCompetitionStudentFilterResultsV6(keyword) {
     results.innerHTML = matches
         .map((student) => {
             const id = String(student.id);
-            const checked =
-                competitionStudentFilterStateV6.has(id);
 
             return `
                 <label class="competition-student-filter-option-v6">
                     <input
                         type="checkbox"
                         value="${escapeStudentPickerHtmlV6(id)}"
-                        ${checked ? 'checked' : ''}
                     >
                     <span class="competition-student-filter-name-v6">
-                        <strong>${escapeStudentPickerHtmlV6(student.full_name)}</strong>
-                        <small>${escapeStudentPickerHtmlV6(student.student_code || 'Chưa có Mã HS')}</small>
+                        <strong>${escapeStudentPickerHtmlV6(
+                            student.full_name,
+                        )}</strong>
+                        <small>${escapeStudentPickerHtmlV6(
+                            student.student_code || 'Chưa có Mã HS',
+                        )}</small>
                     </span>
                 </label>
             `;
@@ -218,7 +251,6 @@ function renderCompetitionStudentFilterResultsV6(keyword) {
 
     results.classList.remove('hidden');
 }
-
 function mountCompetitionStudentFilterV6() {
     if (competitionStudentFilterMountedV6) {
         return true;
