@@ -10,19 +10,19 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const snapshotSource = fs.readFileSync(
-    path.join(root, 'competition-snapshot-notification-v6.js'),
+    path.join(root, '../../modules/competition/competition-snapshot-notification-v6.js'),
     'utf8',
 );
 const snapshotEditSource = fs.readFileSync(
-    path.join(root, 'competition-snapshot-edit-v6.js'),
+    path.join(root, '../../modules/competition/competition-snapshot-edit-v6.js'),
     'utf8',
 );
 const recalculationSource = fs.readFileSync(
-    path.join(root, 'competition-recalculation-v6.js'),
+    path.join(root, '../../modules/competition/competition-recalculation-v6.js'),
     'utf8',
 );
 const calculationSource = fs.readFileSync(
-    path.join(root, 'competition-calculation-v6.js'),
+    path.join(root, '../../modules/competition/competition-calculation-v6.js'),
     'utf8',
 );
 const loaderSource = fs.readFileSync(
