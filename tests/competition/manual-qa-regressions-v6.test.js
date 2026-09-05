@@ -51,13 +51,20 @@ assert.match(
 
 // 4. Multi-student filter keeps the full 44-student ranking and exposes
 // the selected students' ranks within that full ranking.
-assert.match(index, /id="compStudentFilter"[^>]*multiple/);
-assert.match(app, /selectedStudentIds/);
+assert.match(index, /id="compStudentFilter"[^>]*hidden/);
+assert.match(app, /CompetitionRankingUIV6\?\.getSelectedStudentIds/);
 assert.match(
     app,
     /selectedStudentIds\.includes\(String\(record\.student_id\)\)/,
     'History must accept multiple selected students.',
 );
+const rankingUi = read('modules/competition/competition-ranking-ui-v6.js');
+const autocomplete = read('modules/students/student-autocomplete-v6.js');
+assert.match(rankingUi, /type="checkbox"/);
+assert.match(rankingUi, /placeholder="Gõ tên hoặc Mã HS\.\.\."/);
+assert.match(rankingUi, /StudentAutocompleteV6\?\.filterStudents/);
+assert.match(autocomplete, /student\.full_name/);
+assert.match(autocomplete, /student\.student_code/);
 assert.match(
     app,
     /rankingText \+ ' \/ 44'/,
