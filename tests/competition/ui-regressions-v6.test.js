@@ -54,4 +54,4 @@ assert.match(appSource, /competitionRenderRequestId/);
  */
 assert.match(appSource, /CompetitionCalculationV6/);
 assert.match(appSource, /const recordWeek = compWeekStart/);
-assert.match(appSource, /String\(record\.student_id\) === String\(sf\)/);
+assert.match(appSource, /selectedStudentIds/);
