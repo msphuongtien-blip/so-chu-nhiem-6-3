@@ -18,7 +18,7 @@ const loaderSource = fs.readFileSync(
     'utf8',
 );
 const rankingSource = fs.readFileSync(
-    path.join(root, '../../modules/competition/competition-ranking-columns-v6.js'),
+    path.join(root, 'modules/competition/competition-ranking-columns-v6.js'),
     'utf8',
 );
 
