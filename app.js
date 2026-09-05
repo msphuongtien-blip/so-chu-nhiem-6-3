@@ -363,47 +363,93 @@ async function renderCompetition(){
 
   const records=history||[];
 
-  /* Tính điểm tuần theo chuỗi rollover từ lịch sử, không cộng bù vào điểm tổng. */
-  const weeklyCache={};
-  function calcWeek(studentId,targetWeek){
-    const key=studentId+'|'+targetWeek;
-    if(weeklyCache[key]!==undefined)return weeklyCache[key];
+  /*
+   * Tính điểm tuần từ cùng calculation engine V6 được dùng bởi Test Center.
+   * Không duy trì một công thức thứ hai trong renderer vì hai công thức có
+   * thể cho kết quả khác nhau sau khi rollover hoặc khi lịch sử thay đổi.
+   */
+  const weeklyCache = {};
 
-    const rows=records
-      .filter(r=>r.student_id===studentId && r.week)
-      .sort((a,b)=>String(a.week).localeCompare(String(b.week)));
+  function calcWeek(studentId, targetWeek) {
+    const key = String(studentId) + '|' + String(targetWeek);
 
-    const weeks=[...new Set(rows.map(r=>String(r.week)))];
-    let start=81;
-    let result=81;
-
-    if(weeks.length){
-      for(const w of weeks){
-        if(w>targetWeek)break;
-        const total=rows.filter(r=>String(r.week)===w)
-          .reduce((sum,r)=>sum+Number(r.score||0),0);
-        result=Math.max(0,Math.min(100,start+total));
-        if(w===targetWeek){
-          weeklyCache[key]=result;
-          return result;
-        }
-        start=result>=91?91:result>=81?81:result>=66?71:result>=50?61:51;
-      }
+    if (weeklyCache[key] !== undefined) {
+      return weeklyCache[key];
     }
 
-    weeklyCache[key]=targetWeek>=getCurrentWeekStart() ? start : result;
+    const engine = globalThis.CompetitionCalculationV6;
+
+    if (engine) {
+      weeklyCache[key] = engine.calculateWeekScore(
+        records,
+        studentId,
+        targetWeek,
+      );
+      return weeklyCache[key];
+    }
+
+    /*
+     * Fallback chỉ dùng nếu calculation engine chưa bootstrap kịp.
+     * Giữ đúng contract 81 điểm nền và rollover hiện tại.
+     */
+    const rows = records
+      .filter((record) => {
+        return (
+          String(record.student_id) === String(studentId) &&
+          compWeekStart(
+            record.week ||
+              record.week_start ||
+              record.date,
+          ) === compWeekStart(targetWeek)
+        );
+      });
+
+    const total = rows.reduce(
+      (sum, record) => sum + Number(record.score ?? record.points ?? 0),
+      0,
+    );
+
+    weeklyCache[key] = Math.max(
+      0,
+      Math.min(100, 81 + total),
+    );
+
     return weeklyCache[key];
   }
 
-  function calcMonth(studentId,targetWeek){
-    const d=new Date(targetWeek+'T00:00:00');
-    const start=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
-    const nextDate=new Date(d.getFullYear(),d.getMonth()+1,1);
-    const next=nextDate.getFullYear()+'-'+String(nextDate.getMonth()+1).padStart(2,'0')+'-01';
-    const total=records
-      .filter(r=>r.student_id===studentId && String(r.date||'')>=start && String(r.date||'')<next)
-      .reduce((sum,r)=>sum+Number(r.score||0),0);
-    return Math.max(0,Math.min(100,81+total));
+  function calcMonth(studentId, targetWeek) {
+    const d = new Date(targetWeek + 'T00:00:00');
+    const start =
+      d.getFullYear() +
+      '-' +
+      String(d.getMonth() + 1).padStart(2, '0') +
+      '-01';
+    const nextDate = new Date(
+      d.getFullYear(),
+      d.getMonth() + 1,
+      1,
+    );
+    const next =
+      nextDate.getFullYear() +
+      '-' +
+      String(nextDate.getMonth() + 1).padStart(2, '0') +
+      '-01';
+
+    const total = records
+      .filter((record) => {
+        return (
+          String(record.student_id) === String(studentId) &&
+          String(record.date || '') >= start &&
+          String(record.date || '') < next
+        );
+      })
+      .reduce(
+        (sum, record) =>
+          sum + Number(record.score ?? record.points ?? 0),
+        0,
+      );
+
+    return Math.max(0, Math.min(100, 81 + total));
   }
 
   const rows=allStudents.map(s=>({
@@ -438,11 +484,24 @@ async function renderCompetition(){
     :'81.0';
 
   /* LỊCH SỬ: độc lập với bảng xếp hạng. */
-  const filtered=records.filter(x=>
-    (!week||String(x.week||x.week_start||'')===String(week)) &&
-    (!sf||x.student_id===sf) &&
-    (!gf||String(x.category_id)===String(gf))
-  );
+  /*
+   * Lịch sử phải được lọc theo tuần đã chuẩn hóa.
+   * Record có thể lưu week, week_start hoặc chỉ có date; cả ba đều
+   * được quy về thứ Hai đầu tuần trước khi so sánh.
+   */
+  const filtered = records.filter((record) => {
+    const recordWeek = compWeekStart(
+      record.week ||
+        record.week_start ||
+        record.date,
+    );
+
+    return (
+      (!week || recordWeek === compWeekStart(week)) &&
+      (!sf || String(record.student_id) === String(sf)) &&
+      (!gf || String(record.category_id) === String(gf))
+    );
+  });
 
   const studentMap=Object.fromEntries(allStudents.map(s=>[s.id,s.full_name]));
 
