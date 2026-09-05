@@ -21,7 +21,7 @@ const index = fs.readFileSync('index.html', 'utf8');
 const moduleSource = fs.readFileSync('modules/seating-chart.js', 'utf8');
 const css = fs.readFileSync('styles.css', 'utf8');
 const moduleCss = fs.readFileSync('modules/seating-chart.css', 'utf8');
-const seatingMigration = fs.readFileSync('supabase/migrations/20260905_seating_chart.sql', 'utf8');
+const seatingMigration = fs.readFileSync('supabase/migrations/20260905123000_save_seating_positions_atomically.sql', 'utf8');
 
 assert.match(index, /modules\/seating-chart\.js/);
 assert.match(index, /@supabase\/supabase-js@2/);
