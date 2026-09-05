@@ -138,10 +138,13 @@ async function submitCompetitionWithServiceV6() {
 
     const studentId =
         document.getElementById('fStudentV6')?.value;
-    const week =
-        document.getElementById('fWeekV6')?.value;
     const date =
-        document.getElementById('fDateV6')?.value;
+        document.getElementById('fDateV6')?.value || '';
+    const week =
+        document.getElementById('fWeekV6')?.value ||
+        globalThis.CompetitionCalculationV6?.getMonday?.(date) || '';
+    const date =
+        document.getElementById('fDateV6')?.value || '';
     const categoryId =
         document.getElementById('fGroupV6')?.value;
     const criteriaId =
