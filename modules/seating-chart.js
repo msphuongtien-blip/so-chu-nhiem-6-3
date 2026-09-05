@@ -751,6 +751,7 @@
 
     async function finishPick(winner) {
         const nameElement = document.getElementById('scWinnerName');
+        const avatarElement = document.getElementById('scWinnerAvatar');
         const teamElement = document.getElementById('scWinnerTeam');
         const winnerBox = document.getElementById('scWinner');
 
