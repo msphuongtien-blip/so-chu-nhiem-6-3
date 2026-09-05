@@ -37,6 +37,7 @@
     let teacherAvatarUrl = '';
     let gameShowSoundEnabled = true;
     let audioContext = null;
+    let isSaving = false;
 
     const state = {
         students: [],
@@ -134,7 +135,6 @@
                 <div class="sc-toolbar">
                     <div>
                         <div class="sc-kicker">LỚP 6/3 · SƠ ĐỒ LỚP</div>
-                        <h2>Sơ đồ chỗ ngồi</h2>
                         <p>Kéo học sinh để đổi chỗ · Chạm hai ghế để đổi chỗ trên màn hình cảm ứng.</p>
                     </div>
                     <div class="sc-actions">
@@ -147,14 +147,11 @@
                         </select>
                         <button id="scShuffle" class="btn" type="button">↝ Xáo trộn chỗ ngồi</button>
                         <button id="scSave" class="btn primary" type="button">Lưu sơ đồ</button>
+                        <span id="scSaveStatus" class="sc-save-status" role="status" aria-live="polite"></span>
                     </div>
                 </div>
 
                 <div class="sc-classroom">
-                    <div class="sc-board">
-                        <span>BẢNG</span>
-                        <small>GVCN</small>
-                    </div>
                     <div class="sc-teacher-desk">
                         <button type="button" class="sc-teacher-avatar-button" id="scTeacherAvatarButton" title="Thêm hoặc đổi ảnh GVCN">
                             <div id="scTeacherAvatar" class="sc-teacher-avatar"></div>
@@ -505,48 +502,77 @@
         await persistAssignments([source, target]);
     }
 
+    /**
+     * Lưu toàn bộ sơ đồ bằng một RPC transaction ở PostgreSQL.
+     *
+     * Không dùng chuỗi UPDATE từ trình duyệt nữa: nếu một update lỗi,
+     * toàn bộ transaction được rollback để không bao giờ mất một phần lớp.
+     */
     async function persistAssignments(changedSeats) {
-        try {
-            const app = getApp();
-            const occupiedStudentIds = changedSeats.map((seat) => seat.student_id).filter(Boolean);
+        const app = getApp();
+        const payload = changedSeats.map((seat) => ({
+            id: seat.id,
+            student_id: seat.student_id || null,
+            note: seat.note || null,
+            status: seat.status || null
+        }));
 
-            // Bước 1: giải phóng các ghế bị ảnh hưởng để không vi phạm unique student_id.
-            if (occupiedStudentIds.length) {
-                const { error: clearError } = await app
-                    .from('seating_positions')
-                    .update({ student_id: null, updated_at: new Date().toISOString() })
-                    .eq('class_key', CLASS_KEY)
-                    .in('id', changedSeats.map((seat) => seat.id));
+        const { data, error } = await app.rpc('save_seating_positions', {
+            p_class_key: CLASS_KEY,
+            p_assignments: payload
+        });
 
-                if (clearError) throw clearError;
-            }
+        if (error) throw error;
 
-            // Bước 2: ghi lại assignment mới.
-            for (const seat of changedSeats) {
-                const { error } = await app
-                    .from('seating_positions')
-                    .update({
-                        student_id: seat.student_id,
-                        note: seat.note || null,
-                        status: seat.status || null,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', seat.id)
-                    .eq('class_key', CLASS_KEY);
-
-                if (error) throw error;
-            }
-
-            setStatus('Đã lưu vị trí vào Supabase.');
-        } catch (error) {
-            console.error('Seating position save failed:', error);
-            setStatus(`Không lưu được sơ đồ: ${error.message || error}`, true);
-            await loadAndRender();
+        const expectedAssignedCount = payload.filter((seat) => seat.student_id).length;
+        if (Number(data) !== expectedAssignedCount) {
+            throw new Error('Dữ liệu sau khi lưu không khớp với sơ đồ đang hiển thị.');
         }
+
+        setStatus(`Đã lưu sơ đồ thành công: ${expectedAssignedCount} học sinh.`);
+        return data;
     }
 
     async function savePositions() {
-        await persistAssignments(positions);
+        if (isSaving) return;
+
+        const saveButton = document.getElementById('scSave');
+        const saveStatus = document.getElementById('scSaveStatus');
+        const originalLabel = saveButton?.textContent || 'Lưu sơ đồ';
+
+        isSaving = true;
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.setAttribute('aria-busy', 'true');
+            saveButton.textContent = 'Đang lưu...';
+        }
+        if (saveStatus) {
+            saveStatus.textContent = 'Đang lưu sơ đồ vào dữ liệu lớp...';
+            saveStatus.classList.remove('error', 'success');
+        }
+        setStatus('Đang lưu sơ đồ...');
+
+        try {
+            await persistAssignments(positions);
+            if (saveStatus) {
+                saveStatus.textContent = '✓ Đã lưu';
+                saveStatus.classList.add('success');
+            }
+        } catch (error) {
+            console.error('Seating position save failed:', error);
+            if (saveStatus) {
+                saveStatus.textContent = 'Không lưu được';
+                saveStatus.classList.add('error');
+            }
+            setStatus(`Không lưu được sơ đồ: ${error.message || error}`, true);
+        } finally {
+            isSaving = false;
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.removeAttribute('aria-busy');
+                saveButton.textContent = originalLabel;
+            }
+        }
     }
 
     async function shuffleSeats() {
