@@ -586,9 +586,14 @@
 
         try {
             const app = getApp();
-            setStatus('Đang tải ảnh học sinh...');
+            setStatus(isTeacherAvatar ? 'Đang tải ảnh GVCN...' : 'Đang tải ảnh học sinh...');
             const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-            const filePath = `${studentId}/${crypto.randomUUID()}.${extension}`;
+
+            // GVCN không phải là một bản ghi trong bảng students.
+            // Vì vậy ảnh GVCN phải dùng đường dẫn riêng và không được UPDATE students.
+            const filePath = isTeacherAvatar
+                ? `teacher/${crypto.randomUUID()}.${extension}`
+                : `${studentId}/${crypto.randomUUID()}.${extension}`;
 
             const { error: uploadError } = await app.storage
                 .from('student-avatars')
@@ -601,19 +606,24 @@
                 .getPublicUrl(filePath);
             const avatarUrl = publicUrlData.publicUrl;
 
-            const { error: updateError } = await app
-                .from('students')
-                .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
-                .eq('id', studentId);
-
-            if (updateError) throw updateError;
-
             if (isTeacherAvatar) {
                 teacherAvatarUrl = avatarUrl;
                 localStorage.setItem('scTeacherAvatarUrl', avatarUrl);
                 renderTeacherDesk();
                 setStatus('Đã cập nhật ảnh GVCN.');
             } else {
+                const { error: updateError } = await app
+                    .from('students')
+                    .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+                    .eq('id', studentId);
+
+                if (updateError) throw updateError;
+
+                const student = studentById(studentId);
+                if (student) student.avatar_url = avatarUrl;
+                renderSeats(document.getElementById('scViewMode')?.value || 'all');
+                setStatus('Đã cập nhật ảnh học sinh.');
+            }
                 const student = studentById(studentId);
                 if (student) student.avatar_url = avatarUrl;
                 renderSeats(document.getElementById('scViewMode')?.value || 'all');
