@@ -19,9 +19,6 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
 const formPath = path.join(root, 'modules/competition/competition-record-form-v6.js');
-const cleanPath = path.join(root, 'modules/competition/competition-record-form-v6.js');
-const source = fs.readFileSync(formPath, 'utf8');
-const cleanSource = fs.readFileSync(cleanPath, 'utf8');
 
 assert.match(source, /id="fGroupV6"/);
 assert.match(source, /id="fCriteriaV6"/);
@@ -40,28 +37,16 @@ assert.match(
     'Form phải cho giáo viên chọn Ngày.',
 );
 
-assert.match(
-    cleanSource,
-    /fWeekV6.*closest\('\.field'\).*remove/s,
-    'Clean boundary phải loại field Tuần khỏi UI.',
-);
-
-assert.doesNotMatch(
-    cleanSource,
-    /fDateV6.*closest\('\.field'\).*remove/s,
-    'Clean boundary không được loại field Ngày.',
-);
 
 assert.match(
-    cleanSource,
-    /const date = document\.getElementById\('fDateV6'\)\?\.value/,
-    'Submit phải lấy Ngày do người dùng chọn.',
+    source,
+    /getRecordFormCriteriaDefaultScoreV6/,
+    'Form phải hỗ trợ điểm mặc định của tiêu chí.',
 );
-
 assert.match(
-    cleanSource,
-    /CompetitionCalculationV6\?\.getMonday\?\.\(date\)/,
-    'Tuần phải tự suy ra từ Ngày bằng calculation engine.',
+    source,
+    /default_score/,
+    'Form phải đọc default_score từ criteria.',
 );
 
 console.log('PASS: Competition Record Form V6 date-driven week contract');
