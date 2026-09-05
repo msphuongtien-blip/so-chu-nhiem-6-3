@@ -369,28 +369,12 @@ async function renderCompetition(){
     console.warn('Thi đua: số học sinh hiện tại =',allStudents.length,'; yêu cầu giao diện là 44.');
   }
 
-  if($('compStudentFilter')){
-    const select = $('compStudentFilter');
-    const oldSelected = Array.from(select.selectedOptions || [])
-      .map(option => option.value)
-      .filter(Boolean);
-    select.innerHTML = '<option value="">Tất cả học sinh</option>' +
-      allStudents.map(s =>
-        '<option value="' + s.id + '">' + esc(s.full_name) + '</option>'
-      ).join('');
-    oldSelected.forEach(id => {
-      const option = Array.from(select.options).find(
-        item => String(item.value) === String(id),
-      );
-      if (option) option.selected = true;
-    });
+  if (globalThis.CompetitionRankingUIV6?.mountStudentFilter) {
+    globalThis.CompetitionRankingUIV6.mountStudentFilter();
   }
 
-  const selectedStudentIds = Array.from(
-    $('compStudentFilter')?.selectedOptions || [],
-  )
-    .map(option => String(option.value))
-    .filter(Boolean);
+  const selectedStudentIds =
+    globalThis.CompetitionRankingUIV6?.getSelectedStudentIds?.() || [];
   const gf=$('compGroupFilter')?.value||'';
 
   /* Toàn bộ lịch sử vừa được đọc trực tiếp từ Supabase. */
