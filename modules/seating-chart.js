@@ -34,6 +34,9 @@
     let randomBusy = false;
     let randomScope = 'all';
     let excludePicked = true;
+    let teacherAvatarUrl = '';
+    let gameShowSoundEnabled = true;
+    let audioContext = null;
 
     const state = {
         students: [],
@@ -47,6 +50,11 @@
         '"': '&quot;',
         "'": '&#039;'
     }[char]));
+
+    function studentDisplayName(name) {
+        const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+        return parts.length >= 2 ? parts.slice(-2).join(' ') : (parts[0] || '—');
+    }
 
     function initials(name) {
         return String(name || '?')
@@ -147,6 +155,15 @@
                         <span>BẢNG</span>
                         <small>GVCN</small>
                     </div>
+                    <div class="sc-teacher-desk">
+                        <button type="button" class="sc-teacher-avatar-button" id="scTeacherAvatarButton" title="Thêm hoặc đổi ảnh GVCN">
+                            <div id="scTeacherAvatar" class="sc-teacher-avatar"></div>
+                        </button>
+                        <div class="sc-teacher-info">
+                            <span>GVCN</span>
+                            <strong>Phượng Tiên</strong>
+                        </div>
+                    </div>
                     <div id="scTeams" class="sc-teams"></div>
                 </div>
 
@@ -168,14 +185,21 @@
                             <label><input type="radio" name="scRandomScope" value="team4"> Tổ 4</label>
                         </div>
 
-                        <label class="sc-toggle">
-                            <input id="scExcludePicked" type="checkbox" checked>
-                            Không chọn lại học sinh đã quay
-                        </label>
+                        <div class="sc-picker-settings">
+                            <label class="sc-toggle">
+                                <input id="scExcludePicked" type="checkbox" checked>
+                                Không chọn lại học sinh đã quay
+                            </label>
+                            <label class="sc-toggle">
+                                <input id="scGameShowSound" type="checkbox" checked>
+                                Âm thanh gameshow
+                            </label>
+                        </div>
 
                         <div id="scWinner" class="sc-winner">
                             <div class="sc-stage-lights"></div>
                             <div class="sc-winner-label">SẴN SÀNG?</div>
+                            <div id="scWinnerAvatar" class="sc-winner-avatar" aria-hidden="true">?</div>
                             <div id="scWinnerName" class="sc-winner-name">Nhấn QUAY TÊN</div>
                             <div id="scWinnerTeam" class="sc-winner-team">—</div>
                         </div>
@@ -199,6 +223,7 @@
                 </div>
 
                 <div id="scStatus" class="sc-status" role="status"></div>
+                <input id="scAvatarInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
             </div>
         `;
 
@@ -216,8 +241,20 @@
         document.getElementById('scPick')?.addEventListener('click', pickRandomStudent);
         document.getElementById('scUndoPick')?.addEventListener('click', undoLastPick);
         document.getElementById('scResetHistory')?.addEventListener('click', resetPickHistory);
+        document.getElementById('scAvatarInput')?.addEventListener('change', handleAvatarUpload);
+        document.getElementById('scTeacherAvatarButton')?.addEventListener('click', () => {
+            const input = document.getElementById('scAvatarInput');
+            if (!input) return;
+            input.dataset.studentId = '';
+            input.dataset.teacherAvatar = 'true';
+            input.value = '';
+            input.click();
+        });
         document.getElementById('scExcludePicked')?.addEventListener('change', (event) => {
             excludePicked = event.target.checked;
+        });
+        document.getElementById('scGameShowSound')?.addEventListener('change', (event) => {
+            gameShowSoundEnabled = event.target.checked;
         });
 
         document.querySelectorAll('input[name="scRandomScope"]').forEach((input) => {
@@ -254,7 +291,9 @@
             state.students = studentResult.data || [];
             positions = positionResult.data || [];
             randomHistory = historyResult.data || [];
+            teacherAvatarUrl = localStorage.getItem('scTeacherAvatarUrl') || '';
 
+            renderTeacherDesk();
             renderSeats(document.getElementById('scViewMode')?.value || 'all');
             renderHistory();
         } catch (error) {
@@ -273,6 +312,15 @@
         return positions
             .filter((seat) => seat.team === team)
             .sort((a, b) => a.column_number - b.column_number);
+    }
+
+    function renderTeacherDesk() {
+        const avatar = document.getElementById('scTeacherAvatar');
+        if (!avatar) return;
+
+        avatar.innerHTML = teacherAvatarUrl
+            ? `<img src="${escapeHtml(teacherAvatarUrl)}" alt="Ảnh GVCN">`
+            : 'PT';
     }
 
     function renderSeats(viewMode = 'all') {
@@ -305,6 +353,10 @@
         const student = studentById(seat.student_id);
         const note = seat.note || '';
         const status = seat.status || '';
+        // Mỗi tổ có 12 vị trí theo thứ tự 1→12, hiển thị thành 2 cột dọc,
+        // mỗi cột 6 bàn. Không cần thay đổi dữ liệu seat hiện có.
+        const visualColumn = Math.floor((Number(seat.column_number) - 1) / 6) + 1;
+        const visualDesk = ((Number(seat.column_number) - 1) % 6) + 1;
 
         return `
             <article
@@ -314,17 +366,18 @@
                 tabindex="0"
                 aria-label="${student ? escapeHtml(student.full_name) : 'Ghế trống'}"
             >
-                <div class="sc-seat-number">Ghế ${seat.column_number}</div>
+                <div class="sc-seat-number">Cột ${visualColumn} · Bàn ${visualDesk}</div>
                 ${student ? `
                     <div class="sc-student-card">
-                        <div class="sc-avatar">
-                            ${student.avatar_url
-                                ? `<img src="${escapeHtml(student.avatar_url)}" alt="">`
-                                : escapeHtml(initials(student.full_name))}
-                        </div>
+                        <button type="button" class="sc-avatar-button" data-upload-student="${student.id}" title="Thêm hoặc đổi ảnh học sinh">
+                            <div class="sc-avatar">
+                                ${student.avatar_url
+                                    ? `<img src="${escapeHtml(student.avatar_url)}" alt="">`
+                                    : escapeHtml(initials(student.full_name))}
+                            </div>
+                        </button>
                         <div class="sc-student-info">
-                            <strong>${escapeHtml(student.full_name)}</strong>
-                            <span>Mã HS ${escapeHtml(student.student_code || '—')}</span>
+                            <strong>${escapeHtml(studentDisplayName(student.full_name))}</strong>
                         </div>
                     </div>
                 ` : `
@@ -365,6 +418,18 @@
 
         document.querySelectorAll('[data-note-seat]').forEach((button) => {
             button.addEventListener('click', () => editSeatDetails(button.dataset.noteSeat));
+        });
+
+        document.querySelectorAll('[data-upload-student]').forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const input = document.getElementById('scAvatarInput');
+                if (!input) return;
+                input.dataset.studentId = button.dataset.uploadStudent;
+                input.dataset.teacherAvatar = 'false';
+                input.value = '';
+                input.click();
+            });
         });
     }
 
@@ -502,6 +567,71 @@
         setStatus('Đã xáo trộn ngẫu nhiên và lưu sơ đồ.');
     }
 
+    async function handleAvatarUpload(event) {
+        const input = event.currentTarget;
+        const studentId = input.dataset.studentId;
+        const isTeacherAvatar = input.dataset.teacherAvatar === 'true';
+        const file = input.files?.[0];
+
+        if ((!studentId && !isTeacherAvatar) || !file) return;
+
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            setStatus('Ảnh không hợp lệ. Vui lòng chọn JPG, PNG hoặc WebP.', true);
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            setStatus('Ảnh quá lớn. Vui lòng chọn ảnh tối đa 5 MB.', true);
+            return;
+        }
+
+        try {
+            const app = getApp();
+            setStatus(isTeacherAvatar ? 'Đang tải ảnh GVCN...' : 'Đang tải ảnh học sinh...');
+            const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+
+            // GVCN không phải là một bản ghi trong bảng students.
+            // Vì vậy ảnh GVCN phải dùng đường dẫn riêng và không được UPDATE students.
+            const filePath = isTeacherAvatar
+                ? `teacher/${crypto.randomUUID()}.${extension}`
+                : `${studentId}/${crypto.randomUUID()}.${extension}`;
+
+            const { error: uploadError } = await app.storage
+                .from('student-avatars')
+                .upload(filePath, file, { cacheControl: '3600', contentType: file.type, upsert: false });
+
+            if (uploadError) throw uploadError;
+
+            const { data: publicUrlData } = app.storage
+                .from('student-avatars')
+                .getPublicUrl(filePath);
+            const avatarUrl = publicUrlData.publicUrl;
+
+            if (isTeacherAvatar) {
+                teacherAvatarUrl = avatarUrl;
+                localStorage.setItem('scTeacherAvatarUrl', avatarUrl);
+                renderTeacherDesk();
+                setStatus('Đã cập nhật ảnh GVCN.');
+            } else {
+                const { error: updateError } = await app
+                    .from('students')
+                    .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+                    .eq('id', studentId);
+
+                if (updateError) throw updateError;
+
+                const student = studentById(studentId);
+                if (student) student.avatar_url = avatarUrl;
+                renderSeats(document.getElementById('scViewMode')?.value || 'all');
+                setStatus('Đã cập nhật ảnh học sinh.');
+            }
+        } catch (error) {
+            console.error('Student avatar upload failed:', error);
+            setStatus(`Không thể cập nhật ảnh: ${error.message || error}`, true);
+        } finally {
+            input.value = '';
+        }
+    }
     async function editSeatDetails(seatId) {
         const seat = positions.find((item) => item.id === seatId);
         if (!seat) return;
@@ -572,9 +702,13 @@
 
         const winner = candidates[Math.floor(Math.random() * candidates.length)];
         const nameElement = document.getElementById('scWinnerName');
+        const avatarElement = document.getElementById('scWinnerAvatar');
         const winnerBox = document.getElementById('scWinner');
 
         nameElement?.classList.add('spinning');
+        avatarElement?.classList.add('spinning');
+        winnerBox?.classList.remove('winner');
+        playGameShowStart();
         winnerBox?.classList.remove('winner');
 
         const duration = 1800;
@@ -587,7 +721,9 @@
 
             if (progress < 1) {
                 const preview = candidates[Math.floor(Math.random() * candidates.length)];
-                if (nameElement) nameElement.textContent = preview.full_name;
+                if (nameElement) nameElement.textContent = studentDisplayName(preview.full_name);
+                if (avatarElement) renderWinnerAvatar(preview, avatarElement);
+                playSpinTick();
                 window.setTimeout(() => requestAnimationFrame(tick), speed);
                 return;
             }
@@ -609,14 +745,30 @@
         return candidates;
     }
 
+    function renderWinnerAvatar(student, element) {
+        if (!element) return;
+        if (student?.avatar_url) {
+            element.innerHTML = `<img src="${escapeHtml(student.avatar_url)}" alt="Ảnh ${escapeHtml(studentDisplayName(student.full_name))}">`;
+            return;
+        }
+        element.textContent = initials(student?.full_name || '?');
+        element.innerHTML = escapeHtml(initials(student?.full_name || '?'));
+    }
+
     async function finishPick(winner) {
         const nameElement = document.getElementById('scWinnerName');
+        const avatarElement = document.getElementById('scWinnerAvatar');
         const teamElement = document.getElementById('scWinnerTeam');
         const winnerBox = document.getElementById('scWinner');
 
         if (nameElement) {
-            nameElement.textContent = winner.full_name;
+            nameElement.textContent = studentDisplayName(winner.full_name);
             nameElement.classList.remove('spinning');
+        }
+
+        if (avatarElement) {
+            renderWinnerAvatar(winner, avatarElement);
+            avatarElement.classList.remove('spinning');
         }
 
         if (teamElement) teamElement.textContent = teamLabel(winner.team);
@@ -657,32 +809,58 @@
         }
     }
 
-    function playWinnerSound() {
+    function getAudioContext() {
+        if (!gameShowSoundEnabled) return null;
         try {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContextClass) return;
-
-            const context = new AudioContextClass();
-            const oscillator = context.createOscillator();
-            const gain = context.createGain();
-
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(520, context.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.22);
-            gain.gain.setValueAtTime(0.0001, context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + 0.03);
-            gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.28);
-
-            oscillator.connect(gain);
-            gain.connect(context.destination);
-            oscillator.start();
-            oscillator.stop(context.currentTime + 0.3);
+            if (!AudioContextClass) return null;
+            if (!audioContext) audioContext = new AudioContextClass();
+            if (audioContext.state === 'suspended') audioContext.resume();
+            return audioContext;
         } catch (error) {
-            // Âm thanh là enhancement; lỗi audio không được làm hỏng thao tác quay.
-            console.debug('Winner sound unavailable:', error);
+            return null;
         }
     }
 
+    function playTone(frequency, duration, type = 'sine', volume = 0.035, delay = 0) {
+        const context = getAudioContext();
+        if (!context) return;
+
+        const start = context.currentTime + delay;
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(start);
+        oscillator.stop(start + duration + 0.03);
+    }
+
+    function playGameShowStart() {
+        playTone(392, 0.09, 'square', 0.025);
+        playTone(523.25, 0.12, 'square', 0.025, 0.10);
+        playTone(659.25, 0.16, 'square', 0.025, 0.22);
+    }
+
+    function playSpinTick() {
+        playTone(620, 0.045, 'square', 0.012);
+    }
+
+    function playWinnerSound() {
+        const context = getAudioContext();
+        if (!context) return;
+
+        playTone(523.25, 0.18, 'sine', 0.035);
+        playTone(659.25, 0.18, 'sine', 0.035, 0.08);
+        playTone(783.99, 0.18, 'sine', 0.035, 0.16);
+        playTone(1046.5, 0.24, 'sine', 0.04, 0.24);
+    }
     function renderHistory() {
         const root = document.getElementById('scHistory');
         const count = document.getElementById('scHistoryCount');
