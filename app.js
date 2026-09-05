@@ -237,7 +237,33 @@ function setupUI() {
 
 function showPage(id,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(id)?.classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');const t={dashboard:'Tổng quan',students:'Học sinh & hồ sơ',random:'Gọi tên ngẫu nhiên',attendance:'Điểm danh',competition:'Thi đua – xếp hạng',honors:'Bảng danh dự',teams:'Theo dõi tổ',reports:'Báo cáo',alerts:'Cảnh báo',feedbackTeacher:'Phản hồi học sinh',settings:'Cài đặt',sHome:'Trang chủ',sProfile:'Hồ sơ của em',sProgress:'Hành trình tiến bộ',sHonors:'Thành tích của em',sGoals:'Mục tiêu tuần',sFeedback:'Phản hồi'};$('pageTitle').textContent=t[id]||id;if(role==='teacher'&&id==='reports')renderReports();if(role==='teacher'&&id==='alerts')renderAlerts();}
 async function loadSettings(){const {data}=await sb.from('class_settings').select('*').limit(1).maybeSingle();if(data)classSettings=data;$('classNameView').textContent=classSettings.class_name;$('teacherNameView').textContent=classSettings.teacher_name;$('yearTop').textContent=classSettings.school_year;$('loginYear').textContent=classSettings.school_year;$('classNameInput').value=classSettings.class_name;$('schoolYearInput').value=classSettings.school_year;$('teacherNameInput').value=classSettings.teacher_name}
-async function loadAll(){await loadSettings();if(role==='teacher'){await Promise.all([loadStudentsFromSupabase(),loadCompetitionHistoryFromSupabase()]);await renderStudents();await renderDashboard();await renderAttendance();await renderCompetition();await renderHonors();await renderTeams();await renderAlerts();await renderTeacherFeedback()}else await renderStudentAll()}
+async function loadAll(){
+    await loadSettings();
+
+    if(role==='teacher'){
+        await Promise.all([
+            loadStudentsFromSupabase(),
+            loadCompetitionHistoryFromSupabase(),
+        ]);
+
+        // The Competition renderer must not run until every V6 module has
+        // finished loading. This removes browser-dependent bootstrap races.
+        if(globalThis.ApplicationModuleLoaderV6?.ready){
+            await globalThis.ApplicationModuleLoaderV6.ready;
+        }
+
+        await renderStudents();
+        await renderDashboard();
+        await renderAttendance();
+        await renderCompetition();
+        await renderHonors();
+        await renderTeams();
+        await renderAlerts();
+        await renderTeacherFeedback();
+    }else{
+        await renderStudentAll();
+    }
+}
 async function renderStudents(){if(!supabaseCache.students.length) await loadStudentsFromSupabase(); const data=supabaseCache.students;const vnNameKey=n=>{const parts=String(n||'').trim().split(/\s+/);return parts.length?parts[parts.length-1]:''};students=(data||[]).sort((a,b)=>{const ka=vnNameKey(a.full_name),kb=vnNameKey(b.full_name);return ka.localeCompare(kb,'vi',{sensitivity:'base'})||String(a.full_name||'').localeCompare(String(b.full_name||''),'vi',{sensitivity:'base'});});const q=($('studentSearch')?.value||'').toLowerCase();const rows=students.filter(s=>(s.full_name+' '+(s.student_code||'')+' '+(s.team||'')).toLowerCase().includes(q));$('studentBody').innerHTML=rows.map((s,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+esc(s.full_name)+'</b></td><td>'+esc(s.student_code)+'</td><td>'+esc(s.gender||'')+'</td><td>Tổ '+(s.team||'')+'</td><td>'+Number(s.competition_score||0).toFixed(1)+'</td><td>'+groupBadge(s.competition_score)+'</td><td><button class="btn small" onclick=editStudent("'+s.id+'")>Sửa</button></td></tr>').join('')||'<tr><td colspan="8" class="mini">Chưa có học sinh.</td></tr>'}
 function group(score){score=Number(score||0);return score>=91?'💎 Kim cương':score>=81?'🥇 Vàng':score>=66?'🥈 Bạc':score>=50?'🥉 Đồng':'🔩 Sắt'}function groupBadge(score){const s=group(score);const c=s.includes('Kim')?'diamond':s.includes('Vàng')?'gold':s.includes('Bạc')?'silver':s.includes('Đồng')?'bronze':'iron';return '<span class="badge '+c+'">'+s+'</span>'}
 async function renderDashboard(){const total=students.length;$('mTotal').textContent=total;const avg=total?students.reduce((a,s)=>a+Number(s.competition_score||0),0)/total:0;$('mAvg').textContent=avg.toFixed(1);const care=students.filter(s=>['Cần hỗ trợ','Cần can thiệp'].includes(s.support_level)).length;$('mSupport').textContent=care;const date=localDate();const {data:att}=await sb.from('attendance').select('status').eq('attendance_date',date);const present=(att||[]).filter(x=>x.status==='present').length;$('mPresent').textContent=present;$('mAttendanceSub').textContent=(att||[]).length+' lượt đã ghi';const top=[...students].sort((a,b)=>Number(b.competition_score||0)-Number(a.competition_score||0)).slice(0,5);$('topStudents').innerHTML=top.map((s,i)=>'<div class="notice"><b>'+(i+1)+'. '+esc(s.full_name)+'</b> <span class="badge '+(Number(s.competition_score||0)>=81?'good':'watch')+'">'+Number(s.competition_score||0).toFixed(1)+'</span><div class="mini">'+group(s.competition_score)+'</div></div>').join('')||'<div class="mini">Chưa có dữ liệu.</div>';$('careStudents').innerHTML=students.filter(s=>s.support_level).slice(0,6).map(s=>'<div class="notice '+(s.support_level==='Cần can thiệp'?'danger':'warn')+'"><b>'+esc(s.full_name)+'</b><div class="mini">'+esc(s.support_level)+' · '+esc(s.progress_note||'')+'</div></div>').join('')||'<div class="mini">Chưa có học sinh cần quan tâm.</div>';const ranks=[...students].sort((a,b)=>Number(b.competition_score||0)-Number(a.competition_score||0));$('classRankView').textContent=total?'Theo điểm TB '+avg.toFixed(1):'—';renderTrend(ranks)}
