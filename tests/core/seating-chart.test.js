@@ -21,11 +21,15 @@ const index = fs.readFileSync('index.html', 'utf8');
 const moduleSource = fs.readFileSync('modules/seating-chart.js', 'utf8');
 const css = fs.readFileSync('styles.css', 'utf8');
 const moduleCss = fs.readFileSync('modules/seating-chart.css', 'utf8');
+const seatingMigration = fs.readFileSync('supabase/migrations/20260905_seating_chart.sql', 'utf8');
 
 assert.match(index, /modules\/seating-chart\.js/);
 assert.match(index, /@supabase\/supabase-js@2/);
 assert.match(moduleSource, /seating_positions/);
 assert.match(moduleSource, /save_seating_positions/);
+assert.match(seatingMigration, /create or replace function public\.save_seating_positions/);
+assert.match(seatingMigration, /returns integer/);
+assert.match(seatingMigration, /grant execute on function public\.save_seating_positions/);
 assert.match(moduleSource, /scSaveStatus/);
 assert.match(moduleSource, /Đang lưu/);
 assert.match(moduleSource, /random_pick_history/);
