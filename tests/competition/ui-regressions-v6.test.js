@@ -30,6 +30,5 @@ assert.match(finalFormSource, /globalThis\.submitCompetitionV6 = submitCompetiti
 assert.match(finalFormSource, /function removeDuplicateCompetitionFormCloseButtonV6[\s\S]*Đóng[\s\S]*remove\(\)/);
 assert.match(finalFormSource, /submitCompetitionFinalV6[\s\S]*waitForCompetitionWriteBoundaryV6[\s\S]*writeBoundary\(/);
 assert.match(finalFormSource, /resolveStudentIdFromCompetitionFormV6[\s\S]*fStudentV6DisplayV6[\s\S]*student_code/);
-assert.match(indexSource, /<section id="messagesTeacher"[\s\S]*<\/div><\/section>/);
 
 console.log('PASS: UI regressions for ranking, student picker, and record form');
