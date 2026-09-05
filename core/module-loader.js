@@ -162,14 +162,11 @@ async function loadApplicationModulesV6() {
     }
 }
 
+const applicationModulesReadyV6 = loadApplicationModulesV6();
+
 globalThis.ApplicationModuleLoaderV6 = Object.freeze({
     loadApplicationModule,
     loadApplicationModulesV6,
     APPLICATION_MODULES,
+    ready: applicationModulesReadyV6,
 });
-
-const applicationModulesReadyV6 = loadApplicationModulesV6();
-
-// Expose a readiness promise so app bootstrap never renders Competition
-// before the complete V6 compatibility layer is loaded.
-globalThis.ApplicationModuleLoaderV6.ready = applicationModulesReadyV6;
