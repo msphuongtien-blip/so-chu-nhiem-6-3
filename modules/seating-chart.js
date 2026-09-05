@@ -426,6 +426,7 @@
                 const input = document.getElementById('scAvatarInput');
                 if (!input) return;
                 input.dataset.studentId = button.dataset.uploadStudent;
+                input.dataset.teacherAvatar = 'false';
                 input.value = '';
                 input.click();
             });
