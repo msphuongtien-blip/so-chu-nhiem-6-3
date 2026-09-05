@@ -1,0 +1,24 @@
+name: Seating chart verification
+
+on:
+  push:
+    branches:
+      - feature/seating-chart-v1
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check modules/seating-chart.js
+      - name: Check seating integration contract
+        run: |
+          grep -q "modules/seating-chart.js" app.js
+          grep -q "seating_positions" modules/seating-chart.js
+          grep -q "random_pick_history" modules/seating-chart.js
