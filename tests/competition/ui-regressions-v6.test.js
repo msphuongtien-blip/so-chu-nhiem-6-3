@@ -1,9 +1,8 @@
+const fs = require('node:fs');
 #!/usr/bin/env node
 /** Regression tests for V6 ranking, student picker, and record form UI. */
 
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
