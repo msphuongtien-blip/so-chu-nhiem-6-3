@@ -519,10 +519,35 @@ async function renderCompetition(){
     }).join('');
   }
 
-  const selectedRank=selectedStudentIds.length === 1
-    ? rows.findIndex(x=>String(x.id)===selectedStudentIds[0])+1
-    : null;
-  if($('compRank'))$('compRank').textContent=selectedRank||'—';
+  const selectedRankRows = rows
+    .map((student, index) => ({
+      student,
+      rank: index + 1,
+    }))
+    .filter(item =>
+      selectedStudentIds.includes(String(item.student.id)),
+    );
+
+  if ($('compRank')) {
+    if (!selectedRankRows.length) {
+      $('compRank').textContent = '—';
+      $('compRank').removeAttribute('title');
+    } else {
+      const rankingText = selectedRankRows
+        .map(item => '#' + item.rank)
+        .join(', ');
+      $('compRank').textContent = rankingText + ' / 44';
+      $('compRank').title = selectedRankRows
+        .map(
+          item =>
+            item.student.full_name +
+            ': #' +
+            item.rank +
+            ' / 44',
+        )
+        .join('\n');
+    }
+  }
   if($('compAvg'))$('compAvg').textContent=rows.length
     ?(rows.reduce((sum,s)=>sum+s.weekly,0)/rows.length).toFixed(1)
     :'81.0';
