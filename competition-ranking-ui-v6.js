@@ -93,4 +93,3 @@ globalThis.CompetitionRankingUIV6 = Object.freeze({
     removeMonthlyScoreColumnFromDom: removeMonthlyScoreColumnFromDomV6,
     install: installCompetitionRankingUIV6,
 });
-\n
