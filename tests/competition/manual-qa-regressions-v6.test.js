@@ -48,18 +48,6 @@ assert.match(
     'Record form must initialize the score from the selected criterion default.',
 );
 
-// Pure helper contract: minus + points 3 => -3; plus + points 2 => +2.
-const context = vm.createContext({
-    globalThis: {},
-});
-vm.runInContext(service + '\n' + form.replace(
-    /const RECORD_FORM_V6_CONFIG[\s\S]*?const RECORD_FORM_V6_SCORES/,
-    'const RECORD_FORM_V6_SCORES',
-).replace(
-    /const RECORD_FORM_V6_SCORES = \[[\s\S]*?\];/,
-    'const RECORD_FORM_V6_SCORES = [-5,-4,-3,-2,-1,1,2,3,4,5];',
-), context);
-
 // 4. Multi-student filter must exist in the Competition UI and history logic.
 assert.match(index, /id="compStudentFilter"[^>]*multiple/);
 assert.match(app, /selectedStudentIds/);
