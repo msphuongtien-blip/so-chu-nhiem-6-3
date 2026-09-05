@@ -51,7 +51,7 @@ const APPLICATION_MODULES = [
     ['students-import-v6-script', 'modules/students/students-import-v6.js'],
     [
         'competition-criteria-settings-boot-v6-script',
-        'modules/competition/competition-criteria-settings-boot-v6.js',
+        'modules/competition/competition-criteria-v6.js',
     ],
     [
         'competition-record-sync-v6-script',
@@ -63,7 +63,7 @@ const APPLICATION_MODULES = [
     ],
     [
         'competition-render-helpers-v6-script',
-        'modules/competition/competition-render-helpers-v6.js',
+        'modules/competition/competition-renderer-v6.js',
     ],
     ['competition-ux-v6-script', 'modules/competition/competition-ux-v6.js'],
     [
@@ -72,7 +72,7 @@ const APPLICATION_MODULES = [
     ],
     [
         'competition-criteria-settings-ux-v6-script',
-        'modules/competition/competition-criteria-settings-ux-v6.js',
+        'modules/competition/competition-criteria-v6.js',
     ],
     [
         'competition-calculation-v6-script',
@@ -88,7 +88,7 @@ const APPLICATION_MODULES = [
     ],
     [
         'competition-record-write-boundary-v6-script',
-        'modules/competition/competition-record-write-boundary-v6.js',
+        'modules/competition/competition-record-boundary-v6.js',
     ],
     [
         'competition-ranking-ui-v6-script',
@@ -96,7 +96,7 @@ const APPLICATION_MODULES = [
     ],
     [
         'competition-legacy-boundary-v6-script',
-        'modules/competition/competition-legacy-boundary-v6.js',
+        'modules/competition/competition-record-boundary-v6.js',
     ],
     [
         'competition-record-form-clean-v6-script',
@@ -145,7 +145,7 @@ const APPLICATION_MODULES = [
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
     [
         'competition-render-pipeline-v6-script',
-        'modules/competition/competition-render-pipeline-v6.js',
+        'modules/competition/competition-renderer-v6.js',
     ],
 ];
 
