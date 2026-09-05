@@ -15,7 +15,7 @@ const vm = require('node:vm');
 (async () => {
     const root = path.resolve(__dirname, '../..');
     const source = fs.readFileSync(
-        path.join(root, 'competition-records-v6.js'),
+        path.join(root, 'competition-record-form-final-v6.js'),
         'utf8',
     );
 
@@ -90,7 +90,7 @@ const vm = require('node:vm');
     });
 
     vm.runInContext(source, context, {
-        filename: 'competition-records-v6.js',
+        filename: 'competition-record-form-final-v6.js',
     });
 
     setTimeout(() => {

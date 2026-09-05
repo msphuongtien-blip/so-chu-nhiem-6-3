@@ -16,7 +16,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const source = fs.readFileSync(
-    path.join(root, 'competition-ui-v6.js'),
+    path.join(root, 'competition-legacy-boundary-v6.js'),
     'utf8',
 );
 
@@ -44,7 +44,7 @@ const context = vm.createContext({
 });
 
 vm.runInContext(source, context, {
-    filename: 'competition-ui-v6.js',
+    filename: 'competition-legacy-boundary-v6.js',
 });
 
 const installed = context.installCompetitionLegacyBoundaryV6();
