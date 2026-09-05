@@ -1,11 +1,13 @@
 /**
  * FILE: competition-issues-v6.js
  *
- * Mục đích: Quản lý và hiển thị issue của Thi đua.
- * Mỗi file đại diện cho một domain nghiệp vụ, không tách theo từng function.
+ * Mục đích: Domain module đã được hợp nhất theo chức năng để dễ bảo trì.
  */
 
-\n/* ===== competition-issues-service-v6.js ===== */\n\n/**
+
+/* ===== competition-issues-service-v6.js ===== */
+
+/**
  * FILE: competition-issues-service-v6.js
  *
  * Mục đích:
@@ -161,7 +163,11 @@ globalThis.CompetitionIssuesServiceV6 = Object.freeze({
     listOpenIssues,
     resolveIssue,
 });
-\n\n/* ===== competition-issues-renderer-v6.js ===== */\n\n/**
+
+
+/* ===== competition-issues-renderer-v6.js ===== */
+
+/**
  * FILE: competition-issues-renderer-v6.js
  *
  * Mục đích:

@@ -1,11 +1,13 @@
 /**
  * FILE: competition-ui-v6.js
  *
- * Mục đích: UI boundary và compatibility layer cho Thi đua V6.
- * Tập trung các phần trình bày/bridge runtime, không chứa persistence.
+ * Mục đích: Domain module đã được hợp nhất theo chức năng để dễ bảo trì.
  */
 
-\n/* ===== competition-ux-v6.js ===== */\n\n/**
+
+/* ===== competition-ux-v6.js ===== */
+
+/**
  * FILE: competition-ux-v6.js
  *
  * Mục đích:
@@ -474,7 +476,11 @@ function bootstrapCompetitionUxV6() {
 }
 
 bootstrapCompetitionUxV6();
-\n\n/* ===== competition-legacy-boundary-v6.js ===== */\n\n/**
+
+
+/* ===== competition-legacy-boundary-v6.js ===== */
+
+/**
  * FILE: competition-legacy-boundary-v6.js
  *
  * Mục đích:

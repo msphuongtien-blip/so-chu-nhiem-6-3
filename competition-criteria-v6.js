@@ -1,11 +1,13 @@
 /**
  * FILE: competition-criteria-v6.js
  *
- * Mục đích: Quản lý toàn bộ domain Cài đặt tiêu chí của Thi đua V6.
- * Mỗi file đại diện cho một domain nghiệp vụ, không tách theo từng function.
+ * Mục đích: Domain module đã được hợp nhất theo chức năng để dễ bảo trì.
  */
 
-\n/* ===== competition-criteria-settings-boot-v6.js ===== */\n\n/**
+
+/* ===== competition-criteria-settings-boot-v6.js ===== */
+
+/**
  * FILE: competition-criteria-settings-boot-v6.js
  *
  * Mục đích:
@@ -65,7 +67,11 @@ function bootstrapCriteriaSettingsV6() {
 }
 
 bootstrapCriteriaSettingsV6();
-\n\n/* ===== competition-criteria-settings-v6.js ===== */\n\n/**
+
+
+/* ===== competition-criteria-settings-v6.js ===== */
+
+/**
  * FILE: competition-criteria-settings-v6.js
  *
  * Mục đích:
@@ -910,7 +916,11 @@ window.CompetitionCriteriaSettingsV6 = {
     toggle: toggleCriteriaSettingsV6,
     remove: deleteCriteriaSettingsV6,
 };
-\n\n/* ===== competition-criteria-settings-ux-v6.js ===== */\n\n/**
+
+
+/* ===== competition-criteria-settings-ux-v6.js ===== */
+
+/**
  * FILE: competition-criteria-settings-ux-v6.js
  *
  * Mục đích:

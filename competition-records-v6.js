@@ -1,12 +1,13 @@
 /**
  * FILE: competition-records-v6.js
  *
- * Mục đích: Quản lý toàn bộ domain Ghi nhận thi đua V6.
- * Bao gồm persistence, student picker, form, validation, ngày ghi nhận,
- * sửa bản ghi và đồng bộ UI.
+ * Mục đích: Domain module đã được hợp nhất theo chức năng để dễ bảo trì.
  */
 
-\n/* ===== competition-record-service-v6.js ===== */\n\n/**
+
+/* ===== competition-record-service-v6.js ===== */
+
+/**
  * FILE: competition-record-service-v6.js
  *
  * Mục đích:
@@ -257,7 +258,11 @@ globalThis.CompetitionRecordServiceV6 = Object.freeze({
     refreshCompetitionRecordStateV6,
     saveCompetitionRecordV6,
 });
-\n\n/* ===== competition-record-sync-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-sync-v6.js ===== */
+
+/**
  * FILE: competition-record-sync-v6.js
  *
  * Mục đích:
@@ -400,16 +405,15 @@ function loadCompetitionRuntimeScriptV6(
  * Bootstrap các module V6 cần cho luồng Ghi nhận.
  */
 function bootstrapCompetitionRecordModulesV6() {
-    // Service và submit adapter đã nằm trong cùng domain file này.
-    // Không nạp lại các file cũ để tránh duplicate runtime sau refactor.
-    if (
-        globalThis.CompetitionRecordServiceV6 &&
-        typeof globalThis.submitCompetitionWithServiceV6 === 'function'
-    ) {
-        return true;
-    }
+    loadCompetitionRuntimeScriptV6(
+        COMPETITION_RECORD_SERVICE_SCRIPT_ID,
+        'competition-record-service-v6.js',
+    );
 
-    return false;
+    loadCompetitionRuntimeScriptV6(
+        COMPETITION_RECORD_SUBMIT_SCRIPT_ID,
+        'competition-record-submit-v6.js',
+    );
 }
 
 /**
@@ -440,7 +444,11 @@ function bootstrapCompetitionRecordSyncV6() {
 }
 
 bootstrapCompetitionRecordSyncV6();
-\n\n/* ===== competition-record-student-picker-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-student-picker-v6.js ===== */
+
+/**
  * FILE: competition-record-student-picker-v6.js
  *
  * Mục đích:
@@ -918,7 +926,11 @@ window.CompetitionStudentPickerV6 = {
     filterStudentsForPickerV6,
     normalizeStudentPickerSearchV6,
 };
-\n\n/* ===== competition-render-helpers-v6.js ===== */\n\n/**
+
+
+/* ===== competition-render-helpers-v6.js ===== */
+
+/**
  * FILE: competition-render-helpers-v6.js
  *
  * Mục đích:
@@ -987,7 +999,11 @@ globalThis.CompetitionRenderHelpersV6 = Object.freeze({
  * viết lại toàn bộ renderer legacy ngay trong C2.3.
  */
 globalThis.trendText = trendText;
-\n\n/* ===== competition-record-edit-sync-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-edit-sync-v6.js ===== */
+
+/**
  * FILE: competition-record-edit-sync-v6.js
  *
  * Mục đích:
@@ -1135,7 +1151,11 @@ function bootstrapCompetitionEditSyncV6() {
 }
 
 bootstrapCompetitionEditSyncV6();
-\n\n/* ===== competition-record-form-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-form-v6.js ===== */
+
+/**
  * FILE: competition-record-form-v6.js
  *
  * Mục đích:
@@ -1552,7 +1572,11 @@ window.CompetitionRecordFormV6 = {
     buildRecordCriteriaOptionsV6,
     getRecordFormWeekFromDateV6,
 };
-\n\n/* ===== competition-record-write-boundary-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-write-boundary-v6.js ===== */
+
+/**
  * FILE: competition-record-write-boundary-v6.js
  *
  * Mục đích:
@@ -1759,7 +1783,11 @@ globalThis.CompetitionRecordWriteBoundaryV6 = Object.freeze({
 
 // Active boundary: all callers now resolve to the V6 record service.
 globalThis.addCompetition = addCompetitionThroughV6Boundary;
-\n\n/* ===== competition-record-form-clean-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-form-clean-v6.js ===== */
+
+/**
  * FILE: competition-record-form-clean-v6.js
  *
  * Boundary chuyển tiếp cho form ghi nhận thi đua V6.
@@ -1886,7 +1914,11 @@ globalThis.CompetitionRecordFormCleanV6 = Object.freeze({
     submit: submitCompetitionCleanV6,
     install: installCleanCompetitionRecordFormV6,
 });
-\n\n/* ===== competition-record-date-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-date-v6.js ===== */
+
+/**
  * FILE: competition-record-date-v6.js
  *
  * Mục đích:
@@ -2072,7 +2104,11 @@ window.CompetitionRecordDateV6 = Object.freeze({
     normalizeAddForm: normalizeAddRecordDateFormV6,
     normalizeEditForm: normalizeEditRecordDateFormV6,
 });
-\n\n/* ===== competition-record-edit-date-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-edit-date-v6.js ===== */
+
+/**
  * FILE: competition-record-edit-date-v6.js
  *
  * Mục đích:
@@ -2200,7 +2236,11 @@ window.CompetitionRecordEditDateV6 = {
     getWeekFromDate: getEditedRecordWeekFromDateV6,
     sync: syncEditedRecordWeekV6,
 };
-\n\n/* ===== competition-record-form-final-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-form-final-v6.js ===== */
+
+/**
  * FILE: competition-record-form-final-v6.js
  *
  * Boundary cuối của form ghi nhận thi đua V6.
@@ -2427,7 +2467,11 @@ globalThis.CompetitionRecordFormFinalV6 = Object.freeze({
     submit: submitCompetitionFinalV6,
     install: installFinalCompetitionRecordFormV6,
 });
-\n\n/* ===== competition-record-submit-v6.js ===== */\n\n/**
+
+
+/* ===== competition-record-submit-v6.js ===== */
+
+/**
  * FILE: competition-record-submit-v6.js
  *
  * Mục đích:

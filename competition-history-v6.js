@@ -1,11 +1,13 @@
 /**
  * FILE: competition-history-v6.js
  *
- * Mục đích: Tái tính lịch sử và quản lý snapshot.
- * Mỗi file đại diện cho một domain nghiệp vụ, không tách theo từng function.
+ * Mục đích: Domain module đã được hợp nhất theo chức năng để dễ bảo trì.
  */
 
-\n/* ===== competition-recalculation-v6.js ===== */\n\n/**
+
+/* ===== competition-recalculation-v6.js ===== */
+
+/**
  * FILE: competition-recalculation-v6.js
  *
  * Mục đích:
@@ -207,7 +209,11 @@ globalThis.CompetitionRecalculationV6 = Object.freeze({
     getEditedWeekBeforeSave: getEditedCompetitionWeekBeforeSaveV6,
     installEditHook: installCompetitionEditRecalculationV6,
 });
-\n\n/* ===== competition-snapshot-notification-v6.js ===== */\n\n/**
+
+
+/* ===== competition-snapshot-notification-v6.js ===== */
+
+/**
  * FILE: competition-snapshot-notification-v6.js
  *
  * Mục đích:
@@ -613,7 +619,11 @@ globalThis.CompetitionSnapshotNotificationV6 = Object.freeze({
     confirm: confirmCompetitionSnapshotV6,
     getCurrentRecords: getCurrentCompetitionRecordsForSnapshotV6,
 });
-\n\n/* ===== competition-snapshot-edit-v6.js ===== */\n\n/**
+
+
+/* ===== competition-snapshot-edit-v6.js ===== */
+
+/**
  * FILE: competition-snapshot-edit-v6.js
  *
  * Compatibility wrapper for the snapshot edit API.

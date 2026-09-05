@@ -1,11 +1,13 @@
 /**
  * FILE: competition-ranking-v6.js
  *
- * Mục đích: Xếp hạng và chuẩn hóa bảng ranking.
- * Mỗi file đại diện cho một domain nghiệp vụ, không tách theo từng function.
+ * Mục đích: Domain module đã được hợp nhất theo chức năng để dễ bảo trì.
  */
 
-\n/* ===== competition-ranking-ui-v6.js ===== */\n\n/**
+
+/* ===== competition-ranking-ui-v6.js ===== */
+
+/**
  * FILE: competition-ranking-ui-v6.js
  *
  * Mục đích:
@@ -118,7 +120,11 @@ globalThis.CompetitionRankingUIV6 = Object.freeze({
 });
 
 installCompetitionRankingUIV6();
-\n\n/* ===== competition-ranking-columns-v6.js ===== */\n\n/**
+
+
+/* ===== competition-ranking-columns-v6.js ===== */
+
+/**
  * FILE: competition-ranking-columns-v6.js
  *
  * Chuẩn hóa bảng xếp hạng Thi đua V6 về đúng 4 cột:
