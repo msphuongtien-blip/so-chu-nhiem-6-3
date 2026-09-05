@@ -237,7 +237,7 @@ function setupUI() {
 
 function showPage(id,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(id)?.classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');const t={dashboard:'Tổng quan',students:'Học sinh & hồ sơ',random:'Gọi tên ngẫu nhiên',attendance:'Điểm danh',competition:'Thi đua – xếp hạng',honors:'Bảng danh dự',discipline:'Nề nếp – kỷ luật',learning:'Nề nếp học tập',teams:'Theo dõi tổ',reports:'Báo cáo',alerts:'Cảnh báo',feedbackTeacher:'Phản hồi học sinh',messagesTeacher:'Tin nhắn',settings:'Cài đặt',sHome:'Trang chủ',sProfile:'Hồ sơ của em',sProgress:'Hành trình tiến bộ',sHonors:'Thành tích của em',sGoals:'Mục tiêu tuần',sFeedback:'Phản hồi',sMessages:'Tin nhắn từ GVCN'};$('pageTitle').textContent=t[id]||id;if(role==='teacher'&&id==='reports')renderReports();if(role==='teacher'&&id==='alerts')renderAlerts();}
 async function loadSettings(){const {data}=await sb.from('class_settings').select('*').limit(1).maybeSingle();if(data)classSettings=data;$('classNameView').textContent=classSettings.class_name;$('teacherNameView').textContent=classSettings.teacher_name;$('yearTop').textContent=classSettings.school_year;$('loginYear').textContent=classSettings.school_year;$('classNameInput').value=classSettings.class_name;$('schoolYearInput').value=classSettings.school_year;$('teacherNameInput').value=classSettings.teacher_name}
-async function loadAll(){await loadSettings();if(role==='teacher'){await Promise.all([loadStudentsFromSupabase(),loadCompetitionHistoryFromSupabase()]);await renderStudents();await renderDashboard();await renderAttendance();await renderCompetition();await renderHonors();await renderDiscipline();await renderLearning();await renderTeams();await renderAlerts();await renderTeacherFeedback();await renderTeacherMessages()}else await renderStudentAll()}
+async function loadAll(){await loadSettings();if(role==='teacher'){await Promise.all([loadStudentsFromSupabase(),loadCompetitionHistoryFromSupabase()]);await renderStudents();await renderDashboard();await renderAttendance();await renderCompetition();await renderHonors();await renderTeams();await renderAlerts();await renderTeacherFeedback()}else await renderStudentAll()}
 async function renderStudents(){if(!supabaseCache.students.length) await loadStudentsFromSupabase(); const data=supabaseCache.students;const vnNameKey=n=>{const parts=String(n||'').trim().split(/\s+/);return parts.length?parts[parts.length-1]:''};students=(data||[]).sort((a,b)=>{const ka=vnNameKey(a.full_name),kb=vnNameKey(b.full_name);return ka.localeCompare(kb,'vi',{sensitivity:'base'})||String(a.full_name||'').localeCompare(String(b.full_name||''),'vi',{sensitivity:'base'});});const q=($('studentSearch')?.value||'').toLowerCase();const rows=students.filter(s=>(s.full_name+' '+(s.student_code||'')+' '+(s.team||'')).toLowerCase().includes(q));$('studentBody').innerHTML=rows.map((s,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+esc(s.full_name)+'</b></td><td>'+esc(s.student_code)+'</td><td>'+esc(s.gender||'')+'</td><td>Tổ '+(s.team||'')+'</td><td>'+Number(s.competition_score||0).toFixed(1)+'</td><td>'+groupBadge(s.competition_score)+'</td><td><button class="btn small" onclick=editStudent("'+s.id+'")>Sửa</button></td></tr>').join('')||'<tr><td colspan="8" class="mini">Chưa có học sinh.</td></tr>'}
 function group(score){score=Number(score||0);return score>=91?'💎 Kim cương':score>=81?'🥇 Vàng':score>=66?'🥈 Bạc':score>=50?'🥉 Đồng':'🔩 Sắt'}function groupBadge(score){const s=group(score);const c=s.includes('Kim')?'diamond':s.includes('Vàng')?'gold':s.includes('Bạc')?'silver':s.includes('Đồng')?'bronze':'iron';return '<span class="badge '+c+'">'+s+'</span>'}
 async function renderDashboard(){const total=students.length;$('mTotal').textContent=total;const avg=total?students.reduce((a,s)=>a+Number(s.competition_score||0),0)/total:0;$('mAvg').textContent=avg.toFixed(1);const care=students.filter(s=>['Cần hỗ trợ','Cần can thiệp'].includes(s.support_level)).length;$('mSupport').textContent=care;const date=localDate();const {data:att}=await sb.from('attendance').select('status').eq('attendance_date',date);const present=(att||[]).filter(x=>x.status==='present').length;$('mPresent').textContent=present;$('mAttendanceSub').textContent=(att||[]).length+' lượt đã ghi';const top=[...students].sort((a,b)=>Number(b.competition_score||0)-Number(a.competition_score||0)).slice(0,5);$('topStudents').innerHTML=top.map((s,i)=>'<div class="notice"><b>'+(i+1)+'. '+esc(s.full_name)+'</b> <span class="badge '+(Number(s.competition_score||0)>=81?'good':'watch')+'">'+Number(s.competition_score||0).toFixed(1)+'</span><div class="mini">'+group(s.competition_score)+'</div></div>').join('')||'<div class="mini">Chưa có dữ liệu.</div>';$('careStudents').innerHTML=students.filter(s=>s.support_level).slice(0,6).map(s=>'<div class="notice '+(s.support_level==='Cần can thiệp'?'danger':'warn')+'"><b>'+esc(s.full_name)+'</b><div class="mini">'+esc(s.support_level)+' · '+esc(s.progress_note||'')+'</div></div>').join('')||'<div class="mini">Chưa có học sinh cần quan tâm.</div>';const ranks=[...students].sort((a,b)=>Number(b.competition_score||0)-Number(a.competition_score||0));$('classRankView').textContent=total?'Theo điểm TB '+avg.toFixed(1):'—';renderTrend(ranks)}
@@ -541,49 +541,6 @@ async function submitHonor() {
     }
     );closeModal();await renderHonors()
 }
-async function renderDiscipline() {
-    const {
-        data
-    }
-    =await sb.from('discipline_records').select('*,students(full_name,student_code)').order('created_at', {
-        ascending:false
-    }
-    ).limit(100);const counts= {
-        gio:'0',vesinh:'0',trattu:'0',tacphong:'0'
-    };(data||[]).forEach(x=>counts[x.category]=(Number(counts[x.category]||0)+1));$('disciplineStats').innerHTML=Object.entries( {
-        gio:'Giờ giấc',vesinh:'Vệ sinh',trattu:'Trật tự',tacphong:'Tác phong'
-    }
-    ).map(([k,v])=>'<span class="pill">'+v+': <b>'+counts[k]+'</b></span>').join('');$('disciplineList').innerHTML=(data||[]).map(x=>'<div class="notice '+(x.level==='Cần hỗ trợ'?'danger':'')+'"><b>'+esc(x.students?.full_name||'')+'</b> · '+esc(x.category_label||x.category)+' · '+esc(x.item||'')+' · '+esc(x.level)+'<div class="mini">'+new Date(x.created_at).toLocaleString('vi-VN')+'</div></div>').join('')||'<div class="mini">Chưa có ghi nhận.</div>'
-}
-function openDisciplineForm() {
-    openModal('Ghi nhận nề nếp','<div class="field"><label>Học sinh</label><select id="dStudent">'+students.map(s=>'<option value="'+s.id+'">'+esc(s.full_name)+'</option>').join('')+'</select></div><div class="field"><label>Nhóm</label><select id="dCat"><option value="gio">Giờ giấc</option><option value="vesinh">Vệ sinh</option><option value="trattu">Trật tự</option><option value="tacphong">Tác phong</option></select></div><div class="field"><label>Nội dung</label><input id="dItem"></div><div class="field"><label>Mức</label><select id="dLevel"><option>Tốt</option><option>Nhắc nhở</option><option>Cần hỗ trợ</option><option>Cần can thiệp</option></select></div><button class="btn primary" onclick="submitDiscipline()">Lưu</button>')
-}
-async function submitDiscipline() {
-    const labels= {
-        gio:'Giờ giấc',vesinh:'Vệ sinh',trattu:'Trật tự',tacphong:'Tác phong'
-    };await sb.from('discipline_records').insert( {
-        student_id:$('dStudent').value,category:$('dCat').value,category_label:labels[$('dCat').value],item:$('dItem').value,level:$('dLevel').value,created_by:currentUser.id
-    }
-    );closeModal();await renderDiscipline();await renderAlerts()
-}
-async function renderLearning() {
-    const {
-        data
-    }
-    =await sb.from('learning_records').select('*,students(full_name,student_code)').order('created_at', {
-        ascending:false
-    }
-    ).limit(150);$('learningList').innerHTML=(data||[]).map(x=>'<div class="notice"><b>'+esc(x.students?.full_name||'')+'</b> · '+esc(x.subject||'')+' · '+esc(x.status||'')+' · '+esc(x.score||'')+'<div>'+esc(x.note||'')+'</div><div class="mini">'+new Date(x.created_at).toLocaleString('vi-VN')+'</div></div>').join('')||'<div class="mini">Chưa có dữ liệu học tập.</div>'
-}
-function openLearningForm() {
-    openModal('Cập nhật nề nếp học tập','<div class="field"><label>Học sinh</label><select id="lStudent">'+students.map(s=>'<option value="'+s.id+'">'+esc(s.full_name)+'</option>').join('')+'</select></div><div class="field"><label>Môn học</label><input id="lSubject" placeholder="KHTN, Toán,..."></div><div class="field"><label>Nội dung</label><select id="lStatus"><option>Hoàn thành nhiệm vụ</option><option>Chưa hoàn thành nhiệm vụ</option><option>Chuẩn bị bài tốt</option><option>Thiếu sách vở/đồ dùng</option><option>Tích cực phát biểu</option><option>Kết quả giảm sút</option><option>Cần giáo viên hỗ trợ</option></select></div><div class="field"><label>Điểm/đánh giá</label><input id="lScore"></div><div class="field"><label>Nhận xét</label><textarea id="lNote" rows="3"></textarea></div><button class="btn primary" onclick="submitLearning()">Lưu</button>')
-}
-async function submitLearning() {
-    await sb.from('learning_records').insert( {
-        student_id:$('lStudent').value,subject:$('lSubject').value,status:$('lStatus').value,score:$('lScore').value,note:$('lNote').value,created_by:currentUser.id
-    }
-    );closeModal();await renderLearning();await renderAlerts()
-}
 async function renderTeams() {
     const arr=[1,2,3,4].map(t=> {
         const a=students.filter(s=>Number(s.team)===t);return {
@@ -592,17 +549,79 @@ async function renderTeams() {
     }
     ).sort((a,b)=>b.avg-a.avg);$('teamBody').innerHTML=arr.map((x,i)=>'<tr><td>'+((i+1))+'</td><td>Tổ '+x.team+'</td><td>'+x.avg.toFixed(1)+'</td><td>'+x.n+'</td><td>—</td></tr>').join('');$('teamCards').innerHTML=arr.map((x,i)=>'<div class="card"><div class="label">Hạng '+(i+1)+'</div><div class="metric">Tổ '+x.team+'</div><div class="mini">Điểm TB '+x.avg.toFixed(1)+' · '+x.n+' HS</div></div>').join('')
 }
+/**
+ * Build student alerts from competition records.
+ *
+ * The old learning/discipline modules are retired. Alerts now use the
+ * competition module as the single source of behavioral signals.
+ */
 async function renderAlerts() {
-    const by= {
-    };students.forEach(s=>by[s.id]=[]);const [d,l]=await Promise.all([sb.from('discipline_records').select('student_id,level,created_at'),sb.from('learning_records').select('student_id,status,created_at')]);(d.data||[]).forEach(x=>by[x.student_id]?.push(x.level));(l.data||[]).forEach(x=>by[x.student_id]?.push(x.status));const alerts=students.map(s=> {
-        const a=by[s.id]||[];const severe=a.filter(x=>['Cần can thiệp','Kết quả giảm sút','Cần giáo viên hỗ trợ'].includes(x)).length;const warn=a.filter(x=>['Nhắc nhở','Chưa hoàn thành nhiệm vụ','Thiếu sách vở/đồ dùng'].includes(x)).length;return {
-            ...s,severe,warn
+    const week = typeof compWeekInput === 'function'
+        ? compWeekInput()
+        : getCurrentWeekStart();
+
+    const records = (supabaseCache.competitionRecords || [])
+        .filter(record => String(record.week || record.week_start || '') === String(week));
+
+    const byStudent = new Map();
+
+    records.forEach(record => {
+        const score = Number(record.score || 0);
+
+        if (score >= 0) {
+            return;
         }
+
+        const current = byStudent.get(record.student_id) || {
+            total: 0,
+            count: 0,
+            notes: [],
+        };
+
+        current.total += score;
+        current.count += 1;
+
+        const note = record.note || record.item || record.reason || '';
+        if (note) {
+            current.notes.push(String(note));
+        }
+
+        byStudent.set(record.student_id, current);
+    });
+
+    const alerts = students
+        .map(student => ({
+            ...student,
+            ...(byStudent.get(student.id) || {
+                total: 0,
+                count: 0,
+                notes: [],
+            }),
+        }))
+        .filter(student => student.count > 0)
+        .sort((a, b) => a.total - b.total);
+
+    const box = $('alertsBox');
+
+    if (!box) {
+        return;
     }
-    ).filter(s=>s.severe||s.warn||s.support_level);$('alertsBox').innerHTML=alerts.map(s=> {
-        const level=s.severe>=2?'Cần can thiệp':s.severe||s.support_level==='Cần hỗ trợ'?'Cần hỗ trợ':'Cần theo dõi';const c=level==='Cần can thiệp'?'danger':level==='Cần hỗ trợ'?'orange':'watch';return '<div class="notice '+c+'"><b>'+esc(s.full_name)+'</b> <span class="badge '+c+'">'+level+'</span><div class="mini">'+s.severe+' tín hiệu nghiêm trọng · '+s.warn+' tín hiệu theo dõi</div></div>'
-    }
-    ).join('')||'<div class="mini">Chưa có cảnh báo.</div>'
+
+    box.innerHTML = alerts.length
+        ? alerts.map(student => {
+            const severe = student.total <= -5;
+            const level = severe ? 'Cần quan tâm' : 'Cần theo dõi';
+            const tone = severe ? 'danger' : 'watch';
+            const notes = student.notes.slice(0, 2).join(' · ');
+
+            return `<div class="notice ${tone}">
+                <b>${esc(student.full_name)}</b>
+                <span class="badge ${tone}">${level}</span>
+                <div class="mini">Thi đua tuần: ${student.total} điểm · ${student.count} lượt ghi nhận</div>
+                ${notes ? `<div class="mini">${esc(notes)}</div>` : ''}
+            </div>`;
+        }).join('')
+        : '<div class="mini">Chưa có cảnh báo từ dữ liệu thi đua tuần này.</div>';
 }
 function periodRange(period) {
     const now=new Date();const end=new Date(now);end.setHours(23,59,59,999);const start=new Date(now);if(period==='day')start.setHours(0,0,0,0);else if(period==='week') {
@@ -969,7 +988,7 @@ async function renderStudentAll() {
             }
         }
     }
-    );await renderStudentHonors(s.id);await renderGoals();await renderStudentFeedback();await renderStudentMessages()
+    );await renderStudentHonors(s.id);await renderGoals();await renderStudentFeedback()
 }
 async function renderStudentHonors(id) {
     const {
@@ -1044,35 +1063,6 @@ async function replyFeedback(id) {
         teacher_reply:reply,replied_at:new Date().toISOString()
     }
     ).eq('id',id);await renderTeacherFeedback()
-}
-async function renderTeacherMessages() {
-    const {
-        data
-    }
-    =await sb.from('teacher_messages').select('*').order('created_at', {
-        ascending:false
-    }
-    );$('messagesTeacherBox').innerHTML=(data||[]).map(x=>'<div class="notice"><b>'+esc(x.title)+'</b> · '+esc(x.target_type)+'<div>'+esc(x.content)+'</div><div class="mini">'+new Date(x.created_at).toLocaleString('vi-VN')+'</div></div>').join('')||'<div class="mini">Chưa có tin nhắn.</div>'
-}
-function openMessageForm() {
-    openModal('Gửi tin nhắn cho học sinh','<div class="field"><label>Đối tượng</label><select id="msgTarget"><option value="all">Toàn lớp</option><option value="student">Một học sinh</option></select></div><div class="field" id="msgStudentField"><label>Học sinh</label><select id="msgStudent">'+students.map(s=>'<option value="'+s.user_id+'">'+esc(s.full_name)+'</option>').join('')+'</select></div><div class="field"><label>Tiêu đề</label><input id="msgTitle"></div><div class="field"><label>Nội dung</label><textarea id="msgContent" rows="4"></textarea></div><button class="btn primary" onclick="sendTeacherMessage()">Gửi</button>');$('msgTarget').onchange=()=> {
-        $('msgStudentField').style.display=$('msgTarget').value==='student'?'block':'none'
-    };$('msgStudentField').style.display='none'
-}
-async function sendTeacherMessage() {
-    await sb.from('teacher_messages').insert( {
-        teacher_id:currentUser.id,target_type:$('msgTarget').value,target_user_id:$('msgTarget').value==='student'?$('msgStudent').value:null,title:$('msgTitle').value,content:$('msgContent').value
-    }
-    );closeModal();await renderTeacherMessages()
-}
-async function renderStudentMessages() {
-    const {
-        data
-    }
-    =await sb.from('teacher_messages').select('*').order('created_at', {
-        ascending:false
-    }
-    );$('studentMessages').innerHTML=(data||[]).filter(x=>x.target_type==='all'||x.target_user_id===currentUser.id).map(x=>'<div class="notice"><b>'+esc(x.title)+'</b><div>'+esc(x.content)+'</div><div class="mini">'+new Date(x.created_at).toLocaleString('vi-VN')+'</div></div>').join('')||'<div class="mini">Chưa có tin nhắn.</div>'
 }
 async function changePassword() {
     if($('newPass').value.length<6||$('newPass').value!==$('newPass2').value) {
