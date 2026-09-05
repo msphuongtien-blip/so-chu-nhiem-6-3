@@ -14,7 +14,7 @@ const snapshotSource = fs.readFileSync(
     'utf8',
 );
 const snapshotEditSource = fs.readFileSync(
-    path.join(root, 'competition-snapshot-edit-v6.js'),
+    path.join(root, 'competition-history-v6.js'),
     'utf8',
 );
 const recalculationSource = fs.readFileSync(
