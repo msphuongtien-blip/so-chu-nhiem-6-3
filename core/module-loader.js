@@ -51,88 +51,88 @@ const APPLICATION_MODULES = [
     ['students-import-v6-script', 'students-import-v6.js'],
     [
         'competition-criteria-settings-boot-v6-script',
-        'competition-criteria-settings-boot-v6.js',
+        'modules/competition/competition-criteria-settings-boot-v6.js',
     ],
     [
         'competition-record-sync-v6-script',
-        'competition-record-sync-v6.js',
+        'modules/competition/competition-record-sync-v6.js',
     ],
     [
         'competition-student-picker-v6-script',
-        'competition-record-student-picker-v6.js',
+        'modules/competition/competition-record-student-picker-v6.js',
     ],
     [
         'competition-render-helpers-v6-script',
-        'competition-render-helpers-v6.js',
+        'modules/competition/competition-render-helpers-v6.js',
     ],
-    ['competition-ux-v6-script', 'competition-ux-v6.js'],
+    ['competition-ux-v6-script', 'modules/competition/competition-ux-v6.js'],
     [
         'competition-record-edit-sync-v6-script',
-        'competition-record-edit-sync-v6.js',
+        'modules/competition/competition-record-edit-sync-v6.js',
     ],
     [
         'competition-criteria-settings-ux-v6-script',
-        'competition-criteria-settings-ux-v6.js',
+        'modules/competition/competition-criteria-settings-ux-v6.js',
     ],
     [
         'competition-calculation-v6-script',
-        'competition-calculation-v6.js',
+        'modules/competition/competition-calculation-v6.js',
     ],
     [
         'competition-calculation-runtime-v6-script',
-        'competition-calculation-runtime-v6.js',
+        'modules/competition/competition-calculation-runtime-v6.js',
     ],
     [
         'competition-record-form-v6-script',
-        'competition-record-form-v6.js',
+        'modules/competition/competition-record-form-v6.js',
     ],
     [
         'competition-record-write-boundary-v6-script',
-        'competition-record-write-boundary-v6.js',
+        'modules/competition/competition-record-write-boundary-v6.js',
     ],
     [
         'competition-ranking-ui-v6-script',
-        'competition-ranking-ui-v6.js',
+        'modules/competition/competition-ranking-ui-v6.js',
     ],
     [
         'competition-legacy-boundary-v6-script',
-        'competition-legacy-boundary-v6.js',
+        'modules/competition/competition-legacy-boundary-v6.js',
     ],
     [
         'competition-record-form-clean-v6-script',
-        'competition-record-form-clean-v6.js',
+        'modules/competition/competition-record-form-clean-v6.js',
     ],
     [
         'competition-record-date-v6-script',
-        'competition-record-date-v6.js',
+        'modules/competition/competition-record-date-v6.js',
     ],
     [
         'competition-record-edit-date-v6-script',
-        'competition-record-edit-date-v6.js',
+        'modules/competition/competition-record-edit-date-v6.js',
     ],
     [
         'competition-ranking-columns-v6-script',
-        'competition-ranking-columns-v6.js',
+        'modules/competition/competition-ranking-columns-v6.js',
     ],
     [
         'competition-issues-service-v6-script',
-        'competition-issues-service-v6.js',
+        'modules/competition/competition-issues-service-v6.js',
     ],
     [
         'competition-issues-renderer-v6-script',
-        'competition-issues-renderer-v6.js',
+        'modules/competition/competition-issues-renderer-v6.js',
     ],
     [
         'competition-recalculation-v6-script',
-        'competition-recalculation-v6.js',
+        'modules/competition/competition-recalculation-v6.js',
     ],
     [
         'competition-snapshot-notification-v6-script',
-        'competition-snapshot-notification-v6.js',
+        'modules/competition/competition-snapshot-notification-v6.js',
     ],
     [
         'competition-snapshot-edit-v6-script',
-        'competition-snapshot-edit-v6.js',
+        'modules/competition/competition-snapshot-edit-v6.js',
     ],
     [
         'student-autocomplete-v6-script',
@@ -140,7 +140,7 @@ const APPLICATION_MODULES = [
     ],
     [
         'competition-record-form-final-v6-script',
-        'competition-record-form-final-v6.js',
+        'modules/competition/competition-record-form-final-v6.js',
     ],
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
     [
