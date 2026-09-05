@@ -11,7 +11,17 @@
  * - Bảo đảm module được nạp theo đúng thứ tự khai báo.
  */
 
+const V6_ASSET_VERSION = '20260905-competition-history-3';
+
 function loadApplicationModule(scriptId, source) {
+    /*
+     * Module scripts are loaded dynamically, so they need the same cache-bust
+     * version as the entry scripts in index.html. This prevents one browser
+     * from running an older V6 module after another browser has the new one.
+     */
+    const versionedSource = source.includes('?')
+        ? `${source}&v=${V6_ASSET_VERSION}`
+        : `${source}?v=${V6_ASSET_VERSION}`;
     const existingScript = document.getElementById(scriptId);
 
     if (existingScript) {
@@ -21,7 +31,7 @@ function loadApplicationModule(scriptId, source) {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = source;
+        script.src = versionedSource;
         script.defer = true;
         script.addEventListener('load', () => resolve(script), {
             once: true,
@@ -29,7 +39,7 @@ function loadApplicationModule(scriptId, source) {
         script.addEventListener('error', () => {
             reject(
                 new Error(
-                    `Không thể nạp module ứng dụng: ${source}`,
+                    `Không thể nạp module ứng dụng: ${versionedSource}`,
                 ),
             );
         }, { once: true });
