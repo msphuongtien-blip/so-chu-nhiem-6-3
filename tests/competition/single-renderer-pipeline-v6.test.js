@@ -25,7 +25,7 @@ const pipeline = fs.readFileSync(
 );
 
 const compatibilityModules = [
-    'competition-v6-category.js',
+    'modules/competition/competition-v6-category.js',
     'competition-ranking-ui-v6.js',
     'competition-ranking-columns-v6.js',
     'competition-calculation-runtime-v6.js',
