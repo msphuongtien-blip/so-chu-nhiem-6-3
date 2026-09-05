@@ -20,7 +20,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
-const modulePath = path.join(root, 'students-import-v6.js');
+const modulePath = path.join(root, '../../modules/students/students-import-v6.js');
 const loaderPath = path.join(root, 'core', 'module-loader.js');
 const source = fs.readFileSync(modulePath, 'utf8');
 const loaderSource = fs.readFileSync(loaderPath, 'utf8');
@@ -56,7 +56,7 @@ const context = vm.createContext({
 });
 
 vm.runInContext(source, context, {
-    filename: 'students-import-v6.js',
+    filename: '../../modules/students/students-import-v6.js',
 });
 
 const api = context.window.StudentsImportV6;
