@@ -181,6 +181,18 @@ async function submitCompetitionFinalV6() {
     }
 
     closeModal();
+
+    /*
+     * The V6 form writes through the Record Write Boundary directly, so it
+     * does not pass through legacy addCompetition(). Refresh both caches
+     * before rendering; otherwise history and the 44-student score list can
+     * remain stale until a full page reload.
+     */
+    await Promise.all([
+        globalThis.loadStudentsFromSupabase?.(),
+        globalThis.loadCompetitionHistoryFromSupabase?.(),
+    ]);
+
     await renderStudents();
     await renderCompetition();
     await renderDashboard();
