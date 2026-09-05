@@ -58,3 +58,8 @@ console.log('PASS: seating chart contract tests');
 assert.match(moduleSource, /SEATS_PER_TEAM = 12/);
 assert.match(moduleSource, /seat\.row_number/);
 assert.match(moduleSource, /seat\.column_number/);
+assert.match(moduleSource, /visualColumn = Math\.floor\(\(Number\(seat\.column_number\) - 1\) \/ 6\) \+ 1/);
+assert.match(moduleSource, /visualDesk = \(\(Number\(seat\.column_number\) - 1\) % 6\) \+ 1/);
+assert.match(moduleSource, /Cột \$\{visualColumn\} · Bàn \$\{visualDesk\}/);
+assert.match(css, /\.sc-seat-grid\{[^}]*grid-template-columns:repeat\(2/);
+assert.match(css, /\.sc-seat-grid\{[^}]*grid-template-rows:repeat\(6/);
