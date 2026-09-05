@@ -2,13 +2,12 @@
  * FILE: core/module-loader.js
  *
  * Mục đích:
- * Nạp các module chuyển tiếp V6 sau khi Core và app legacy đã sẵn sàng.
+ * Nạp các module ứng dụng theo domain, sau khi Core và app legacy sẵn sàng.
  *
- * Trách nhiệm:
- * - Giữ dependency loading tập trung ở một nơi.
- * - Không đưa DOM, Supabase query hoặc business logic vào Core config.
- * - Bảo đảm mỗi module chỉ được thêm vào DOM một lần.
- * - Bảo đảm module được nạp theo đúng thứ tự khai báo.
+ * Quy tắc:
+ * - Một file đại diện cho một domain chức năng.
+ * - Không tách module theo từng function nhỏ.
+ * - Thứ tự load được giữ rõ ràng để dependency dễ debug.
  */
 
 function loadApplicationModule(scriptId, source) {
@@ -23,9 +22,11 @@ function loadApplicationModule(scriptId, source) {
         script.id = scriptId;
         script.src = source;
         script.defer = true;
+
         script.addEventListener('load', () => resolve(script), {
             once: true,
         });
+
         script.addEventListener('error', () => {
             reject(
                 new Error(
@@ -33,110 +34,26 @@ function loadApplicationModule(scriptId, source) {
                 ),
             );
         }, { once: true });
+
         document.head.appendChild(script);
     });
 }
 
 const APPLICATION_MODULES = [
     ['students-import-v6-script', 'students-import-v6.js'],
-    [
-        'competition-criteria-settings-boot-v6-script',
-        'competition-criteria-settings-boot-v6.js',
-    ],
-    [
-        'competition-record-sync-v6-script',
-        'competition-record-sync-v6.js',
-    ],
-    [
-        'competition-student-picker-v6-script',
-        'competition-record-student-picker-v6.js',
-    ],
-    [
-        'competition-render-helpers-v6-script',
-        'competition-render-helpers-v6.js',
-    ],
-    ['competition-ux-v6-script', 'competition-ux-v6.js'],
-    [
-        'competition-record-edit-sync-v6-script',
-        'competition-record-edit-sync-v6.js',
-    ],
-    [
-        'competition-criteria-settings-ux-v6-script',
-        'competition-criteria-settings-ux-v6.js',
-    ],
-    [
-        'competition-calculation-v6-script',
-        'competition-calculation-v6.js',
-    ],
-    [
-        'competition-calculation-runtime-v6-script',
-        'competition-calculation-runtime-v6.js',
-    ],
-    [
-        'competition-record-form-v6-script',
-        'competition-record-form-v6.js',
-    ],
-    [
-        'competition-record-write-boundary-v6-script',
-        'competition-record-write-boundary-v6.js',
-    ],
-    [
-        'competition-ranking-ui-v6-script',
-        'competition-ranking-ui-v6.js',
-    ],
-    [
-        'competition-legacy-boundary-v6-script',
-        'competition-legacy-boundary-v6.js',
-    ],
-    [
-        'competition-record-form-clean-v6-script',
-        'competition-record-form-clean-v6.js',
-    ],
-    [
-        'competition-record-date-v6-script',
-        'competition-record-date-v6.js',
-    ],
-    [
-        'competition-record-edit-date-v6-script',
-        'competition-record-edit-date-v6.js',
-    ],
-    [
-        'competition-ranking-columns-v6-script',
-        'competition-ranking-columns-v6.js',
-    ],
-    [
-        'competition-issues-service-v6-script',
-        'competition-issues-service-v6.js',
-    ],
-    [
-        'competition-issues-renderer-v6-script',
-        'competition-issues-renderer-v6.js',
-    ],
-    [
-        'competition-recalculation-v6-script',
-        'competition-recalculation-v6.js',
-    ],
-    [
-        'competition-snapshot-notification-v6-script',
-        'competition-snapshot-notification-v6.js',
-    ],
-    [
-        'competition-snapshot-edit-v6-script',
-        'competition-snapshot-edit-v6.js',
-    ],
-    [
-        'student-autocomplete-v6-script',
-        'student-autocomplete-v6.js',
-    ],
-    [
-        'competition-record-form-final-v6-script',
-        'competition-record-form-final-v6.js',
-    ],
+    ['competition-criteria-v6-script', 'competition-criteria-v6.js'],
+    ['competition-records-v6-script', 'competition-records-v6.js'],
+    ['competition-calculation-v6-script', 'competition-calculation-v6.js'],
+    ['competition-ranking-v6-script', 'competition-ranking-v6.js'],
+    ['competition-ui-v6-script', 'competition-ui-v6.js'],
+    ['competition-issues-v6-script', 'competition-issues-v6.js'],
+    ['competition-history-v6-script', 'competition-history-v6.js'],
+    ['student-autocomplete-v6-script', 'student-autocomplete-v6.js'],
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
 ];
 
 /**
- * Nạp tuần tự để các module phụ thuộc không chạy trước module nền.
+ * Nạp tuần tự để dependency không chạy trước module nền.
  */
 async function loadApplicationModulesV6() {
     for (const [scriptId, source] of APPLICATION_MODULES) {

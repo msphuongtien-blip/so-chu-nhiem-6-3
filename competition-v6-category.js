@@ -439,7 +439,7 @@ function renderCompetitionCategoryFilterV6() {
 
     const script = document.createElement('script');
     script.id = scriptId;
-    script.src = 'competition-criteria-settings-v6.js';
+    script.src = 'competition-criteria-v6.js';
 
     document.head.appendChild(script);
 })();
@@ -459,7 +459,7 @@ function renderCompetitionCategoryFilterV6() {
 
     const script = document.createElement('script');
     script.id = scriptId;
-    script.src = 'competition-record-form-v6.js';
+    script.src = 'competition-records-v6.js';
 
     document.head.appendChild(script);
 })();
