@@ -48,6 +48,11 @@
         "'": '&#039;'
     }[char]));
 
+    function studentDisplayName(name) {
+        const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+        return parts.length > 1 ? parts.slice(1).join(' ') : (parts[0] || '—');
+    }
+
     function initials(name) {
         return String(name || '?')
             .trim()
@@ -199,6 +204,7 @@
                 </div>
 
                 <div id="scStatus" class="sc-status" role="status"></div>
+                <input id="scAvatarInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
             </div>
         `;
 
@@ -216,6 +222,7 @@
         document.getElementById('scPick')?.addEventListener('click', pickRandomStudent);
         document.getElementById('scUndoPick')?.addEventListener('click', undoLastPick);
         document.getElementById('scResetHistory')?.addEventListener('click', resetPickHistory);
+        document.getElementById('scAvatarInput')?.addEventListener('change', handleAvatarUpload);
         document.getElementById('scExcludePicked')?.addEventListener('change', (event) => {
             excludePicked = event.target.checked;
         });
@@ -321,14 +328,15 @@
                 <div class="sc-seat-number">Cột ${visualColumn} · Bàn ${visualDesk}</div>
                 ${student ? `
                     <div class="sc-student-card">
-                        <div class="sc-avatar">
-                            ${student.avatar_url
-                                ? `<img src="${escapeHtml(student.avatar_url)}" alt="">`
-                                : escapeHtml(initials(student.full_name))}
-                        </div>
+                        <button type="button" class="sc-avatar-button" data-upload-student="${student.id}" title="Thêm hoặc đổi ảnh học sinh">
+                            <div class="sc-avatar">
+                                ${student.avatar_url
+                                    ? `<img src="${escapeHtml(student.avatar_url)}" alt="">`
+                                    : escapeHtml(initials(student.full_name))}
+                            </div>
+                        </button>
                         <div class="sc-student-info">
-                            <strong>${escapeHtml(student.full_name)}</strong>
-                            <span>Mã HS ${escapeHtml(student.student_code || '—')}</span>
+                            <strong>${escapeHtml(studentDisplayName(student.full_name))}</strong>
                         </div>
                     </div>
                 ` : `
@@ -369,6 +377,17 @@
 
         document.querySelectorAll('[data-note-seat]').forEach((button) => {
             button.addEventListener('click', () => editSeatDetails(button.dataset.noteSeat));
+        });
+
+        document.querySelectorAll('[data-upload-student]').forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const input = document.getElementById('scAvatarInput');
+                if (!input) return;
+                input.dataset.studentId = button.dataset.uploadStudent;
+                input.value = '';
+                input.click();
+            });
         });
     }
 
@@ -506,6 +525,58 @@
         setStatus('Đã xáo trộn ngẫu nhiên và lưu sơ đồ.');
     }
 
+    async function handleAvatarUpload(event) {
+        const input = event.currentTarget;
+        const studentId = input.dataset.studentId;
+        const file = input.files?.[0];
+
+        if (!studentId || !file) return;
+
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            setStatus('Ảnh không hợp lệ. Vui lòng chọn JPG, PNG hoặc WebP.', true);
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            setStatus('Ảnh quá lớn. Vui lòng chọn ảnh tối đa 5 MB.', true);
+            return;
+        }
+
+        try {
+            const app = getApp();
+            setStatus('Đang tải ảnh học sinh...');
+            const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+            const filePath = `${studentId}/${crypto.randomUUID()}.${extension}`;
+
+            const { error: uploadError } = await app.storage
+                .from('student-avatars')
+                .upload(filePath, file, { cacheControl: '3600', contentType: file.type, upsert: false });
+
+            if (uploadError) throw uploadError;
+
+            const { data: publicUrlData } = app.storage
+                .from('student-avatars')
+                .getPublicUrl(filePath);
+            const avatarUrl = publicUrlData.publicUrl;
+
+            const { error: updateError } = await app
+                .from('students')
+                .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+                .eq('id', studentId);
+
+            if (updateError) throw updateError;
+
+            const student = studentById(studentId);
+            if (student) student.avatar_url = avatarUrl;
+            renderSeats(document.getElementById('scViewMode')?.value || 'all');
+            setStatus('Đã cập nhật ảnh học sinh.');
+        } catch (error) {
+            console.error('Student avatar upload failed:', error);
+            setStatus(`Không thể cập nhật ảnh: ${error.message || error}`, true);
+        } finally {
+            input.value = '';
+        }
+    }
     async function editSeatDetails(seatId) {
         const seat = positions.find((item) => item.id === seatId);
         if (!seat) return;
