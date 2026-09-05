@@ -358,38 +358,8 @@ async function refreshCompetitionSnapshotNotificationV6() {
 }
 
 function installCompetitionSnapshotNotificationV6() {
-    const render = globalThis.renderCompetition;
-
-    if (
-        typeof render !== 'function' ||
-        globalThis.__competitionSnapshotNotificationV6Installed
-    ) {
-        return false;
-    }
-
-    globalThis.renderCompetition = async function renderCompetitionWithSnapshotNoticeV6(...args) {
-        const result = await render(...args);
-        await refreshCompetitionSnapshotNotificationV6();
-        return result;
-    };
-
-    globalThis.__competitionSnapshotNotificationV6Installed = true;
-    void refreshCompetitionSnapshotNotificationV6();
-    return true;
-}
-
-if (typeof window !== 'undefined' && window.document) {
-    const startedAt = Date.now();
-    const timer = window.setInterval(() => {
-        if (installCompetitionSnapshotNotificationV6()) {
-            window.clearInterval(timer);
-            return;
-        }
-
-        if (Date.now() - startedAt >= 15000) {
-            window.clearInterval(timer);
-        }
-    }, 100);
+    // Snapshot notification is invoked explicitly by the consolidated renderer.
+    return typeof globalThis.CompetitionSnapshotNotificationV6 === 'object';
 }
 
 globalThis.CompetitionSnapshotNotificationV6 = Object.freeze({
