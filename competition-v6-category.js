@@ -197,18 +197,7 @@ if (typeof originalLoadAllV5 === 'function') {
     };
 }
 
-/**
- * Bổ sung category database trước khi render màn hình Thi đua.
- */
-const originalRenderCompetitionV5 = window.renderCompetition;
-if (typeof originalRenderCompetitionV5 === 'function') {
-    window.renderCompetition = async function renderCompetitionV6() {
-        await ensureCompetitionCategoriesV6();
-        renderCompetitionCategoryFilterV6();
-
-        return originalRenderCompetitionV5();
-    };
-}
+/* Category data is prepared by the consolidated Competition render pipeline. */
 
 /**
  * Dùng tên category từ database thay cho mapping hard-code của V5.
