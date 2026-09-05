@@ -363,7 +363,7 @@ function loadStudentAutocompleteStylesV6() {
 
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'student-autocomplete-v6.css';
+    link.href = 'modules/students/student-autocomplete-v6.css';
     link.dataset.studentAutocompleteV6Style = 'true';
     document.head.appendChild(link);
 }
