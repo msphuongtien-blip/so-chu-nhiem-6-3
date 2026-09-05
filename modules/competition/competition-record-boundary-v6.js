@@ -251,6 +251,13 @@ function installCompetitionLegacyBoundaryV6() {
         return false;
     }
 
+    if (
+        typeof globalThis.CompetitionRecordServiceV6
+            ?.saveCompetitionRecordV6 !== 'function'
+    ) {
+        return false;
+    }
+
     // Inline HTML vẫn gọi tên legacy nhưng không còn chạy implementation cũ.
     globalThis.openCompetitionForm = recordForm;
     globalThis.addCompetition = writeBoundary;
