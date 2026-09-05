@@ -35,6 +35,8 @@
     let randomScope = 'all';
     let excludePicked = true;
     let teacherAvatarUrl = '';
+    let gameShowSoundEnabled = true;
+    let audioContext = null;
 
     const state = {
         students: [],
@@ -183,14 +185,21 @@
                             <label><input type="radio" name="scRandomScope" value="team4"> Tổ 4</label>
                         </div>
 
-                        <label class="sc-toggle">
-                            <input id="scExcludePicked" type="checkbox" checked>
-                            Không chọn lại học sinh đã quay
-                        </label>
+                        <div class="sc-picker-settings">
+                            <label class="sc-toggle">
+                                <input id="scExcludePicked" type="checkbox" checked>
+                                Không chọn lại học sinh đã quay
+                            </label>
+                            <label class="sc-toggle">
+                                <input id="scGameShowSound" type="checkbox" checked>
+                                Âm thanh gameshow
+                            </label>
+                        </div>
 
                         <div id="scWinner" class="sc-winner">
                             <div class="sc-stage-lights"></div>
                             <div class="sc-winner-label">SẴN SÀNG?</div>
+                            <div id="scWinnerAvatar" class="sc-winner-avatar" aria-hidden="true">?</div>
                             <div id="scWinnerName" class="sc-winner-name">Nhấn QUAY TÊN</div>
                             <div id="scWinnerTeam" class="sc-winner-team">—</div>
                         </div>
@@ -243,6 +252,9 @@
         });
         document.getElementById('scExcludePicked')?.addEventListener('change', (event) => {
             excludePicked = event.target.checked;
+        });
+        document.getElementById('scGameShowSound')?.addEventListener('change', (event) => {
+            gameShowSoundEnabled = event.target.checked;
         });
 
         document.querySelectorAll('input[name="scRandomScope"]').forEach((input) => {
@@ -684,9 +696,13 @@
 
         const winner = candidates[Math.floor(Math.random() * candidates.length)];
         const nameElement = document.getElementById('scWinnerName');
+        const avatarElement = document.getElementById('scWinnerAvatar');
         const winnerBox = document.getElementById('scWinner');
 
         nameElement?.classList.add('spinning');
+        avatarElement?.classList.add('spinning');
+        winnerBox?.classList.remove('winner');
+        playGameShowStart();
         winnerBox?.classList.remove('winner');
 
         const duration = 1800;
@@ -699,7 +715,9 @@
 
             if (progress < 1) {
                 const preview = candidates[Math.floor(Math.random() * candidates.length)];
-                if (nameElement) nameElement.textContent = preview.full_name;
+                if (nameElement) nameElement.textContent = studentDisplayName(preview.full_name);
+                if (avatarElement) renderWinnerAvatar(preview, avatarElement);
+                playSpinTick();
                 window.setTimeout(() => requestAnimationFrame(tick), speed);
                 return;
             }
@@ -721,14 +739,29 @@
         return candidates;
     }
 
+    function renderWinnerAvatar(student, element) {
+        if (!element) return;
+        if (student?.avatar_url) {
+            element.innerHTML = `<img src="${escapeHtml(student.avatar_url)}" alt="Ảnh ${escapeHtml(studentDisplayName(student.full_name))}">`;
+            return;
+        }
+        element.textContent = initials(student?.full_name || '?');
+        element.innerHTML = escapeHtml(initials(student?.full_name || '?'));
+    }
+
     async function finishPick(winner) {
         const nameElement = document.getElementById('scWinnerName');
         const teamElement = document.getElementById('scWinnerTeam');
         const winnerBox = document.getElementById('scWinner');
 
         if (nameElement) {
-            nameElement.textContent = winner.full_name;
+            nameElement.textContent = studentDisplayName(winner.full_name);
             nameElement.classList.remove('spinning');
+        }
+
+        if (avatarElement) {
+            renderWinnerAvatar(winner, avatarElement);
+            avatarElement.classList.remove('spinning');
         }
 
         if (teamElement) teamElement.textContent = teamLabel(winner.team);
@@ -769,8 +802,52 @@
         }
     }
 
+    function getAudioContext() {
+        if (!gameShowSoundEnabled) return null;
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return null;
+            if (!audioContext) audioContext = new AudioContextClass();
+            if (audioContext.state === 'suspended') audioContext.resume();
+            return audioContext;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function playTone(frequency, duration, type = 'sine', volume = 0.035, delay = 0) {
+        const context = getAudioContext();
+        if (!context) return;
+
+        const start = context.currentTime + delay;
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, start);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(start);
+        oscillator.stop(start + duration + 0.03);
+    }
+
+    function playGameShowStart() {
+        playTone(392, 0.09, 'square', 0.025);
+        playTone(523.25, 0.12, 'square', 0.025, 0.10);
+        playTone(659.25, 0.16, 'square', 0.025, 0.22);
+    }
+
+    function playSpinTick() {
+        playTone(620, 0.045, 'square', 0.012);
+    }
+
     function playWinnerSound() {
         try {
+            if (!gameShowSoundEnabled) return;
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (!AudioContextClass) return;
 
@@ -789,6 +866,7 @@
             gain.connect(context.destination);
             oscillator.start();
             oscillator.stop(context.currentTime + 0.3);
+            [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => playTone(frequency, 0.18, 'sine', 0.035, 0.08 + index * 0.08));
         } catch (error) {
             // Âm thanh là enhancement; lỗi audio không được làm hỏng thao tác quay.
             console.debug('Winner sound unavailable:', error);
