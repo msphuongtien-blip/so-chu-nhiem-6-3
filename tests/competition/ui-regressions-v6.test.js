@@ -10,7 +10,7 @@ const rawIndexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const indexSource = rawIndexSource.replace(/\s+/g, ' ');
 const autocompleteSource = fs.readFileSync(path.join(root, 'student-autocomplete-v6.js'), 'utf8');
 const appSource = fs.readFileSync('app.js', 'utf8');
-const finalFormSource = fs.readFileSync(path.join(root, 'modules/competition/competition-record-form-final-v6.js'), 'utf8');
+const finalFormSource = fs.readFileSync(path.join(root, 'modules/competition/competition-record-form-v6.js'), 'utf8');
 const rankingColumnsSource = fs.readFileSync(path.join(root, 'modules/competition/competition-ranking-columns-v6.js'), 'utf8');
 
 const rankingHeaderMatch = rankingColumnsSource.match(
