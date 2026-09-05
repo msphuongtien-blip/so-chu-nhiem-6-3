@@ -48,7 +48,7 @@ function loadApplicationModule(scriptId, source) {
 }
 
 const APPLICATION_MODULES = [
-    ['students-import-v6-script', 'students-import-v6.js'],
+    ['students-import-v6-script', 'modules/students/students-import-v6.js'],
     [
         'competition-criteria-settings-boot-v6-script',
         'modules/competition/competition-criteria-settings-boot-v6.js',
@@ -136,7 +136,7 @@ const APPLICATION_MODULES = [
     ],
     [
         'student-autocomplete-v6-script',
-        'student-autocomplete-v6.js',
+        'modules/students/student-autocomplete-v6.js',
     ],
     [
         'competition-record-form-final-v6-script',
