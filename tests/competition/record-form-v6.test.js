@@ -18,7 +18,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
-const formPath = path.join(root, 'competition-record-form-v6.js');
+const formPath = path.join(root, 'competition-records-v6.js');
 const cleanPath = path.join(root, 'competition-record-form-clean-v6.js');
 const source = fs.readFileSync(formPath, 'utf8');
 const cleanSource = fs.readFileSync(cleanPath, 'utf8');
