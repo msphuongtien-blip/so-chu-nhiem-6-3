@@ -82,25 +82,9 @@ function removeMonthlyScoreColumnFromDomV6() {
  * Bọc renderer legacy để cột monthly không quay lại sau mỗi lần render.
  */
 function installCompetitionRankingUIV6() {
-    const legacyRenderCompetition = globalThis.renderCompetition;
-
-    if (typeof legacyRenderCompetition !== 'function') {
-        return false;
-    }
-
-    if (globalThis.__competitionRankingUIV6Installed) {
-        return true;
-    }
-
-    globalThis.renderCompetition = async function competitionRankingRenderV6(...args) {
-        const result = await legacyRenderCompetition(...args);
-        removeMonthlyScoreColumnFromDomV6();
-        return result;
-    };
-
-    globalThis.__competitionRankingUIV6Installed = true;
-
-    return true;
+    // Rendering is owned by the consolidated Competition pipeline.
+    // Keep this function as a compatibility API; no renderer wrapping.
+    return typeof globalThis.renderCompetition === 'function';
 }
 
 globalThis.CompetitionRankingUIV6 = Object.freeze({
@@ -109,5 +93,4 @@ globalThis.CompetitionRankingUIV6 = Object.freeze({
     removeMonthlyScoreColumnFromDom: removeMonthlyScoreColumnFromDomV6,
     install: installCompetitionRankingUIV6,
 });
-
-installCompetitionRankingUIV6();
+\n
