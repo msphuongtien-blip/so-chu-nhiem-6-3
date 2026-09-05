@@ -17,7 +17,7 @@ const source = fs.readFileSync(
     'utf8',
 );
 const snapshotEditSource = fs.readFileSync(
-    path.join(root, 'competition-snapshot-edit-v6.js'),
+    path.join(root, 'competition-history-v6.js'),
     'utf8',
 );
 const issueRendererSource = fs.readFileSync(
@@ -25,7 +25,7 @@ const issueRendererSource = fs.readFileSync(
     'utf8',
 );
 const issueServiceSource = fs.readFileSync(
-    path.join(root, 'competition-issues-service-v6.js'),
+    path.join(root, 'competition-issues-v6.js'),
     'utf8',
 );
 const loaderSource = fs.readFileSync(
