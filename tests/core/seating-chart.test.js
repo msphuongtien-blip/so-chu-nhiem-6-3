@@ -82,3 +82,14 @@ assert.match(css, /\.sc-seat-grid\{[^}]*grid-template-rows:repeat\(6/);
 assert.match(css, /\.sc-seat-grid\{[^}]*grid-auto-flow:column/);
 assert.match(css, /\.sc-student-card\{display:flex;flex-direction:column/);
 assert.match(css, /\.sc-student-info strong\{display:block;font-size:14px/);
+
+assert.match(moduleSource, /scWinnerAvatar/);
+assert.match(moduleSource, /renderWinnerAvatar/);
+assert.match(moduleSource, /studentDisplayName\(winner\.full_name\)/);
+assert.match(moduleSource, /gameShowSoundEnabled/);
+assert.match(moduleSource, /playGameShowStart/);
+assert.match(moduleSource, /playSpinTick/);
+assert.match(moduleSource, /playWinnerSound/);
+assert.match(moduleSource, /scGameShowSound/);
+assert.match(css, /\.sc-winner-avatar\{/);
+assert.match(css, /\.sc-winner-avatar img\{/);
