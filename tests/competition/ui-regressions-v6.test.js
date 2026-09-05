@@ -34,3 +34,13 @@ assert.match(finalFormSource, /loadStudentsFromSupabase\?\.[\s\S]*loadCompetitio
 assert.match(finalFormSource, /resolveStudentIdFromCompetitionFormV6[\s\S]*fStudentV6DisplayV6[\s\S]*student_code/);
 
 console.log('PASS: UI regressions for ranking, student picker, and record form');
+
+
+/*
+ * Regression contract: competition page must fetch fresh students and
+ * competition_records whenever it renders, rather than trusting stale cache.
+ */
+assert.match(appSource, /let competitionRenderRequestId = 0/);
+assert.match(appSource, /sb\.from\('students'\)\.select\('\*'\)/);
+assert.match(appSource, /sb\.from\('competition_records'\)/);
+assert.match(appSource, /competitionRenderRequestId/);
