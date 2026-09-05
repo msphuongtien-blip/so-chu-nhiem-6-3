@@ -17,19 +17,19 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const formSource = fs.readFileSync(
-    path.join(root, '../../modules/competition/competition-record-form-v6.js'),
+    path.join(root, 'modules/competition/competition-record-form-v6.js'),
     'utf8',
 );
 const finalFormSource = fs.readFileSync(
-    path.join(root, '../../modules/competition/competition-record-form-final-v6.js'),
+    path.join(root, 'modules/competition/competition-record-form-final-v6.js'),
     'utf8',
 );
 const editDateSource = fs.readFileSync(
-    path.join(root, '../../modules/competition/competition-record-edit-date-v6.js'),
+    path.join(root, 'modules/competition/competition-record-edit-date-v6.js'),
     'utf8',
 );
 const rankingSource = fs.readFileSync(
-    path.join(root, '../../modules/competition/competition-ranking-columns-v6.js'),
+    path.join(root, 'modules/competition/competition-ranking-columns-v6.js'),
     'utf8',
 );
 
@@ -65,7 +65,7 @@ assert.match(
 // 3. Ranking ties: same score must receive the same rank number.
 const rankingContext = vm.createContext({});
 vm.runInContext(rankingSource, rankingContext, {
-    filename: '../../modules/competition/competition-ranking-columns-v6.js',
+    filename: 'modules/competition/competition-ranking-columns-v6.js',
 });
 
 const rankingApi = rankingContext.CompetitionRankingColumnsV6;
