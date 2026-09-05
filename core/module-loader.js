@@ -68,7 +68,7 @@ const APPLICATION_MODULES = [
     ['competition-ux-v6-script', 'modules/competition/competition-ux-v6.js'],
     [
         'competition-record-edit-sync-v6-script',
-        'modules/competition/competition-record-edit-sync-v6.js',
+        'modules/competition/competition-record-sync-v6.js',
     ],
     [
         'competition-criteria-settings-ux-v6-script',
@@ -100,7 +100,7 @@ const APPLICATION_MODULES = [
     ],
     [
         'competition-record-form-clean-v6-script',
-        'modules/competition/competition-record-form-clean-v6.js',
+        'modules/competition/competition-record-form-v6.js',
     ],
     [
         'competition-record-date-v6-script',
@@ -108,7 +108,7 @@ const APPLICATION_MODULES = [
     ],
     [
         'competition-record-edit-date-v6-script',
-        'modules/competition/competition-record-edit-date-v6.js',
+        'modules/competition/competition-record-date-v6.js',
     ],
     [
         'competition-ranking-columns-v6-script',
@@ -140,7 +140,7 @@ const APPLICATION_MODULES = [
     ],
     [
         'competition-record-form-final-v6-script',
-        'modules/competition/competition-record-form-final-v6.js',
+        'modules/competition/competition-record-form-v6.js',
     ],
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
     [
