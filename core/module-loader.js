@@ -143,6 +143,10 @@ const APPLICATION_MODULES = [
         'competition-record-form-final-v6.js',
     ],
     ['test-center-entry-v6-script', 'test-center-entry-v6.js'],
+    [
+        'competition-render-pipeline-v6-script',
+        'modules/competition/competition-render-pipeline-v6.js',
+    ],
 ];
 
 /**
@@ -164,4 +168,8 @@ globalThis.ApplicationModuleLoaderV6 = Object.freeze({
     APPLICATION_MODULES,
 });
 
-loadApplicationModulesV6();
+const applicationModulesReadyV6 = loadApplicationModulesV6();
+
+// Expose a readiness promise so app bootstrap never renders Competition
+// before the complete V6 compatibility layer is loaded.
+globalThis.ApplicationModuleLoaderV6.ready = applicationModulesReadyV6;
