@@ -66,11 +66,31 @@
         return `Tổ ${team}`;
     }
 
+    // Module dùng cùng Supabase project và Auth session với ứng dụng chính.
+    // Không sửa app.js để tránh kéo module mới vào legacy boundary của file lõi.
+    let moduleSb = null;
+
     function getApp() {
-        if (!window.SCN || !window.SCN.sb) {
-            throw new Error('Sổ chủ nhiệm chưa sẵn sàng.');
+        if (!moduleSb) {
+            if (!window.supabase) {
+                throw new Error('Supabase client chưa được tải.');
+            }
+
+            moduleSb = window.supabase.createClient(
+                'https://fdyhnwklzizzbiyqqlxo.supabase.co',
+                'sb_publishable_QJeu6Jb17f6UVbvXJwuUMQ_-QfBaGDy'
+            );
         }
-        return window.SCN;
+
+        return moduleSb;
+    }
+
+    async function getCurrentUserId() {
+        const app = getApp();
+        const { data, error } = await app.auth.getUser();
+
+        if (error) throw error;
+        return data.user?.id || null;
     }
 
     function openPage() {
@@ -615,6 +635,7 @@
 
         try {
             const app = getApp();
+            const currentUserId = await getCurrentUserId();
             const team = randomScope.startsWith('team')
                 ? Number(randomScope.replace('team', ''))
                 : null;
@@ -626,7 +647,7 @@
                     student_id: winner.id,
                     scope: randomScope,
                     scope_team: team,
-                    created_by: app.currentUser?.id || null
+                    created_by: currentUserId
                 })
                 .select('id,student_id,scope,scope_team,picked_at')
                 .single();
