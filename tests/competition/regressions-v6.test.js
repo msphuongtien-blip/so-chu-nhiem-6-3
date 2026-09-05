@@ -21,11 +21,11 @@ const formSource = fs.readFileSync(
     'utf8',
 );
 const finalFormSource = fs.readFileSync(
-    path.join(root, 'modules/competition/competition-record-form-final-v6.js'),
+    path.join(root, 'modules/competition/competition-record-form-v6.js'),
     'utf8',
 );
 const editDateSource = fs.readFileSync(
-    path.join(root, 'modules/competition/competition-record-edit-date-v6.js'),
+    path.join(root, 'modules/competition/competition-record-date-v6.js'),
     'utf8',
 );
 const rankingSource = fs.readFileSync(
