@@ -420,11 +420,12 @@ async function renderCompetition(){
       .filter((record) => {
         return (
           String(record.student_id) === String(studentId) &&
-          compWeekStart(
-            record.week ||
+          (globalThis.CompetitionCalculationV6?.getRecordWeek?.(record) ||
+            compWeekStart(
               record.week_start ||
-              record.date,
-          ) === compWeekStart(targetWeek)
+                record.week ||
+                record.date,
+            )) === compWeekStart(targetWeek)
         );
       });
 
@@ -562,7 +563,7 @@ async function renderCompetition(){
         record?.date,
       ]) {
         const normalized = String(value || '').slice(0, 10);
-        if (/^\\d{4}-\\d{2}-\\d{2}$/.test(normalized)) {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
           return compWeekStart(normalized);
         }
       }
