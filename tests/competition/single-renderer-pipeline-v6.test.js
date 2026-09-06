@@ -34,7 +34,7 @@ const compatibilityModules = [
 ];
 
 for (const file of compatibilityModules) {
-    const source = fs.readFileSync(path.join(root, 'modules/competition', file), 'utf8');
+    const source = fs.readFileSync(path.join(root, file), 'utf8');
 
     assert.doesNotMatch(
         source,
