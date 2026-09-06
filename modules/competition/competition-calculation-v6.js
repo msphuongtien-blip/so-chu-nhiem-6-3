@@ -55,19 +55,36 @@ function normalizeCompetitionCalculationDateV6(value) {
  */
 function getMondayForCompetitionWeekV6(value) {
     const normalized = normalizeCompetitionCalculationDateV6(value);
-    const date = new Date(`${normalized}T00:00:00`);
+
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(normalized)) {
+        return '';
+    }
+
+    const date = new Date(normalized + 'T00:00:00Z');
 
     if (Number.isNaN(date.getTime())) {
         return '';
     }
 
-    const day = date.getDay();
+    const day = date.getUTCDay();
     const diff = day === 0 ? -6 : 1 - day;
-    date.setDate(date.getDate() + diff);
+    date.setUTCDate(date.getUTCDate() + diff);
 
     return date.toISOString().slice(0, 10);
 }
 
+/**
+ * Resolve the canonical week from legacy record fields.
+ * Prefer a valid week_start, then week, then date.
+ */
+function getRecordWeekV6(record) {
+    if (!record) return '';
+    for (const value of [record.week_start, record.week, record.date]) {
+        const monday = getMondayForCompetitionWeekV6(value);
+        if (monday) return monday;
+    }
+    return '';
+}
 /**
  * Tính điểm bắt đầu của tuần sau từ điểm kết thúc tuần hiện tại.
  *
@@ -129,9 +146,7 @@ function clampCompetitionScoreV6(score) {
 function sumCompetitionWeekChangeV6(records, studentId, weekStart) {
     return records
         .filter((record) => {
-            const recordWeek = getMondayForCompetitionWeekV6(
-                record.week || record.week_start || record.date,
-            );
+            const recordWeek = getRecordWeekV6(record);
 
             return (
                 String(record.student_id) === String(studentId) &&
@@ -267,9 +282,7 @@ function addSevenDaysCompetitionV6(value) {
 function summarizeCompetitionWeekV6(records, studentId, week) {
     const weekStart = getMondayForCompetitionWeekV6(week);
     const rows = records.filter((record) => {
-        const recordWeek = getMondayForCompetitionWeekV6(
-            record.week || record.week_start || record.date,
-        );
+        const recordWeek = getRecordWeekV6(record);
 
         return (
             String(record.student_id) === String(studentId) &&
@@ -309,6 +322,7 @@ function summarizeCompetitionWeekV6(records, studentId, week) {
  */
 globalThis.CompetitionCalculationV6 = Object.freeze({
     CONFIG: COMPETITION_CALCULATION_V6,
+    getRecordWeek: getRecordWeekV6,
     normalizeDate: normalizeCompetitionCalculationDateV6,
     getMonday: getMondayForCompetitionWeekV6,
     isOfficialWeek: isOfficialCompetitionWeekV6,
