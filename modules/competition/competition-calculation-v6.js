@@ -56,7 +56,7 @@ function normalizeCompetitionCalculationDateV6(value) {
 function getMondayForCompetitionWeekV6(value) {
     const normalized = normalizeCompetitionCalculationDateV6(value);
 
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(normalized)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
         return '';
     }
 
@@ -173,9 +173,7 @@ function getCompetitionHistoryWeeksV6(records, studentId) {
                     return String(record.student_id) === String(studentId);
                 })
                 .map((record) => {
-                    return getMondayForCompetitionWeekV6(
-                        record.week || record.week_start || record.date,
-                    );
+                    return getRecordWeekV6(record);
                 })
                 .filter(Boolean),
         ),
