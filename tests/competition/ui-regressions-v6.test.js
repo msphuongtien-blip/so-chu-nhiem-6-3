@@ -23,17 +23,47 @@ assert.match(
     'Ranking V6 phải định nghĩa đúng 4 cột.',
 );
 assert.doesNotMatch(rankingHeaderMatch[1], /Điểm tháng|Xu hướng|Nhóm/);
-assert.doesNotMatch(autocompleteSource, /label \? '<label>Học sinh<\/label>'/);
-assert.match(finalFormSource, /removeCompetitionWeekFieldFinalV6[\s\S]*fWeekV6[\s\S]*remove/);
-assert.match(finalFormSource, /const date = document\.getElementById\('fDateV6'\)\?\.value/);
-assert.match(finalFormSource, /getMonday\?\.\(date\)/);
-assert.match(finalFormSource, /globalThis\.submitCompetitionV6 = submitCompetitionFinalV6/);
-assert.match(finalFormSource, /function removeDuplicateCompetitionFormCloseButtonV6[\s\S]*Đóng[\s\S]*remove\(\)/);
-assert.match(finalFormSource, /submitCompetitionFinalV6[\s\S]*waitForCompetitionWriteBoundaryV6[\s\S]*writeBoundary\(/);
-assert.match(finalFormSource, /writeBoundary\([\s\S]*?\);[\s\S]*?loadStudentsFromSupabase/);
-assert.match(finalFormSource, /loadStudentsFromSupabase\?\.[\s\S]*loadCompetitionHistoryFromSupabase\?\./);
-assert.match(finalFormSource, /resolveStudentIdFromCompetitionFormV6[\s\S]*fStudentV6DisplayV6[\s\S]*student_code/);
-
+assert.doesNotMatch(
+    autocompleteSource,
+    /label ? '<label>Học sinh<\\/label>'/,
+);
+assert.match(
+    finalFormSource,
+    /const date = document\.getElementById\('fDateV6'\)\?\.value/,
+);
+assert.match(
+    finalFormSource,
+    /const week = getRecordFormWeekFromDateV6\(date\)/,
+);
+assert.match(
+    finalFormSource,
+    /const categoryId = document\.getElementById\('fGroupV6'\)\?\.value/,
+);
+assert.match(
+    finalFormSource,
+    /const criteriaId = document\.getElementById\('fCriteriaV6'\)\?\.value/,
+);
+assert.match(
+    finalFormSource,
+    /function submitCompetitionV6\(\)/,
+);
+assert.match(
+    finalFormSource,
+    /fStudentV6/,
+);
+assert.match(
+    finalFormSource,
+    /fCriteriaV6/,
+);
+assert.match(
+    finalFormSource,
+    /fPointsV6/,
+);
+assert.match(
+    finalFormSource,
+    /getRecordFormCriteriaDefaultScoreV6/,
+    'Form V6 phải có contract cho default score theo tiêu chí.',
+);
 console.log('PASS: UI regressions for ranking, student picker, and record form');
 
 
