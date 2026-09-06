@@ -80,5 +80,5 @@ assert.match(appSource, /competitionRenderRequestId/);
  * - History must normalize week/week_start/date before filtering.
  */
 assert.match(appSource, /CompetitionCalculationV6/);
-assert.match(appSource, /const recordWeek = compWeekStart/);
+assert.match(appSource, /const canonicalWeek = String[\s\S]*?record\.week_start \|\| record\.week/);
 assert.match(appSource, /selectedStudentIds/);
