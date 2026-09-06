@@ -25,7 +25,7 @@ assert.match(
 assert.doesNotMatch(rankingHeaderMatch[1], /Điểm tháng|Xu hướng|Nhóm/);
 assert.doesNotMatch(
     autocompleteSource,
-    /label ? '<label>Học sinh<\\/label>'/,
+    /<label>Học sinh<\\/label>/,
 );
 assert.match(
     finalFormSource,
