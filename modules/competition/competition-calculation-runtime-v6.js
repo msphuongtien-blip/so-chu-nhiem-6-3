@@ -63,11 +63,7 @@ function getCalculationRecordsForWeekV6(targetWeek) {
     }
 
     return records.filter((record) => {
-        const week = engine.getMonday(
-            record.week ||
-                record.week_start ||
-                record.date,
-        );
+        const week = engine.getRecordWeek(record);
 
         return week >= officialFirstWeek;
     });
