@@ -80,5 +80,19 @@ assert.match(appSource, /competitionRenderRequestId/);
  * - History must normalize week/week_start/date before filtering.
  */
 assert.match(appSource, /CompetitionCalculationV6/);
-assert.match(appSource, /const canonicalWeek = String[\s\S]*?record\.week_start \|\| record\.week/);
+assert.match(appSource, /const canonicalWeek = normalizeRecordWeek\(record\)/);
+assert.match(appSource, /record\.week_start[\s\S]*record\.week[\s\S]*record\.date/);
+assert.match(appSource, /recordDate >= historyWeekStart/);
 assert.match(appSource, /selectedStudentIds/);
+
+
+/*
+ * Regression contract: competition uses six criteria groups, including
+ * Học tập (category 6), and the legacy fallback must not silently collapse
+ * the sixth group into category 5.
+ */
+assert.match(
+    appSource,
+    /6:'Học tập'/,
+    'Competition category 6 (Học tập) must remain available.',
+);
