@@ -19,6 +19,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '../..');
 const formPath = path.join(root, 'modules/competition/competition-record-form-v6.js');
+const source = fs.readFileSync(formPath, 'utf8');
 
 assert.match(source, /id="fGroupV6"/);
 assert.match(source, /id="fCriteriaV6"/);
