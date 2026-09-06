@@ -25,7 +25,10 @@ const source = fs.readFileSync(
 
 const context = vm.createContext({
     console,
-    window: {},
+    window: {
+        setInterval,
+        clearInterval,
+    },
 });
 
 vm.runInContext(source, context, {
