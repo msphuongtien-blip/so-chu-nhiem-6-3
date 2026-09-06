@@ -552,42 +552,47 @@ async function renderCompetition(){
    * History and ranking must share exactly one canonical week contract.
    * Older records may populate week, week_start, or only date.
    */
+  const calculationEngine = globalThis.CompetitionCalculationV6;
+  const normalizeRecordWeek =
+    calculationEngine?.getRecordWeek ||
+    ((record) => {
+      for (const value of [
+        record?.week_start,
+        record?.week,
+        record?.date,
+      ]) {
+        const normalized = String(value || '').slice(0, 10);
+        if (/^\\d{4}-\\d{2}-\\d{2}$/.test(normalized)) {
+          return compWeekStart(normalized);
+        }
+      }
+      return '';
+    });
+
   const historyWeekStart =
-    globalThis.CompetitionCalculationV6?.getMonday?.(week) ||
+    calculationEngine?.getMonday?.(week) ||
     compWeekStart(week);
 
   const historyWeekEndDate = new Date(
-    historyWeekStart + 'T00:00:00',
+    historyWeekStart + 'T00:00:00Z',
   );
-  historyWeekEndDate.setDate(historyWeekEndDate.getDate() + 7);
+  historyWeekEndDate.setUTCDate(historyWeekEndDate.getUTCDate() + 7);
   const historyWeekEnd = historyWeekEndDate.toISOString().slice(0, 10);
 
   const filtered = records.filter((record) => {
-    const rawWeek =
-      record.week_start ||
-      record.week ||
-      record.date ||
-      String(record.created_at || '').slice(0, 10);
-
-    const canonicalWeek =
-      globalThis.CompetitionCalculationV6?.getMonday?.(rawWeek) ||
-      compWeekStart(rawWeek);
-
+    const canonicalWeek = normalizeRecordWeek(record);
     const recordDate = String(
-      record.date || String(record.created_at || '').slice(0, 10),
+      record?.date || String(record?.created_at || '').slice(0, 10),
     ).slice(0, 10);
 
-    const belongsToWeek =
-      canonicalWeek === historyWeekStart ||
-      (
-        !record.week_start &&
-        !record.week &&
-        recordDate >= historyWeekStart &&
-        recordDate < historyWeekEnd
-      );
-
     return (
-      belongsToWeek &&
+      (
+        canonicalWeek === historyWeekStart ||
+        (
+          recordDate >= historyWeekStart &&
+          recordDate < historyWeekEnd
+        )
+      ) &&
       (!selectedStudentIds.length ||
         selectedStudentIds.includes(String(record.student_id))) &&
       (!gf || String(record.category_id) === String(gf))
