@@ -26,7 +26,10 @@ const alerts = [];
 
 const context = vm.createContext({
     console,
-    window: {},
+    window: {
+        setInterval,
+        clearInterval,
+    },
     alert: (message) => alerts.push(message),
     currentUser: {
         id: 'teacher-1',
