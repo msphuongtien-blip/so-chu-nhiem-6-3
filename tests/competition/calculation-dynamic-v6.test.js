@@ -110,4 +110,31 @@ assert.equal(
     '5 live records: HS s2 phải từ 81 lên 87.',
 );
 
+
+const mixedFieldRecords = [
+    {
+        student_id: 'mixed',
+        week_start: '2026-08-31',
+        week: 'not-a-date',
+        date: '2026-09-02',
+        score: 5,
+    },
+];
+
+assert.equal(
+    engine.calculateWeekScore(
+        mixedFieldRecords,
+        'mixed',
+        '2026-08-31',
+    ),
+    86,
+    'Một field tuần legacy không hợp lệ không được chặn fallback sang week_start hợp lệ.',
+);
+
+assert.equal(
+    engine.getRecordWeek(mixedFieldRecords[0]),
+    '2026-08-31',
+    'Record phải được chuẩn hóa về cùng canonical week.',
+);
+
 console.log('PASS: dynamic weekly calculation contract');
