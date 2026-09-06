@@ -51,8 +51,8 @@ assert.match(
 );
 assert.match(
     finalFormSource,
-    /getMonday.*date|week.*getMonday.*date/s,
-    'Final boundary phải suy Tuần từ Ngày.',
+    /const week = getRecordFormWeekFromDateV6\(date\)/,
+    'Final form phải suy Tuần từ Ngày.',
 );
 
 // 2. Opening the edit modal must not recursively mutate the modal forever.
