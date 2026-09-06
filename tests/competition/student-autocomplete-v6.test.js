@@ -10,7 +10,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../..');
 const source = fs.readFileSync(
-    path.join(root, 'student-autocomplete-v6.js'),
+    path.join(root, 'modules/students/student-autocomplete-v6.js'),
     'utf8',
 );
 const loaderSource = fs.readFileSync(
