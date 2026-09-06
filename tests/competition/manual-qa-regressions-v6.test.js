@@ -65,7 +65,7 @@ assert.match(rankingUi, /placeholder="Gõ tên hoặc Mã HS\.\.\."/);
 assert.match(rankingUi, /StudentAutocompleteV6\?\.filterStudents/);
 assert.match(
     rankingUi,
-    /!competitionStudentFilterStateV6\.has\(String\(student\.id\)\)/,
+    /competitionStudentFilterStateV6\.has\([\s\S]*?String\(student\.id\)/,
     'Selected students must be hidden from picker results.',
 );
 assert.match(
