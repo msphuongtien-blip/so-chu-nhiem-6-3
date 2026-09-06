@@ -26,11 +26,11 @@ const pipeline = fs.readFileSync(
 
 const compatibilityModules = [
     'modules/competition/competition-v6-category.js',
-    'competition-ranking-ui-v6.js',
-    'competition-ranking-columns-v6.js',
-    'competition-calculation-runtime-v6.js',
-    'competition-issues-renderer-v6.js',
-    'competition-snapshot-notification-v6.js',
+    'modules/competition/competition-ranking-ui-v6.js',
+    'modules/competition/competition-ranking-columns-v6.js',
+    'modules/competition/competition-calculation-runtime-v6.js',
+    'modules/competition/competition-issues-renderer-v6.js',
+    'modules/competition/competition-snapshot-notification-v6.js',
 ];
 
 for (const file of compatibilityModules) {
