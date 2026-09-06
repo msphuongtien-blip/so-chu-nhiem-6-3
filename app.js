@@ -745,13 +745,26 @@ function openCompetitionForm() {
         data
     }
     )=> {
-        const groups=[1,2,3,4,5],gm= {
+        const groups=[1,2,3,4,5,6],gm= {
         };(data||[]).forEach(c=>(gm[c.group_name||5]??=[]).push(c));const gh=groups.map(id=>'<div class="criteria-group"><h4>Nhóm '+id+': '+categoryName(id)+'</h4><div class="criteria-items">'+((gm[id]||[]).map(c=>'<span class="criteria-chip">'+esc(c.name)+'</span>').join('')||'<span class="mini">Chưa có tiêu chí.</span>')+'</div></div>').join('');openModal('Ghi nhận thi đua','<div class="field"><label>Học sinh</label><select id="fStudent">'+students.map(s=>'<option value="'+s.id+'">'+esc(s.full_name)+'</option>').join('')+'</select></div><div class="field"><label>Tuần</label><input id="fWeek" type="date" value="'+getCurrentWeekStart()+'"></div><div class="field"><label>Ngày</label><input id="fDate" type="date" value="'+localDate()+'"></div>'+gh+'<div class="field"><label>Nhóm tiêu chí</label><select id="fGroup" onchange="filterCriteriaByGroup()">'+groups.map(i=>'<option value="'+i+'">'+i+'. '+categoryName(i)+'</option>').join('')+'</select></div><div class="field"><label>Tiêu chí</label><select id="fCriteria">'+(data||[]).map(c=>'<option value="'+c.id+'" data-group="'+(c.group_name||5)+'">'+esc(c.name)+'</option>').join('')+'</select></div><div class="field"><label>Điểm</label><select id="fPoints">'+scoreOptions(1)+'</select></div><div class="field"><label>📝 Ghi chú</label><textarea id="fNote" rows="4" placeholder="Lỗi vi phạm, hành vi tích cực, khen thưởng hoặc nhận xét..."></textarea></div><div class="actions"><button class="btn primary" onclick="submitCompetition()">Lưu</button></div>');filterCriteriaByGroup();
     }
     )
 }
+function syncCompetitionPointsToCriteria() {
+    const criterion = $('fCriteria')?.selectedOptions?.[0];
+    const points = Number(criterion?.dataset?.points || 1);
+    const pointsSelect = $('fPoints');
+
+    if (pointsSelect) {
+        pointsSelect.value = String(points);
+    }
+}
+
 function filterCriteriaByGroup() {
-    const g=$('fGroup')?.value;if(!g)return;const sel=$('fCriteria');[...sel.options].forEach(o=>o.hidden=String(o.dataset.group)!==String(g));const first=[...sel.options].find(o=>!o.hidden);if(first)sel.value=first.value
+    const g=$('fGroup')?.value;if(!g)return;const sel=$('fCriteria');[...sel.options].forEach(o=>o.hidden=String(o.dataset.group)!==String(g));const first=[...sel.options].find(o=>!o.hidden);if(first) {
+        sel.value=first.value;
+        syncCompetitionPointsToCriteria();
+    }
 }
 async function submitCompetition() {
     const c=await sb.from('competition_criteria').select('*').eq('id',$('fCriteria').value).single();const points=Number($('fPoints').value);if(c.error||!c.data)return alert('Không tìm thấy tiêu chí.');const ok=await addCompetition($('fStudent').value,points,c.data.name,$('fNote').value.trim(),Number($('fGroup').value),$('fWeek').value,$('fDate').value);if(ok) {
