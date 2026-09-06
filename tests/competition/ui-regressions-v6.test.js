@@ -23,10 +23,7 @@ assert.match(
     'Ranking V6 phải định nghĩa đúng 4 cột.',
 );
 assert.doesNotMatch(rankingHeaderMatch[1], /Điểm tháng|Xu hướng|Nhóm/);
-assert.doesNotMatch(
-    autocompleteSource,
-    /<label>Học sinh<\\/label>/,
-);
+assert.doesNotMatch(autocompleteSource, /<label>Học sinh/);
 assert.match(
     finalFormSource,
     /const date = document\.getElementById\('fDateV6'\)\?\.value/,
