@@ -64,12 +64,12 @@ assert.match(
 );
 assert.match(
     app,
-    /id=\\?['"]competitionRecent/,
+    /id=['"]competitionRecent/,
     'Renderer phải cập nhật khu vực Lịch sử.',
 );
 assert.match(
     app,
-    /id=\\?['"]rankBody/,
+    /id=['"]rankBody/,
     'Renderer phải cập nhật khu vực Ranking.',
 );
 
