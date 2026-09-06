@@ -38,7 +38,7 @@ for (const file of compatibilityModules) {
 
     assert.doesNotMatch(
         source,
-        /window\.renderCompetition\s*=|globalThis\.renderCompetition\s*=/,
+        /window\.renderCompetition\s*=(?!=)|globalThis\.renderCompetition\s*=(?!=)/,
         file + ' không được override renderCompetition.',
     );
 }
