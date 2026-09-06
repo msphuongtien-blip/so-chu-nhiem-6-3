@@ -35,7 +35,7 @@ function loadModule() {
 
     vm.runInNewContext(
         fs.readFileSync(
-            path.join(projectRoot, 'student-actions-v6-final.js'),
+            path.join(projectRoot, 'modules/students/student-actions-v6-final.js'),
             'utf8',
         ),
         context,
