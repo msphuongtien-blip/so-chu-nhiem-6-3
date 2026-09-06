@@ -15,6 +15,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '../..');
 
 const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const loader = fs.readFileSync(
     path.join(root, 'core/module-loader.js'),
     'utf8',
@@ -63,12 +64,12 @@ assert.match(
     'Renderer phải giữ History độc lập với Ranking.',
 );
 assert.match(
-    app,
+    index,
     /id=['"]competitionRecent/,
     'Renderer phải cập nhật khu vực Lịch sử.',
 );
 assert.match(
-    app,
+    index,
     /id=['"]rankBody/,
     'Renderer phải cập nhật khu vực Ranking.',
 );
