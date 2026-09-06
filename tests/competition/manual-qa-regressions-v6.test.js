@@ -113,4 +113,20 @@ for (const file of [
     );
 }
 
+assert.match(
+    app,
+    /canonicalWeek = String\(\s*record\.week_start \|\| record\.week/,
+    'Lịch sử phải ưu tiên week_start/week canonical từ Supabase.',
+);
+assert.match(
+    app,
+    /belongsToWeek = historyWeekStart/,
+    'Lịch sử phải lọc theo tuần hiện tại bằng khóa tuần canonical.',
+);
+assert.match(
+    app,
+    /canonicalWeek === historyWeekStart/,
+    'Record có week_start đúng tuần phải được hiển thị trong Lịch sử.',
+);
+
 console.log('PASS: Competition V6 manual-QA regression contracts');
