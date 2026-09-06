@@ -23,9 +23,11 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '../..');
 const categoryModulePath = path.join(root, 'modules/competition/competition-v6-category.js');
 const indexPath = path.join(root, 'index.html');
+const loaderPath = path.join(root, 'core/module-loader.js');
 
 const categorySource = fs.readFileSync(categoryModulePath, 'utf8');
 const indexSource = fs.readFileSync(indexPath, 'utf8');
+const loaderSource = fs.readFileSync(loaderPath, 'utf8');
 
 const context = vm.createContext({
     console,
@@ -131,7 +133,7 @@ assert.ok(
 );
 
 assert.equal(
-    indexSource.includes('modules/competition/competition-v6-category.js'),
+    loaderSource.includes('modules/competition/competition-v6-category.js'),
     true,
     'index.html phải load module Category V6.',
 );
