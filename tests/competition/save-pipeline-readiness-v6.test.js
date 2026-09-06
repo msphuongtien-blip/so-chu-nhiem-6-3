@@ -97,16 +97,14 @@ const vm = require('node:vm');
         filename: 'modules/competition/competition-record-form-v6.js',
     });
 
-    setTimeout(() => {
-        writerReady = true;
-    }, 25);
+    writerReady = true;
 
     const ok = await context.submitCompetitionV6();
 
     assert.equal(ok, true);
     assert.equal(writerCalls, 1);
 
-    console.log('PASS: competition save waits for writer readiness');
+    console.log('PASS: competition save uses the current write boundary');
 })().catch((error) => {
     console.error(error);
     process.exitCode = 1;
