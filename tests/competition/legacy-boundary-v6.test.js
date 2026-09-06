@@ -54,7 +54,7 @@ const installed = context.installCompetitionLegacyBoundaryV6();
 
 assert.equal(installed, true);
 assert.equal(context.openCompetitionForm, v6Open);
-assert.equal(context.addCompetition, v6Add);
+assert.equal(context.addCompetition, context.addCompetitionThroughV6Boundary);
 assert.equal(context.submitCompetition, v6Submit);
 assert.equal(
     context.__competitionLegacyBoundaryV6Installed,
