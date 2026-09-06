@@ -548,7 +548,14 @@ async function renderCompetition(){
    * các record đã lưu canonical week_start = thứ Hai của tuần.
    * Có fallback theo date để tương thích record cũ chỉ có date.
    */
-  const historyWeekStart = compWeekStart(week);
+  /*
+   * History and ranking must share exactly one canonical week contract.
+   * Older records may populate week, week_start, or only date.
+   */
+  const historyWeekStart =
+    globalThis.CompetitionCalculationV6?.getMonday?.(week) ||
+    compWeekStart(week);
+
   const historyWeekEndDate = new Date(
     historyWeekStart + 'T00:00:00',
   );
@@ -556,21 +563,28 @@ async function renderCompetition(){
   const historyWeekEnd = historyWeekEndDate.toISOString().slice(0, 10);
 
   const filtered = records.filter((record) => {
-    const canonicalWeek = String(
-      record.week_start || record.week || '',
-    ).slice(0, 10);
+    const rawWeek =
+      record.week_start ||
+      record.week ||
+      record.date ||
+      String(record.created_at || '').slice(0, 10);
+
+    const canonicalWeek =
+      globalThis.CompetitionCalculationV6?.getMonday?.(rawWeek) ||
+      compWeekStart(rawWeek);
+
     const recordDate = String(
       record.date || String(record.created_at || '').slice(0, 10),
     ).slice(0, 10);
 
-    const belongsToWeek = historyWeekStart
-      ? (
-          canonicalWeek === historyWeekStart ||
-          (!canonicalWeek &&
-            recordDate >= historyWeekStart &&
-            recordDate < historyWeekEnd)
-        )
-      : true;
+    const belongsToWeek =
+      canonicalWeek === historyWeekStart ||
+      (
+        !record.week_start &&
+        !record.week &&
+        recordDate >= historyWeekStart &&
+        recordDate < historyWeekEnd
+      );
 
     return (
       belongsToWeek &&
