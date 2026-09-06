@@ -542,15 +542,38 @@ async function renderCompetition(){
    * Record có thể lưu week, week_start hoặc chỉ có date; cả ba đều
    * được quy về thứ Hai đầu tuần trước khi so sánh.
    */
+  /*
+   * Lịch sử dùng khoảng ngày của tuần làm khóa lọc chính.
+   * Không phụ thuộc vào parsing lại record.week/week_start qua Date, vì
+   * các record đã lưu canonical week_start = thứ Hai của tuần.
+   * Có fallback theo date để tương thích record cũ chỉ có date.
+   */
+  const historyWeekStart = compWeekStart(week);
+  const historyWeekEndDate = new Date(
+    historyWeekStart + 'T00:00:00',
+  );
+  historyWeekEndDate.setDate(historyWeekEndDate.getDate() + 7);
+  const historyWeekEnd = historyWeekEndDate.toISOString().slice(0, 10);
+
   const filtered = records.filter((record) => {
-    const recordWeek = compWeekStart(
-      record.week ||
-        record.week_start ||
-        record.date,
-    );
+    const canonicalWeek = String(
+      record.week_start || record.week || '',
+    ).slice(0, 10);
+    const recordDate = String(
+      record.date || String(record.created_at || '').slice(0, 10),
+    ).slice(0, 10);
+
+    const belongsToWeek = historyWeekStart
+      ? (
+          canonicalWeek === historyWeekStart ||
+          (!canonicalWeek &&
+            recordDate >= historyWeekStart &&
+            recordDate < historyWeekEnd)
+        )
+      : true;
 
     return (
-      (!week || recordWeek === compWeekStart(week)) &&
+      belongsToWeek &&
       (!selectedStudentIds.length ||
         selectedStudentIds.includes(String(record.student_id))) &&
       (!gf || String(record.category_id) === String(gf))
