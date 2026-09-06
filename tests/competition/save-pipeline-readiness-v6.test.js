@@ -84,15 +84,12 @@ const vm = require('node:vm');
                 return '2030-01-07';
             },
         },
-        CompetitionRecordWriteBoundaryV6: {
-            get addCompetitionThroughV6Boundary() {
-                return writerReady
-                    ? async () => {
-                        writerCalls += 1;
-                        return true;
-                    }
-                    : undefined;
-            },
+        addCompetition: async () => {
+            if (!writerReady) {
+                return false;
+            }
+            writerCalls += 1;
+            return true;
         },
     });
 
@@ -104,7 +101,7 @@ const vm = require('node:vm');
         writerReady = true;
     }, 25);
 
-    const ok = await context.submitCompetitionFinalV6();
+    const ok = await context.submitCompetitionV6();
 
     assert.equal(ok, true);
     assert.equal(writerCalls, 1);
