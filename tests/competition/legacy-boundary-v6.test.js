@@ -41,6 +41,9 @@ const context = vm.createContext({
     openCompetitionFormV6: v6Open,
     addCompetitionThroughV6Boundary: v6Add,
     submitCompetitionV6: v6Submit,
+    CompetitionRecordServiceV6: {
+        saveCompetitionRecordV6: async () => ({ ok: true }),
+    },
 });
 
 vm.runInContext(source, context, {
