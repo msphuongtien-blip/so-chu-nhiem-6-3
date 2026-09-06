@@ -91,4 +91,23 @@ assert.equal(
     'Tuần rỗng tiếp theo phải giữ nguyên rollover.',
 );
 
+const liveWeekRecords = [
+    { student_id: 's1', week: '2026-08-31', week_start: '2026-08-31', score: 1 },
+    { student_id: 's1', week: '2026-08-31', week_start: '2026-08-31', score: 1 },
+    { student_id: 's1', week: '2026-08-31', week_start: '2026-08-31', score: 5 },
+    { student_id: 's2', week: '2026-08-31', week_start: '2026-08-31', score: 1 },
+    { student_id: 's2', week: '2026-08-31', week_start: '2026-08-31', score: 5 },
+];
+
+assert.equal(
+    engine.calculateWeekScore(liveWeekRecords, 's1', '2026-08-31'),
+    88,
+    '5 live records: HS s1 phải từ 81 lên 88.',
+);
+assert.equal(
+    engine.calculateWeekScore(liveWeekRecords, 's2', '2026-08-31'),
+    87,
+    '5 live records: HS s2 phải từ 81 lên 87.',
+);
+
 console.log('PASS: dynamic weekly calculation contract');
