@@ -67,6 +67,13 @@ const vm = require('node:vm');
         alert() {
             throw new Error('Unexpected alert during save pipeline test.');
         },
+        window: {
+            supabase: {
+                createClient() {
+                    return client;
+                },
+            },
+        },
         closeModal() {},
         renderStudents: async () => {},
         renderCompetition: async () => {},
