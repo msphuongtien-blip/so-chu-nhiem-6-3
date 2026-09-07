@@ -98,5 +98,17 @@ console.log('Core contract tests: PASS');
  * assets. This prevents one machine from executing an older cached module.
  */
 const indexHtml = fs.readFileSync('index.html', 'utf8');
-assert.match(indexHtml, /app\.js\?v=20260906-competition-render-pipeline-1/);
-assert.match(indexHtml, /core\/module-loader\.js\?v=20260906-competition-render-pipeline-1/);
+const appVersionMatch = indexHtml.match(/app\.js\?v=([^"'&]+)/);
+const loaderVersionMatch = indexHtml.match(
+    /core\/module-loader\.js\?v=([^"'&]+)/,
+);
+assert.ok(appVersionMatch, 'app.js must be versioned for cache busting.');
+assert.ok(
+    loaderVersionMatch,
+    'module-loader.js must be versioned for cache busting.',
+);
+assert.equal(
+    appVersionMatch[1],
+    loaderVersionMatch[1],
+    'Entry V6 assets must share one cache-busting version.',
+);
