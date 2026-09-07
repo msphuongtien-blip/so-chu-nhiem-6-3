@@ -59,25 +59,27 @@ function isCompetitionRecordScoreValidV6(score) {
     );
 }
 
+/**
+ * Chuẩn hóa ngày về thứ Hai đầu tuần bằng resolver canonical của Core.
+ *
+ * Date-only luôn được xử lý theo YYYY-MM-DD, không dùng local Date để
+ * tránh lệch ngày khi trình duyệt chạy ở múi giờ khác.
+ *
+ * @param {string} value Ngày dạng YYYY-MM-DD.
+ * @returns {string} Ngày thứ Hai đầu tuần hoặc chuỗi rỗng nếu không hợp lệ.
+ */
 function getCompetitionRecordWeekV6(value) {
     const normalized = String(value || '').slice(0, 10);
 
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(normalized)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
         return '';
     }
 
-    const date = new Date(normalized + 'T00:00:00Z');
-
-    if (Number.isNaN(date.getTime())) {
+    if (typeof compWeekStart !== 'function') {
         return '';
     }
 
-    const day = date.getUTCDay();
-    const difference = day === 0 ? -6 : 1 - day;
-
-    date.setUTCDate(date.getUTCDate() + difference);
-
-    return date.toISOString().slice(0, 10);
+    return compWeekStart(normalized);
 }
 
 /**
@@ -289,6 +291,7 @@ async function saveCompetitionRecordV6(input) {
 globalThis.CompetitionRecordServiceV6 = Object.freeze({
     COMPETITION_RECORD_SERVICE_V6_SCORES,
     buildCompetitionRecordPayloadV6,
+    getCompetitionRecordWeekV6,
     isCompetitionRecordScoreValidV6,
     refreshCompetitionRecordStateV6,
     saveCompetitionRecordV6,
