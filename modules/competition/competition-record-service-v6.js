@@ -59,6 +59,27 @@ function isCompetitionRecordScoreValidV6(score) {
     );
 }
 
+function getCompetitionRecordWeekV6(value) {
+    const normalized = String(value || '').slice(0, 10);
+
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(normalized)) {
+        return '';
+    }
+
+    const date = new Date(normalized + 'T00:00:00Z');
+
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const day = date.getUTCDay();
+    const difference = day === 0 ? -6 : 1 - day;
+
+    date.setUTCDate(date.getUTCDate() + difference);
+
+    return date.toISOString().slice(0, 10);
+}
+
 /**
  * Tạo payload chuẩn cho competition_records.
  *
@@ -104,6 +125,29 @@ function buildCompetitionRecordPayloadV6(input) {
     }
 
     const numericPoints = Number(points);
+
+    const canonicalWeek = getCompetitionRecordWeekV6(week);
+    const recordWeek = getCompetitionRecordWeekV6(date);
+
+    if (!canonicalWeek || canonicalWeek !== week) {
+        throw new Error(
+            'Tuần ghi nhận phải là ngày thứ Hai đầu tuần.',
+        );
+    }
+
+    if (!recordWeek || recordWeek !== canonicalWeek) {
+        throw new Error(
+            'Ngày ghi nhận phải nằm trong tuần ' +
+            canonicalWeek +
+            ' đến ' +
+            (() => {
+                const end = new Date(canonicalWeek + 'T00:00:00Z');
+                end.setUTCDate(end.getUTCDate() + 6);
+                return end.toISOString().slice(0, 10);
+            })() +
+            '.',
+        );
+    }
 
     if (!isCompetitionRecordScoreValidV6(numericPoints)) {
         throw new Error(
