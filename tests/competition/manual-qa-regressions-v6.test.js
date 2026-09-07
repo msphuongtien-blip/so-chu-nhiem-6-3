@@ -120,7 +120,7 @@ assert.match(
 );
 assert.match(
     app,
-    /record\.week_start,\s*record\.week,\s*record\.date/,
+    /record\?\.week_start,\s*record\?\.week,\s*record\?\.date/,
     'Resolver tuần phải ưu tiên week_start, rồi week, rồi date.',
 );
 assert.match(
