@@ -78,3 +78,18 @@ test('Competition V6 service rejects a record date outside its canonical week', 
         /recordWeek !== canonicalWeek/,
     );
 });
+
+test('Competition V6 record form restricts the date to the selected week', () => {
+    const source = read(
+        'modules/competition/competition-record-form-v6.js',
+    );
+
+    assert.match(
+        source,
+        /min="\$\{escapeRecordFormV6\(selectedWeek \|\| defaultRecordDate\)\}"/,
+    );
+    assert.match(
+        source,
+        /max="\$\{escapeRecordFormV6\(selectedWeekEnd\)\}"/,
+    );
+});
