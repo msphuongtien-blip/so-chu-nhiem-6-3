@@ -290,6 +290,18 @@ async function openCompetitionFormV6() {
         firstCategoryId,
     );
 
+    /*
+     * Ghi nhận is opened from the currently selected week. Default the date
+     * to that week's Monday instead of silently switching to today's week.
+     * The teacher can still choose another date inside the week.
+     */
+    const selectedWeek =
+        typeof window.compWeekInput === 'function'
+            ? window.compWeekInput()
+            : getRecordFormWeekFromDateV6(localDate());
+    const defaultRecordDate =
+        selectedWeek || localDate();
+
     openModal(
         'Ghi nhận thi đua',
         `
@@ -314,7 +326,7 @@ async function openCompetitionFormV6() {
                 <input
                     id="fDateV6"
                     type="date"
-                    value="${escapeRecordFormV6(localDate())}"
+                    value="${escapeRecordFormV6(defaultRecordDate)}"
                 >
             </div>
 
