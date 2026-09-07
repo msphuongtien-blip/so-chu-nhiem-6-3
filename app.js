@@ -572,9 +572,9 @@ async function renderCompetition(){
 
   /*
    * Canonical history filter:
-   * A record is in the selected week when ANY explicit week field points
-   * to that Monday. We do not let a legacy/malformed week field hide a
-   * record whose date is clearly inside the selected Monday-Sunday range.
+   * Keep the normalized week as the primary contract, but also accept the
+   * explicit stored week_start/week/date fields. This is intentionally
+   * defensive because old records were written by several V5/V6 forms.
    */
   const historyWeekStart =
     calculationEngine?.getMonday?.(week) ||
@@ -586,35 +586,22 @@ async function renderCompetition(){
   historyWeekEndDate.setUTCDate(historyWeekEndDate.getUTCDate() + 7);
   const historyWeekEnd = historyWeekEndDate.toISOString().slice(0, 10);
 
-  function isCompetitionRecordInSelectedWeek(record) {
-    const explicitValues = [
-      record?.week_start,
-      record?.week,
-      record?.date,
-      String(record?.created_at || '').slice(0, 10),
-    ]
-      .map((value) => String(value || '').slice(0, 10))
-      .filter((value) => /^\\d{4}-\\d{2}-\\d{2}$/.test(value));
-
-    if (!explicitValues.length) {
-      return false;
-    }
-
-    return explicitValues.some((value) => {
-      const canonical = calculationEngine?.getMonday
-        ? calculationEngine.getMonday(value)
-        : compWeekStart(value);
-
-      return (
-        canonical === historyWeekStart ||
-        (value >= historyWeekStart && value < historyWeekEnd)
-      );
-    });
-  }
-
   const filtered = records.filter((record) => {
+    const canonicalWeek = normalizeRecordWeek(record);
+    const explicitWeekStart = String(record?.week_start || '').slice(0, 10);
+    const explicitWeek = String(record?.week || '').slice(0, 10);
+    const recordDate = String(
+      record?.date || String(record?.created_at || '').slice(0, 10),
+    ).slice(0, 10);
+
+    const inSelectedWeek =
+      canonicalWeek === historyWeekStart ||
+      explicitWeekStart === historyWeekStart ||
+      explicitWeek === historyWeekStart ||
+      (recordDate >= historyWeekStart && recordDate < historyWeekEnd);
+
     return (
-      isCompetitionRecordInSelectedWeek(record) &&
+      inSelectedWeek &&
       (!selectedStudentIds.length ||
         selectedStudentIds.includes(String(record.student_id))) &&
       (!gf || String(record.category_id) === String(gf))
