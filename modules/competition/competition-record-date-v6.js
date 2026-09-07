@@ -26,28 +26,13 @@ let recordDateV6OriginalEditForm = null;
  * Tính Monday của tuần chứa ngày được chọn.
  */
 function getRecordWeekFromDateV6(dateValue) {
-    const engine = globalThis.CompetitionCalculationV6;
-
-    if (engine && typeof engine.getMonday === 'function') {
-        return engine.getMonday(dateValue);
+    // Dùng một resolver duy nhất của Core để mọi luồng ngày/tuần có cùng
+    // kết quả và không bị lệch do timezone hoặc resolver V6 cũ.
+    if (typeof compWeekStart === 'function') {
+        return compWeekStart(dateValue);
     }
 
-    if (typeof dateValue !== 'string' || !dateValue) {
-        return '';
-    }
-
-    const date = new Date(`${dateValue}T00:00:00`);
-
-    if (Number.isNaN(date.getTime())) {
-        return '';
-    }
-
-    const day = date.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-
-    date.setDate(date.getDate() + diff);
-
-    return date.toISOString().slice(0, 10);
+    return '';
 }
 
 /**
@@ -204,17 +189,11 @@ window.CompetitionRecordDateV6 = Object.freeze({
  */
 
 function getEditedRecordWeekFromDateV6(dateValue) {
-    const date = new Date(`${dateValue}T00:00:00`);
-
-    if (Number.isNaN(date.getTime())) {
-        return '';
+    if (typeof compWeekStart === 'function') {
+        return compWeekStart(dateValue);
     }
 
-    const day = date.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    date.setDate(date.getDate() + diff);
-
-    return date.toISOString().slice(0, 10);
+    return '';
 }
 
 function syncEditedRecordWeekV6() {
