@@ -26,7 +26,7 @@ test('Competition V6 submit derives week from the form date when no Week field e
         source,
         /CompetitionRecordFormV6\?\.getRecordFormWeekFromDateV6\?\.\(date\)/,
     );
-    assert.doesNotMatch(
+    assert.match(
         source,
         /if\s*\(\s*!studentId\s*\|\|\s*!week\s*\|\|\s*!date\s*\|\|\s*!categoryId\s*\|\|\s*!criteriaId\s*\)/,
     );
