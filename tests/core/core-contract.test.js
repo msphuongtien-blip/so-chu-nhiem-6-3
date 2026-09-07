@@ -89,6 +89,26 @@ assert.equal(
     vm.runInContext("compWeekStart('2026-08-27')", context),
     '2026-08-24',
 );
+assert.equal(
+    vm.runInContext("compWeekStart('2026-08-25')", context),
+    '2026-08-24',
+);
+assert.equal(
+    vm.runInContext("compWeekStart('2026-08-31')", context),
+    '2026-08-31',
+);
+assert.equal(
+    vm.runInContext("compWeekStart('2026-09-01')", context),
+    '2026-08-31',
+);
+assert.equal(
+    vm.runInContext("compWeekRange('2026-08-25')", context),
+    'Tuần 24/08/2026 – 30/08/2026',
+);
+assert.notEqual(
+    vm.runInContext("compWeekStart('2026-08-25')", context),
+    '2026-08-16',
+);
 
 console.log('Core contract tests: PASS');
 
