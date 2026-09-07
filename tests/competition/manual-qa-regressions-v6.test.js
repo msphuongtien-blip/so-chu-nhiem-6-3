@@ -115,8 +115,13 @@ for (const file of [
 
 assert.match(
     app,
-    /canonicalWeek = String\(\s*record\.week_start \|\| record\.week/,
-    'Lịch sử phải ưu tiên week_start/week canonical từ Supabase.',
+    /const normalizeRecordWeek =/,
+    'Lịch sử phải dùng một resolver tuần canonical duy nhất.',
+);
+assert.match(
+    app,
+    /record\.week_start,\s*record\.week,\s*record\.date/,
+    'Resolver tuần phải ưu tiên week_start, rồi week, rồi date.',
 );
 assert.match(
     app,
