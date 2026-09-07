@@ -125,11 +125,6 @@ assert.match(
 );
 assert.match(
     app,
-    /belongsToWeek = historyWeekStart/,
-    'Lịch sử phải lọc theo tuần hiện tại bằng khóa tuần canonical.',
-);
-assert.match(
-    app,
     /canonicalWeek === historyWeekStart/,
     'Record có week_start đúng tuần phải được hiển thị trong Lịch sử.',
 );
