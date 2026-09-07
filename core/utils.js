@@ -35,6 +35,38 @@ const esc = (value) =>
     );
 
 /**
+ * Parse một ngày YYYY-MM-DD mà không phụ thuộc timezone của trình duyệt.
+ *
+ * @param {string} value Ngày dạng YYYY-MM-DD.
+ * @returns {Date|null} Date UTC hoặc null nếu không hợp lệ.
+ */
+function parseDateOnly(value) {
+    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (!match) {
+        return null;
+    }
+
+    const date = new Date(
+        Date.UTC(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3]),
+        ),
+    );
+
+    if (
+        date.getUTCFullYear() !== Number(match[1]) ||
+        date.getUTCMonth() !== Number(match[2]) - 1 ||
+        date.getUTCDate() !== Number(match[3])
+    ) {
+        return null;
+    }
+
+    return date;
+}
+
+/**
  * Trả về ngày hiện tại theo múi giờ local của trình duyệt.
  *
  * @returns {string} Ngày dạng YYYY-MM-DD.
@@ -54,11 +86,16 @@ function localDate() {
  * @returns {string} Ngày bắt đầu tuần dạng YYYY-MM-DD.
  */
 function getCurrentWeekStart() {
-    const date = new Date();
-    const day = date.getDay();
+    const date = parseDateOnly(localDate());
+
+    if (!date) {
+        return '';
+    }
+
+    const day = date.getUTCDay();
     const difference = day === 0 ? -6 : 1 - day;
 
-    date.setDate(date.getDate() + difference);
+    date.setUTCDate(date.getUTCDate() + difference);
 
     return date.toISOString().slice(0, 10);
 }
@@ -66,22 +103,22 @@ function getCurrentWeekStart() {
 /**
  * Chuẩn hóa một ngày bất kỳ về ngày thứ Hai đầu tuần.
  *
+ * Quy tắc dùng Date UTC cho date-only để không bị lệch tuần do timezone.
+ *
  * @param {string} value Ngày dạng YYYY-MM-DD.
  * @returns {string} Ngày bắt đầu tuần.
  */
 function compWeekStart(value) {
-    const date = new Date(
-        (value || getCurrentWeekStart()) + 'T00:00:00',
-    );
+    const date = parseDateOnly(value || getCurrentWeekStart());
 
-    if (Number.isNaN(date.getTime())) {
+    if (!date) {
         return getCurrentWeekStart();
     }
 
-    const day = date.getDay();
+    const day = date.getUTCDay();
     const difference = day === 0 ? -6 : 1 - day;
 
-    date.setDate(date.getDate() + difference);
+    date.setUTCDate(date.getUTCDate() + difference);
 
     return date.toISOString().slice(0, 10);
 }
@@ -94,21 +131,21 @@ function compWeekStart(value) {
  */
 function compWeekRange(value) {
     const start = compWeekStart(value);
-    const date = new Date(start + 'T00:00:00');
+    const date = parseDateOnly(start);
 
-    if (Number.isNaN(date.getTime())) {
+    if (!date) {
         return '';
     }
 
     const end = new Date(date);
-    end.setDate(end.getDate() + 6);
+    end.setUTCDate(end.getUTCDate() + 6);
 
     const format = (item) =>
-        String(item.getDate()).padStart(2, '0') +
+        String(item.getUTCDate()).padStart(2, '0') +
         '/' +
-        String(item.getMonth() + 1).padStart(2, '0') +
+        String(item.getUTCMonth() + 1).padStart(2, '0') +
         '/' +
-        item.getFullYear();
+        item.getUTCFullYear();
 
     return 'Tuần ' + format(date) + ' – ' + format(end);
 }
