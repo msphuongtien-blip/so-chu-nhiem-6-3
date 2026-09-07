@@ -44,3 +44,37 @@ test('Competition V6 record form defaults the recording date to the selected wee
         /value="\$\{escapeRecordFormV6\(defaultRecordDate\)\}"/,
     );
 });
+
+test('Competition V6 week label uses a Monday-to-Sunday range', () => {
+    const utils = read('core/utils.js');
+
+    assert.match(
+        utils,
+        /function compWeekRange\(value\)/,
+        'Utils phải có helper hiển thị khoảng tuần.',
+    );
+    assert.match(
+        utils,
+        /return 'Tuần ' \+ format\(date\) \+ ' – ' \+ format\(end\)/,
+        'Nhãn tuần phải hiển thị từ thứ Hai đến Chủ nhật.',
+    );
+});
+
+test('Competition V6 service rejects a record date outside its canonical week', () => {
+    const source = read(
+        'modules/competition/competition-record-service-v6.js',
+    );
+
+    assert.match(
+        source,
+        /canonicalWeek = getCompetitionRecordWeekV6\(week\)/,
+    );
+    assert.match(
+        source,
+        /recordWeek = getCompetitionRecordWeekV6\(date\)/,
+    );
+    assert.match(
+        source,
+        /recordWeek !== canonicalWeek/,
+    );
+});
