@@ -64,7 +64,7 @@ const vm = require('node:vm');
 
     const expected = Array.from(
         context.ApplicationModuleLoaderV6.APPLICATION_MODULES,
-        ([, src]) => `${src}?v=\${assetVersion}`,
+        ([, src]) => `${src}?v=${assetVersion}`,
     );
 
     assert.deepEqual(appended, expected);
