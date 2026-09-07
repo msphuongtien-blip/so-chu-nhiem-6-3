@@ -85,3 +85,30 @@ function compWeekStart(value) {
 
     return date.toISOString().slice(0, 10);
 }
+
+/**
+ * Trả về nhãn tuần theo khoảng thứ Hai–Chủ nhật.
+ *
+ * @param {string} value Một ngày bất kỳ trong tuần.
+ * @returns {string} Ví dụ: "Tuần 07/09/2026 – 13/09/2026".
+ */
+function compWeekRange(value) {
+    const start = compWeekStart(value);
+    const date = new Date(start + 'T00:00:00');
+
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const end = new Date(date);
+    end.setDate(end.getDate() + 6);
+
+    const format = (item) =>
+        String(item.getDate()).padStart(2, '0') +
+        '/' +
+        String(item.getMonth() + 1).padStart(2, '0') +
+        '/' +
+        item.getFullYear();
+
+    return 'Tuần ' + format(date) + ' – ' + format(end);
+}
