@@ -58,9 +58,13 @@ const vm = require('node:vm');
         context.ApplicationModuleLoaderV6.APPLICATION_MODULES.length,
     );
 
+    const versionMatch = String(appended[0] || '').match(/[?&]v=([^&]+)$/);
+    assert.ok(versionMatch, 'Dynamic V6 modules must include a cache-busting version.');
+    const assetVersion = versionMatch[1];
+
     const expected = Array.from(
         context.ApplicationModuleLoaderV6.APPLICATION_MODULES,
-        ([, src]) => `${src}?v=20260906-competition-render-pipeline-1`,
+        ([, src]) => `${src}?v=\${assetVersion}`,
     );
 
     assert.deepEqual(appended, expected);
