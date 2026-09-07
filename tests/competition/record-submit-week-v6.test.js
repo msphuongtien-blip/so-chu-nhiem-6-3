@@ -93,3 +93,43 @@ test('Competition V6 record form restricts the date to the selected week', () =>
         /max="\$\{escapeRecordFormV6\(selectedWeekEnd\)\}"/,
     );
 });
+
+test('Competition V6 uses the canonical Core resolver for all record-week derivation', () => {
+    const service = read(
+        'modules/competition/competition-record-service-v6.js',
+    );
+    const form = read(
+        'modules/competition/competition-record-form-v6.js',
+    );
+
+    assert.match(
+        service,
+        /!\/^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\/\.test\(normalized\)/,
+        'Service phải validate date-only trước khi resolve tuần.',
+    );
+    assert.match(
+        service,
+        /typeof compWeekStart !== 'function'/,
+        'Service phải phụ thuộc resolver tuần canonical của Core.',
+    );
+    assert.match(
+        service,
+        /return compWeekStart\(normalized\);/,
+        'Service phải dùng cùng resolver với UI.',
+    );
+    assert.match(
+        form,
+        /return compWeekStart\(dateValue\);/,
+        'Form phải dùng cùng resolver với service.',
+    );
+    assert.match(
+        form,
+        /id="fWeekV6"[\s\S]*type="hidden"/,
+        'Form phải giữ tuần đã chọn để submit không tự đổi sang tuần khác.',
+    );
+    assert.match(
+        form,
+        /T00:00:00Z[\s\S]*setUTCDate\(date\.getUTCDate\(\) \+ 6\)/,
+        'Ngày cuối tuần phải được tính theo UTC date-only.',
+    );
+});
