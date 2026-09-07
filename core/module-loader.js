@@ -11,7 +11,7 @@
  * - Bảo đảm module được nạp theo đúng thứ tự khai báo.
  */
 
-const V6_ASSET_VERSION = '20260907-competition-final-2';
+const V6_ASSET_VERSION = '20260908-competition-week-fix-1';
 
 function loadApplicationModule(scriptId, source) {
     /*
