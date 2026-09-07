@@ -301,6 +301,17 @@ async function openCompetitionFormV6() {
             : getRecordFormWeekFromDateV6(localDate());
     const defaultRecordDate =
         selectedWeek || localDate();
+    const selectedWeekEnd = (() => {
+        const date = new Date(
+            (selectedWeek || defaultRecordDate) + 'T00:00:00',
+        );
+        date.setDate(date.getDate() + 6);
+        return date.toISOString().slice(0, 10);
+    })();
+    const selectedWeekLabel =
+        typeof compWeekRange === 'function'
+            ? compWeekRange(selectedWeek || defaultRecordDate)
+            : selectedWeek || defaultRecordDate;
 
     openModal(
         'Ghi nhận thi đua',
@@ -322,10 +333,13 @@ async function openCompetitionFormV6() {
             </div>
 
             <div class="field">
-                <label>Ngày</label>
+                <label>Ngày ghi nhận</label>
+                <div class="mini">${escapeRecordFormV6(selectedWeekLabel)}</div>
                 <input
                     id="fDateV6"
                     type="date"
+                    min="${escapeRecordFormV6(selectedWeek || defaultRecordDate)}"
+                    max="${escapeRecordFormV6(selectedWeekEnd)}"
                     value="${escapeRecordFormV6(defaultRecordDate)}"
                 >
             </div>
