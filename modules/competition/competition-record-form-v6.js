@@ -237,22 +237,28 @@ async function waitForRecordFormCategoriesV6() {
  * Tính Monday từ Ngày đã chọn. Không phụ thuộc module khác để tránh
  * trường hợp load-order làm form không xác định được Tuần.
  */
+/**
+ * Tính thứ Hai của tuần chứa ngày được chọn bằng resolver canonical của Core.
+ *
+ * Date-only được xử lý thống nhất qua YYYY-MM-DD, không dùng local Date,
+ * để tránh lệch ngày/tuần do timezone.
+ *
+ * @param {string} dateValue Ngày dạng YYYY-MM-DD.
+ * @returns {string} Ngày thứ Hai đầu tuần hoặc chuỗi rỗng nếu không hợp lệ.
+ */
 function getRecordFormWeekFromDateV6(dateValue) {
-    if (typeof dateValue !== 'string' || !dateValue) {
+    if (
+        typeof dateValue !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(dateValue)
+    ) {
         return '';
     }
 
-    const date = new Date(`${dateValue}T00:00:00`);
-
-    if (Number.isNaN(date.getTime())) {
+    if (typeof compWeekStart !== 'function') {
         return '';
     }
 
-    const day = date.getDay();
-    const diff = day === 0 ? -6 : 1 - day;
-    date.setDate(date.getDate() + diff);
-
-    return date.toISOString().slice(0, 10);
+    return compWeekStart(dateValue);
 }
 
 async function openCompetitionFormV6() {
@@ -303,9 +309,9 @@ async function openCompetitionFormV6() {
         selectedWeek || localDate();
     const selectedWeekEnd = (() => {
         const date = new Date(
-            (selectedWeek || defaultRecordDate) + 'T00:00:00',
+            (selectedWeek || defaultRecordDate) + 'T00:00:00Z',
         );
-        date.setDate(date.getDate() + 6);
+        date.setUTCDate(date.getUTCDate() + 6);
         return date.toISOString().slice(0, 10);
     })();
     const selectedWeekLabel =
@@ -341,6 +347,11 @@ async function openCompetitionFormV6() {
                     min="${escapeRecordFormV6(selectedWeek || defaultRecordDate)}"
                     max="${escapeRecordFormV6(selectedWeekEnd)}"
                     value="${escapeRecordFormV6(defaultRecordDate)}"
+                >
+                <input
+                    id="fWeekV6"
+                    type="hidden"
+                    value="${escapeRecordFormV6(selectedWeek || getRecordFormWeekFromDateV6(defaultRecordDate))}"
                 >
             </div>
 
