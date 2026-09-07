@@ -570,6 +570,12 @@ async function renderCompetition(){
       return '';
     });
 
+  /*
+   * Canonical history filter:
+   * A record is in the selected week when ANY explicit week field points
+   * to that Monday. We do not let a legacy/malformed week field hide a
+   * record whose date is clearly inside the selected Monday-Sunday range.
+   */
   const historyWeekStart =
     calculationEngine?.getMonday?.(week) ||
     compWeekStart(week);
@@ -580,20 +586,35 @@ async function renderCompetition(){
   historyWeekEndDate.setUTCDate(historyWeekEndDate.getUTCDate() + 7);
   const historyWeekEnd = historyWeekEndDate.toISOString().slice(0, 10);
 
-  const filtered = records.filter((record) => {
-    const canonicalWeek = normalizeRecordWeek(record);
-    const recordDate = String(
-      record?.date || String(record?.created_at || '').slice(0, 10),
-    ).slice(0, 10);
+  function isCompetitionRecordInSelectedWeek(record) {
+    const explicitValues = [
+      record?.week_start,
+      record?.week,
+      record?.date,
+      String(record?.created_at || '').slice(0, 10),
+    ]
+      .map((value) => String(value || '').slice(0, 10))
+      .filter((value) => /^\\d{4}-\\d{2}-\\d{2}$/.test(value));
 
+    if (!explicitValues.length) {
+      return false;
+    }
+
+    return explicitValues.some((value) => {
+      const canonical = calculationEngine?.getMonday
+        ? calculationEngine.getMonday(value)
+        : compWeekStart(value);
+
+      return (
+        canonical === historyWeekStart ||
+        (value >= historyWeekStart && value < historyWeekEnd)
+      );
+    });
+  }
+
+  const filtered = records.filter((record) => {
     return (
-      (
-        canonicalWeek === historyWeekStart ||
-        (
-          recordDate >= historyWeekStart &&
-          recordDate < historyWeekEnd
-        )
-      ) &&
+      isCompetitionRecordInSelectedWeek(record) &&
       (!selectedStudentIds.length ||
         selectedStudentIds.includes(String(record.student_id))) &&
       (!gf || String(record.category_id) === String(gf))
