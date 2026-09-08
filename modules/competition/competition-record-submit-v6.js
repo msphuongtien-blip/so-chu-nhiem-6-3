@@ -136,9 +136,9 @@ async function submitCompetitionWithServiceV6() {
     const originalLabel =
         submitButton?.textContent || 'Lưu';
 
-    const studentIds = String(
-        document.getElementById('fStudentV6')?.value || '',
-    ).split(',').filter(Boolean);
+    const studentIds =
+        globalThis.CompetitionStudentPickerV6
+            ?.getCompetitionRecordSelectedStudentsV6?.() || [];
     const date =
         document.getElementById('fDateV6')?.value;
 
@@ -218,8 +218,8 @@ async function submitCompetitionWithServiceV6() {
         }
 
         const result =
-            await Promise.all(studentIds.map((studentId) => service.saveCompetitionRecordV6({
-                studentId,
+            await service.saveCompetitionRecordsV6({
+                studentIds,
                 criteria: selectedCriteria,
                 points,
                 note,
@@ -227,13 +227,11 @@ async function submitCompetitionWithServiceV6() {
                 week,
                 date,
                 createdBy: authData.user.id,
-            })));
+            });
 
-        const failedResult = result.find((item) => !item.ok);
-
-        if (failedResult) {
+        if (!result?.ok) {
             showCompetitionSubmitToastV6(
-                failedResult.message || 'Không thể lưu ghi nhận.',
+                result?.message || 'Không thể lưu ghi nhận.',
                 'error',
             );
             return;
