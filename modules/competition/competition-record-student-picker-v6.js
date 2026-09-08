@@ -88,14 +88,47 @@ function filterStudentsForPickerV6(sourceStudents, keyword) {
 /**
  * Đóng danh sách gợi ý.
  */
+/**
+ * Lấy danh sách HS đang được chọn từ đúng một nguồn state.
+ *
+ * Các module khác không được tự đọc/parse #fStudentV6.
+ * Đây là public selection API dùng chung cho Ghi nhận V6.
+ *
+ * @returns {string[]} student_id đã chọn.
+ */
 function getSelectedStudentPickerIdsV6() {
     return Array.from(selectedStudentPickerIdsV6);
+}
+
+/**
+ * Đồng bộ selection vào form hidden field.
+ * Đây là điểm duy nhất chịu trách nhiệm serialize selection cho form.
+ */
+function syncStudentPickerSelectionV6() {
+    const hidden = document.getElementById('fStudentV6');
+    const ids = getSelectedStudentPickerIdsV6();
+
+    if (hidden) {
+        hidden.value = ids.join(',');
+    }
+
+    return ids;
+}
+
+/**
+ * Public operation dùng chung cho mọi thao tác cần lấy nhiều HS
+ * từ picker Ghi nhận V6.
+ *
+ * Không module nào bên ngoài picker được tự parse chuỗi #fStudentV6.
+ */
+function getCompetitionRecordSelectedStudentsV6() {
+    return syncStudentPickerSelectionV6().slice();
 }
 
 function syncSelectedStudentPickerFieldV6() {
     const hidden = document.getElementById('fStudentV6');
     if (hidden) {
-        hidden.value = getSelectedStudentPickerIdsV6().join(',');
+        syncStudentPickerSelectionV6();
     }
 }
 
@@ -488,4 +521,6 @@ window.CompetitionStudentPickerV6 = {
     filterStudentsForPickerV6,
     normalizeStudentPickerSearchV6,
     getSelectedStudentPickerIdsV6,
+    getCompetitionRecordSelectedStudentsV6,
+    syncStudentPickerSelectionV6,
 };
