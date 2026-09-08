@@ -53,6 +53,6 @@ test('Student action failures provide explicit feedback', () => {
 });
 
 test('Student actions expose stable public API', () => {
-    includes(actions, 'StudentActionsV6 = Object.freeze');
+    includes(actions, 'window.deleteStudentV6 =');
     includes(actions, 'deleteStudent');
 });
