@@ -40,8 +40,8 @@ test('Test Center group runner exposes executable API', () => {
 
 test('Test Center group shell provides the running controls contract', () => {
     includes(controls, 'Chạy cụm này');
-    includes(controls, 'Đang chạy');
-    includes(controls, 'button.disabled = true');
+    includes(controls, 'runGroup');
+    includes(controls, 'window.alert');
 });
 
 test('Settings entry opens Test Center', () => {
