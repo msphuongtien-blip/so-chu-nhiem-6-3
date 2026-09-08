@@ -1,3 +1,4 @@
+const { test } = require('node:test');
 /**
  * FILE: application-feature-contract.test.js
  *
@@ -20,7 +21,10 @@ function fn(name) {
 }
 
 function page(id) {
-    assert.match(index, new RegExp('id=["\\']' + id + '["\\']'));
+    assert.ok(
+        index.includes('id="' + id + '"') || index.includes("id='" + id + "'"),
+        'Thiếu page #' + id + '.',
+    );
 }
 
 test('Teacher application pages exist', () => {
@@ -44,7 +48,10 @@ test('Attendance covers all supported states and persists with upsert', () => {
     fn('renderAttendance');
     fn('saveAttendance');
     for (const status of ['present', 'excused', 'absent', 'late', 'early_leave']) {
-        assert.match(app, new RegExp('value=["\\']' + status + '["\\']'));
+        assert.ok(
+            app.includes('value="' + status + '"') || app.includes("value='" + status + "'"),
+            'Thiếu status ' + status + '.',
+        );
     }
     assert.match(app, /from\\(["']attendance["']\\)/);
     assert.match(app, /upsert\\(/);
