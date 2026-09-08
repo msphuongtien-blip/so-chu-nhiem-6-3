@@ -1,7 +1,7 @@
 /**
  * FILE: student-picker-multi-select-v6.test.js
  *
- * Regression/unit tests cho API chọn nhiều HS của Ghi nhận V6.
+ * Regression contract cho API chọn nhiều HS của Ghi nhận V6.
  * Không ghi dữ liệu.
  */
 const assert = require('node:assert/strict');
@@ -14,9 +14,9 @@ const source = fs.readFileSync(
     'utf8',
 );
 
-assert.match(source, /function getCompetitionRecordSelectedStudentsV6()/);
-assert.match(source, /function syncStudentPickerSelectionV6()/);
-assert.match(source, /getSelectedStudentPickerIdsV6()/);
+assert.match(source, /function getCompetitionRecordSelectedStudentsV6\(\)/);
+assert.match(source, /function syncStudentPickerSelectionV6\(\)/);
+assert.match(source, /getSelectedStudentPickerIdsV6\(\)/);
 assert.match(source, /window\.CompetitionStudentPickerV6 =/);
 assert.match(source, /getCompetitionRecordSelectedStudentsV6/);
 
