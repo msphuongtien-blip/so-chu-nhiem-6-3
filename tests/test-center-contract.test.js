@@ -1,3 +1,4 @@
+const { test } = require('node:test');
 /**
  * FILE: test-center-contract.test.js
  *
