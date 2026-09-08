@@ -51,3 +51,7 @@ assert.match(
 );
 
 console.log('PASS: Competition Record Form V6 date-driven week contract');
+
+assert.match(source, /multiple hidden/);
+assert.match(source, /studentIds/);
+console.log('PASS: Competition Record Form V6 supports multi-student selection');
