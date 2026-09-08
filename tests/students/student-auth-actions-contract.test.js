@@ -1,10 +1,9 @@
-const { test } = require('node:test');
 /**
  * FILE: student-auth-actions-contract.test.js
- *
- * Regression contract cho cấp/reset tài khoản và xóa học sinh.
+ * Regression contract cho tài khoản học sinh và xóa học sinh.
  * Không gọi Edge Function và không DELETE dữ liệu thật.
  */
+const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -14,55 +13,46 @@ const actions = fs.readFileSync(path.join(root, 'modules/students/student-action
 const finalActions = fs.readFileSync(path.join(root, 'modules/students/student-actions-v6-final.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
+function includes(source, value, message) {
+    assert.ok(source.includes(value), message || 'Missing: ' + value);
+}
+
 test('Student auth exposes provision/open/reset API', () => {
-    for (const name of [
-        'provisionStudentAccounts',
-        'openStudentAccountProvisioning',
-        'resetStudentAccount',
-    ]) assert.match(auth, new RegExp(name));
-    assert.match(auth, /StudentAuthV6\\s*=\\s*Object\\.freeze/);
-    for (const name of ['provision', 'openProvisioning', 'reset']) {
-        assert.match(auth, new RegExp(name + '\\s*:'));
+    for (const value of ['provisionStudentAccounts','openStudentAccountProvisioning','resetStudentAccount']) {
+        includes(auth, value);
+    }
+    includes(auth, 'StudentAuthV6 = Object.freeze');
+    for (const value of ['provision:','openProvisioning:','reset:']) includes(auth, value);
+});
+
+test('Provisioning requires session token and uses Edge Function POST', () => {
+    for (const value of ['provision-student-accounts','sb.auth.getSession()','session?.access_token','Authorization:','method:']) {
+        includes(auth, value);
+    }
+    includes(auth, "'POST'");
+});
+
+test('Account provisioning is teacher-only', () => {
+    includes(auth, "role !== 'teacher'");
+    includes(index, 'StudentAuthV6.openProvisioning()');
+});
+
+test('Student deletion checks every protected dependency before DELETE', () => {
+    for (const table of ['attendance','competition_records','competition_data_issues','competition_weekly_snapshots','honors']) {
+        includes(finalActions, "'" + table + "'");
+    }
+    for (const value of ['getStudentDependencyCounts','dependencies.length',"from('students')",'.delete()']) {
+        includes(finalActions, value);
     }
 });
 
-test('Provisioning is authenticated and server-side', () => {
-    assert.match(auth, /provision-student-accounts/);
-    assert.match(auth, /sb\\.auth\\.getSession\\(\\)/);
-    assert.match(auth, /session\\?\\.access_token/);
-    assert.match(auth, /Authorization:/);
-    assert.match(auth, /method:\\s*['"]POST['"]/);
+test('Student action failures provide explicit feedback', () => {
+    includes(finalActions, 'alert(');
+    includes(finalActions, 'Không thể xóa học sinh');
+    includes(finalActions, 'console.error');
 });
 
-test('Provisioning and reset are teacher-only', () => {
-    assert.match(auth, /role !== ['"]teacher['"]/);
-    assert.match(index, /StudentAuthV6\\.openProvisioning\\(\\)/);
-});
-
-test('Student deletion guards every protected dependency', () => {
-    for (const table of [
-        'attendance',
-        'competition_records',
-        'competition_data_issues',
-        'competition_weekly_snapshots',
-        'honors',
-    ]) assert.ok(
-        finalActions.includes("'" + table + "'") || finalActions.includes('"' + table + '"'),
-        'Thiếu dependency ' + table + '.',
-    );
-    assert.match(finalActions, /getStudentDependencyCounts/);
-    assert.match(finalActions, /dependencies\\.length/);
-    assert.match(finalActions, /from\\(["']students["']\\)/);
-    assert.match(finalActions, /\\.delete\\(\\)/);
-});
-
-test('Student action failures are surfaced to the user', () => {
-    assert.match(finalActions, /alert\\(/);
-    assert.match(finalActions, /Không thể xóa học sinh/);
-    assert.match(finalActions, /console\\.error/);
-});
-
-test('Student actions expose a stable public API', () => {
-    assert.match(actions, /StudentActionsV6\\s*=\\s*Object\\.freeze/);
-    assert.match(actions, /deleteStudent/);
+test('Student actions expose stable public API', () => {
+    includes(actions, 'StudentActionsV6 = Object.freeze');
+    includes(actions, 'deleteStudent');
 });
