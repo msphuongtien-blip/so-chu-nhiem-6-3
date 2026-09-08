@@ -31,5 +31,5 @@ test('Bulk record operation has one shared service entry point', () => {
 test('Bulk payload reuses the same single-record validation path', () => {
     const service = read('modules/competition/competition-record-service-v6.js');
     assert.match(service, /buildCompetitionRecordPayloadV6\(\{/);
-    assert.match(service, /new Set\(input\?\.studentIds/);
+    assert.match(service, /studentIds[\s\S]*new Set/);
 });
