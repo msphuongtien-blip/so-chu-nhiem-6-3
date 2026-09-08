@@ -191,12 +191,8 @@ function renderStudentPickerResultsV6(keyword) {
  * Cập nhật HS đã chọn và input hiển thị.
  */
 function toggleStudentPickerV6(student) {
-    const input = document.getElementById(
-        'studentPickerInputV6',
-    );
-    const hiddenStudentId = document.getElementById(
-        'fStudentV6',
-    );
+    const input = document.getElementById('studentPickerInputV6');
+    const hiddenStudentId = document.getElementById('fStudentV6');
 
     if (!input || !hiddenStudentId || !student) return;
     const id = String(student.id);
@@ -320,11 +316,8 @@ function bindStudentPickerEventsV6() {
     }
 
     input.addEventListener('input', () => {
-        selectedStudentPickerIdV6 = '';
 
-        const hiddenStudentId = document.getElementById(
-            'fStudentV6',
-        );
+        const hiddenStudentId = document.getElementById('fStudentV6');
 
         if (hiddenStudentId) hiddenStudentId.value = '';
 
