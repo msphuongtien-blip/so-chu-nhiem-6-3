@@ -1,3 +1,4 @@
+const { test } = require('node:test');
 /**
  * FILE: random-picker-v6-contract.test.js
  *
@@ -17,7 +18,10 @@ test('Random picker supports whole class and all four teams', () => {
     assert.match(picker, /student\\.team/);
     assert.match(index, /id=["']randomScope["']/);
     for (const team of ['team1', 'team2', 'team3', 'team4']) {
-        assert.match(index, new RegExp('value=["\\']' + team + '["\\']'));
+        assert.ok(
+            index.includes('value="' + team + '"') || index.includes("value='" + team + "'"),
+            'Thiếu scope ' + team + '.',
+        );
     }
 });
 
