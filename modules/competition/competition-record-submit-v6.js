@@ -136,8 +136,9 @@ async function submitCompetitionWithServiceV6() {
     const originalLabel =
         submitButton?.textContent || 'Lưu';
 
-    const studentId =
-        document.getElementById('fStudentV6')?.value;
+    const studentIds = String(
+        document.getElementById('fStudentV6')?.value || '',
+    ).split(',').filter(Boolean);
     const date =
         document.getElementById('fDateV6')?.value;
 
@@ -171,7 +172,7 @@ async function submitCompetitionWithServiceV6() {
     }
 
     if (
-        !studentId ||
+        !studentIds.length ||
         !week ||
         !date ||
         !categoryId ||
@@ -217,7 +218,7 @@ async function submitCompetitionWithServiceV6() {
         }
 
         const result =
-            await service.saveCompetitionRecordV6({
+            await Promise.all(studentIds.map((studentId) => service.saveCompetitionRecordV6({
                 studentId,
                 criteria: selectedCriteria,
                 points,
@@ -226,11 +227,13 @@ async function submitCompetitionWithServiceV6() {
                 week,
                 date,
                 createdBy: authData.user.id,
-            });
+            })));
 
-        if (!result.ok) {
+        const failedResult = result.find((item) => !item.ok);
+
+        if (failedResult) {
             showCompetitionSubmitToastV6(
-                result.message || 'Không thể lưu ghi nhận.',
+                failedResult.message || 'Không thể lưu ghi nhận.',
                 'error',
             );
             return;
@@ -247,7 +250,7 @@ async function submitCompetitionWithServiceV6() {
         }
 
         showCompetitionSubmitToastV6(
-            'Đã lưu ghi nhận thi đua và cập nhật dữ liệu.',
+            `Đã lưu ghi nhận cho ${studentIds.length} học sinh và cập nhật dữ liệu.`,
             'success',
         );
     } catch (error) {
