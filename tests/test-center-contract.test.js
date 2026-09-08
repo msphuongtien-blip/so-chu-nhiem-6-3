@@ -38,7 +38,7 @@ test('Test Center group runner exposes executable API', () => {
     includes(groups, 'MutationObserver');
 });
 
-test('Test Center controls provide running feedback', () => {
+test('Test Center group shell provides the running controls contract', () => {
     includes(controls, 'Chạy cụm này');
     includes(controls, 'Đang chạy');
     includes(controls, 'button.disabled = true');
