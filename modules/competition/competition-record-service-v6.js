@@ -174,6 +174,93 @@ function buildCompetitionRecordPayloadV6(input) {
 }
 
 /**
+ * Tạo payload cho nhiều HS từ cùng một thao tác Ghi nhận.
+ * Giữ validation ở buildCompetitionRecordPayloadV6() để single/bulk
+ * luôn có cùng business rules.
+ */
+function buildCompetitionRecordPayloadsV6(input) {
+    const studentIds = Array.isArray(input?.studentIds)
+        ? [...new Set(input.studentIds.map((id) => String(id).trim()).filter(Boolean))]
+        : [];
+
+    if (!studentIds.length) {
+        throw new Error('Thiếu học sinh.');
+    }
+
+    return studentIds.map((studentId) =>
+        buildCompetitionRecordPayloadV6({
+            ...input,
+            studentId,
+        }),
+    );
+}
+
+/**
+ * Lưu nhiều record trong một request Supabase.
+ *
+ * Đây là entry point duy nhất cho thao tác "một tiêu chí -> nhiều HS".
+ * Không dùng Promise.all() nhiều INSERT riêng lẻ vì như vậy có thể tạo
+ * trạng thái ghi nhận một phần nếu một request thất bại.
+ */
+async function saveCompetitionRecordsV6(input) {
+    const client = getCompetitionRecordServiceClientV6();
+
+    if (!client) {
+        return {
+            ok: false,
+            message: 'Supabase Core chưa sẵn sàng. Vui lòng thử lại.',
+        };
+    }
+
+    let payloads;
+
+    try {
+        payloads = buildCompetitionRecordPayloadsV6(input);
+    } catch (error) {
+        return {
+            ok: false,
+            message: error.message,
+        };
+    }
+
+    const { data, error } = await client
+        .from('competition_records')
+        .insert(payloads)
+        .select('*');
+
+    if (error) {
+        console.error(
+            '[Competition V6] Không thể lưu bulk records:',
+            error,
+        );
+
+        return {
+            ok: false,
+            message: 'Không thể lưu ghi nhận: ' + error.message,
+        };
+    }
+
+    let refreshOk = true;
+
+    try {
+        await refreshCompetitionRecordStateV6();
+    } catch (refreshError) {
+        refreshOk = false;
+
+        console.error(
+            '[Competition V6] Records đã lưu nhưng refresh thất bại:',
+            refreshError,
+        );
+    }
+
+    return {
+        ok: true,
+        data: data || [],
+        refreshOk,
+    };
+}
+
+/**
  * Đồng bộ cache sau khi INSERT.
  *
  * `loadCompetitionHistoryFromSupabase()` là API hiện có của app.js.
@@ -295,4 +382,6 @@ globalThis.CompetitionRecordServiceV6 = Object.freeze({
     isCompetitionRecordScoreValidV6,
     refreshCompetitionRecordStateV6,
     saveCompetitionRecordV6,
+    buildCompetitionRecordPayloadsV6,
+    saveCompetitionRecordsV6,
 });
