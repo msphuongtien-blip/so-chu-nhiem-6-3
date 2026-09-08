@@ -24,7 +24,7 @@ const STUDENT_PICKER_V6_POLL_MS = 100;
 let studentPickerOriginalOpenFormV6 = null;
 let studentPickerInitializedV6 = false;
 let studentPickerDocumentClickBoundV6 = false;
-let selectedStudentPickerIdV6 = '';
+let selectedStudentPickerIdsV6 = new Set();
 
 /**
  * Escape dữ liệu HS trước khi đưa vào HTML.
@@ -88,6 +88,28 @@ function filterStudentsForPickerV6(sourceStudents, keyword) {
 /**
  * Đóng danh sách gợi ý.
  */
+function getSelectedStudentPickerIdsV6() {
+    return Array.from(selectedStudentPickerIdsV6);
+}
+
+function syncSelectedStudentPickerFieldV6() {
+    const hidden = document.getElementById('fStudentV6');
+    if (hidden) {
+        hidden.value = getSelectedStudentPickerIdsV6().join(',');
+    }
+}
+
+function renderSelectedStudentPickerV6() {
+    const selected = document.getElementById('studentPickerSelectedV6');
+    if (!selected) return;
+    const sourceStudents = Array.isArray(students) ? students : [];
+    selected.innerHTML = getSelectedStudentPickerIdsV6().map((id) => {
+        const student = sourceStudents.find((item) => String(item.id) === String(id));
+        if (!student) return '';
+        return `<span class="student-picker-chip-v6">${escapeStudentPickerHtmlV6(student.full_name)} <button type="button" data-remove-student-picker-id="${escapeStudentPickerHtmlV6(student.id)}" aria-label="Bỏ ${escapeStudentPickerHtmlV6(student.full_name)}">×</button></span>`;
+    }).join('');
+}
+
 function closeStudentPickerResultsV6() {
     const results = document.getElementById(
         'studentPickerResultsV6',
@@ -120,7 +142,8 @@ function renderStudentPickerResultsV6(keyword) {
     );
 
     if (!keyword.trim()) {
-        closeStudentPickerResultsV6();
+        renderSelectedStudentPickerV6();
+    closeStudentPickerResultsV6();
         return;
     }
 
@@ -150,9 +173,9 @@ function renderStudentPickerResultsV6(keyword) {
                 <button
                     class="student-picker-option-v6"
                     type="button"
-                    data-student-picker-id="${escapeStudentPickerHtmlV6(student.id)}"
+                    data-student-picker-id="${escapeStudentPickerHtmlV6(student.id)}" aria-pressed="${selectedStudentPickerIdsV6.has(String(student.id))}"
                 >
-                    <span class="student-picker-name-v6">${name}</span>
+                    <span class="student-picker-check-v6">${selectedStudentPickerIdsV6.has(String(student.id)) ? '✓' : '□'}</span><span class="student-picker-name-v6">${name}</span>
                     <span class="student-picker-meta-v6">
                         ${code}${team}
                     </span>
@@ -167,7 +190,7 @@ function renderStudentPickerResultsV6(keyword) {
 /**
  * Cập nhật HS đã chọn và input hiển thị.
  */
-function selectStudentPickerV6(student) {
+function toggleStudentPickerV6(student) {
     const input = document.getElementById(
         'studentPickerInputV6',
     );
@@ -175,22 +198,20 @@ function selectStudentPickerV6(student) {
         'fStudentV6',
     );
 
-    if (!input || !hiddenStudentId || !student) {
-        return;
-    }
-
-    selectedStudentPickerIdV6 = String(student.id);
-    hiddenStudentId.value = selectedStudentPickerIdV6;
-    input.value = `${student.full_name} · ${student.student_code || ''}`.trim();
-
-    closeStudentPickerResultsV6();
+    if (!input || !hiddenStudentId || !student) return;
+    const id = String(student.id);
+    if (selectedStudentPickerIdsV6.has(id)) selectedStudentPickerIdsV6.delete(id);
+    else selectedStudentPickerIdsV6.add(id);
+    syncSelectedStudentPickerFieldV6();
+    renderSelectedStudentPickerV6();
+    renderStudentPickerResultsV6(input.value);
 }
 
 /**
  * Xóa HS đã chọn để GVCN chọn lại.
  */
 function clearStudentPickerV6() {
-    selectedStudentPickerIdV6 = '';
+    selectedStudentPickerIdsV6.clear();
 
     const input = document.getElementById(
         'studentPickerInputV6',
@@ -218,7 +239,7 @@ function clearStudentPickerV6() {
  */
 function buildStudentPickerMarkupV6() {
     return `
-        <div class="student-picker-v6">
+        <div class="student-picker-v6" data-multi-select="true">
             <input
                 id="fStudentV6"
                 type="hidden"
@@ -241,6 +262,7 @@ function buildStudentPickerMarkupV6() {
                     ×
                 </button>
             </div>
+            <div id="studentPickerSelectedV6" class="student-picker-selected-v6" aria-live="polite"></div>
             <div
                 id="studentPickerResultsV6"
                 class="student-picker-results-v6 hidden"
@@ -249,7 +271,7 @@ function buildStudentPickerMarkupV6() {
                 id="studentPickerHintV6"
                 class="mini student-picker-hint-v6"
             >
-                Gõ tên hoặc Mã HS để thu hẹp danh sách.
+                Gõ tên hoặc Mã HS để chọn một hoặc nhiều học sinh. Bấm lại để bỏ chọn.
             </div>
         </div>
     `;
@@ -304,9 +326,7 @@ function bindStudentPickerEventsV6() {
             'fStudentV6',
         );
 
-        if (hiddenStudentId) {
-            hiddenStudentId.value = '';
-        }
+        if (hiddenStudentId) hiddenStudentId.value = '';
 
         clearButton.classList.toggle(
             'hidden',
@@ -317,7 +337,7 @@ function bindStudentPickerEventsV6() {
     });
 
     input.addEventListener('focus', () => {
-        if (input.value.trim() && !selectedStudentPickerIdV6) {
+        if (input.value.trim()) {
             renderStudentPickerResultsV6(input.value);
         }
     });
@@ -328,9 +348,16 @@ function bindStudentPickerEventsV6() {
     });
 
     results.addEventListener('click', (event) => {
-        const option = event.target.closest(
-            '[data-student-picker-id]',
-        );
+        const remove = event.target.closest('[data-remove-student-picker-id]');
+        if (remove) {
+            selectedStudentPickerIdsV6.delete(String(remove.dataset.removeStudentPickerId));
+            syncSelectedStudentPickerFieldV6();
+            renderSelectedStudentPickerV6();
+            renderStudentPickerResultsV6(input.value);
+            return;
+        }
+
+        const option = event.target.closest('[data-student-picker-id]');
 
         if (!option) {
             return;
@@ -346,7 +373,7 @@ function bindStudentPickerEventsV6() {
             return;
         }
 
-        selectStudentPickerV6(student);
+        toggleStudentPickerV6(student);
         clearButton.classList.remove('hidden');
     });
 
@@ -372,7 +399,7 @@ async function openCompetitionFormWithStudentPickerV6() {
         return;
     }
 
-    const previousStudentId = studentSelect.value;
+    const previousStudentIds = String(studentSelect.value || '').split(',').filter(Boolean);
     const parent = studentSelect.parentElement;
 
     if (!parent) {
@@ -386,21 +413,13 @@ async function openCompetitionFormWithStudentPickerV6() {
         ${buildStudentPickerMarkupV6()}
     `;
 
-    if (previousStudentId) {
-        const previousStudent =
-            (Array.isArray(students) ? students : [])
-                .find(
-                    (student) =>
-                        String(student.id) ===
-                        String(previousStudentId),
-                );
-
-        if (previousStudent) {
-            selectStudentPickerV6(previousStudent);
-            document
-                .getElementById('studentPickerClearV6')
-                ?.classList.remove('hidden');
-        }
+    if (previousStudentIds.length) {
+        previousStudentIds.forEach((id) => {
+            const previousStudent = (Array.isArray(students) ? students : []).find((student) => String(student.id) === String(id));
+            if (previousStudent) selectedStudentPickerIdsV6.add(String(previousStudent.id));
+        });
+        syncSelectedStudentPickerFieldV6();
+        renderSelectedStudentPickerV6();
     }
 
     bindStudentPickerEventsV6();
@@ -475,4 +494,5 @@ bootstrapStudentPickerV6();
 window.CompetitionStudentPickerV6 = {
     filterStudentsForPickerV6,
     normalizeStudentPickerSearchV6,
+    getSelectedStudentPickerIdsV6,
 };
