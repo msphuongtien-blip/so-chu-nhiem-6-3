@@ -348,11 +348,6 @@ async function openCompetitionFormV6() {
                     max="${escapeRecordFormV6(selectedWeekEnd)}"
                     value="${escapeRecordFormV6(defaultRecordDate)}"
                 >
-                <input
-                    id="fWeekV6"
-                    type="hidden"
-                    value="${escapeRecordFormV6(selectedWeek || getRecordFormWeekFromDateV6(defaultRecordDate))}"
-                >
             </div>
 
             <div class="field">
