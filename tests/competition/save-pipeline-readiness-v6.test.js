@@ -84,6 +84,11 @@ const vm = require('node:vm');
                 return '2030-01-07';
             },
         },
+        compWeekStart(dateValue) {
+            return dateValue === '2030-01-09'
+                ? '2030-01-07'
+                : '';
+        },
         addCompetition: async () => {
             if (!writerReady) {
                 return false;
