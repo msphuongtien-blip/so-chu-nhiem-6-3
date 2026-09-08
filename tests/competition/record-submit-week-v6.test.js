@@ -18,9 +18,10 @@ test('Competition V6 submit derives week from the form date when no Week field e
         source,
         /const date\s*=\s*\n\s*document\.getElementById\('fDateV6'\)\?\.value/,
     );
-    assert.match(
+    assert.doesNotMatch(
         source,
-        /document\.getElementById\('fWeekV6'\)\?\.value\s*\|\|/,
+        /fWeekV6/,
+        'Submit V6 không được đọc một trường Tuần riêng.',
     );
     assert.match(
         source,
@@ -102,9 +103,8 @@ test('Competition V6 uses the canonical Core resolver for all record-week deriva
         'modules/competition/competition-record-form-v6.js',
     );
 
-    assert.match(
-        service,
-        /!\/^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\/\.test\(normalized\)/,
+    assert.ok(
+        service.includes("!/^\\d{4}-\\d{2}-\\d{2}$/.test(normalized)"),
         'Service phải validate date-only trước khi resolve tuần.',
     );
     assert.match(
@@ -122,10 +122,10 @@ test('Competition V6 uses the canonical Core resolver for all record-week deriva
         /return compWeekStart\(dateValue\);/,
         'Form phải dùng cùng resolver với service.',
     );
-    assert.match(
+    assert.doesNotMatch(
         form,
-        /id="fWeekV6"[\s\S]*type="hidden"/,
-        'Form phải giữ tuần đã chọn để submit không tự đổi sang tuần khác.',
+        /id="fWeekV6"/,
+        'Form không được render trường Tuần riêng; Tuần phải được suy ra từ Ngày.',
     );
     assert.match(
         form,
