@@ -21,7 +21,8 @@ function includes(source, value, message) {
 test('Test Center loads runner and groups', () => {
     includes(html, 'test-center-v6.js');
     includes(html, 'test-center-groups-v6.js');
-    includes(html, 'test-center-controls-v6.js');
+    includes(html, 'test-center-groups-shell-v6.js');
+    includes(html, 'test-center-competition-live-v6.js');
 });
 
 test('Test Center runner has grouped assertions and run-all action', () => {
