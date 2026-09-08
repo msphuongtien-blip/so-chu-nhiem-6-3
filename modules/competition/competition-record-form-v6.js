@@ -407,6 +407,7 @@ async function openCompetitionFormV6() {
 
 async function submitCompetitionV6() {
     const studentIds = String(document.getElementById('fStudentV6')?.value || '').split(',').filter(Boolean);
+    const studentId = studentIds[0];
     const date = document.getElementById('fDateV6')?.value;
     const categoryId = document.getElementById('fGroupV6')?.value;
     const criteriaId = document.getElementById('fCriteriaV6')?.value;
