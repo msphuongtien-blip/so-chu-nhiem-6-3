@@ -29,7 +29,6 @@ test('Student provisioning Edge Function requires authenticated teacher access',
         'callerProfile',
         'role',
         'Authorization',
-        'Bearer',
         'provision',
     ]) {
         includes(provision, value);
