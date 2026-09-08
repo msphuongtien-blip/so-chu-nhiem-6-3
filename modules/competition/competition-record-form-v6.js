@@ -417,7 +417,7 @@ async function openCompetitionFormV6() {
 }
 
 async function submitCompetitionV6() {
-    const studentId = document.getElementById('fStudentV6')?.value;
+    const studentIds = String(document.getElementById('fStudentV6')?.value || '').split(',').filter(Boolean);
     const date = document.getElementById('fDateV6')?.value;
     const categoryId = document.getElementById('fGroupV6')?.value;
     const criteriaId = document.getElementById('fCriteriaV6')?.value;
@@ -426,7 +426,7 @@ async function submitCompetitionV6() {
     const week = getRecordFormWeekFromDateV6(date);
 
     if (!studentId || !date || !categoryId || !criteriaId || !week) {
-        alert('Vui lòng chọn đầy đủ học sinh, nhóm và tiêu chí.');
+        alert('Vui lòng chọn ít nhất một học sinh, nhóm và tiêu chí.');
         return false;
     }
 
