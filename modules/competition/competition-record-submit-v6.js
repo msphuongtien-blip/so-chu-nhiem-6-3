@@ -143,12 +143,9 @@ async function submitCompetitionWithServiceV6() {
 
     /*
      * Form V6 intentionally does not render a separate Week field.
-     * Week is derived from the selected recording date. The old submit
-     * adapter still required fWeekV6, so every save was rejected before
-     * reaching the Record Service.
+     * Week is always derived from the selected recording date.
      */
     const week =
-        document.getElementById('fWeekV6')?.value ||
         globalThis.CompetitionRecordFormV6?.getRecordFormWeekFromDateV6?.(date) ||
         '';
     const categoryId =
