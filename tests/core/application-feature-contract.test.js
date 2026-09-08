@@ -1,10 +1,9 @@
-const { test } = require('node:test');
 /**
  * FILE: application-feature-contract.test.js
- *
- * Regression contract cho các module ứng dụng chưa có test riêng.
+ * Regression contract cho các chức năng ứng dụng chưa có test riêng.
  * Chỉ đọc source, không mutation database.
  */
+const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -12,86 +11,81 @@ const root = path.resolve(__dirname, '..', '..');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 
-function fn(name) {
-    assert.match(
-        app,
-        new RegExp('(?:async\\s+)?function\\s+' + name + '\\s*\\('),
-        'Thiếu function ' + name + '().',
-    );
+function includes(source, value, message) {
+    assert.ok(source.includes(value), message || 'Missing: ' + value);
 }
 
-function page(id) {
-    assert.ok(
-        index.includes('id="' + id + '"') || index.includes("id='" + id + "'"),
-        'Thiếu page #' + id + '.',
-    );
-}
-
-test('Teacher application pages exist', () => {
-    for (const id of [
-        'dashboard', 'students', 'random', 'attendance', 'competition',
-        'honors', 'teams', 'reports', 'alerts', 'settings',
-    ]) page(id);
-});
-
-test('Student application pages exist', () => {
-    for (const id of ['sHome', 'sProfile', 'sProgress', 'sHonors', 'sGoals']) page(id);
-});
-
-test('Authentication/session lifecycle is present', () => {
-    for (const name of ['setRole', 'login', 'logout', 'startSession']) fn(name);
-    assert.match(app, /profiles/);
-    assert.match(app, /sb\\.auth\\.signOut\\(\\)/);
-});
-
-test('Attendance covers all supported states and persists with upsert', () => {
-    fn('renderAttendance');
-    fn('saveAttendance');
-    for (const status of ['present', 'excused', 'absent', 'late', 'early_leave']) {
-        assert.ok(
-            app.includes('value="' + status + '"') || app.includes("value='" + status + "'"),
-            'Thiếu status ' + status + '.',
-        );
+test('Teacher pages exist', () => {
+    for (const id of ['dashboard','students','random','attendance','competition','honors','teams','reports','alerts','settings']) {
+        includes(index, 'id="' + id + '"');
     }
-    assert.match(app, /from\\(["']attendance["']\\)/);
-    assert.match(app, /upsert\\(/);
 });
 
-test('Honors supports week/month and save flow', () => {
-    for (const name of ['renderHonors', 'openHonorForm', 'submitHonor']) fn(name);
-    assert.match(index, /id=["']honorPeriod["']/);
-    assert.match(app, /value=["']week["']/);
-    assert.match(app, /value=["']month["']/);
-    assert.match(app, /from\\(["']honors["']\\)/);
-});
-
-test('Team tracking ranks four teams by average score', () => {
-    fn('renderTeams');
-    assert.match(app, /Number\\(s\\.team\\)===t/);
-    assert.match(app, /b\\.avg-a\\.avg/);
-    page('teams');
-});
-
-test('Alerts and reports have dedicated renderers and data sources', () => {
-    fn('renderAlerts');
-    fn('renderReports');
-    fn('printReport');
-    for (const table of ['attendance', 'competition_records', 'honors']) {
-        assert.match(app, new RegExp('from\\(["\\']' + table + '["\\']\\)'));
+test('Student pages exist', () => {
+    for (const id of ['sHome','sProfile','sProgress','sHonors','sGoals']) {
+        includes(index, 'id="' + id + '"');
     }
-    page('alerts');
-    page('reports');
 });
 
-test('Class settings has load/edit/save flow', () => {
-    for (const name of ['loadSettings', 'openClassSettings', 'saveClassSettings']) fn(name);
-    for (const id of ['classNameInput', 'schoolYearInput', 'teacherNameInput']) page(id);
-    assert.match(app, /class_settings/);
-});
-
-test('Student-side progress, honors and goals flows exist', () => {
-    for (const name of ['renderStudentAll', 'renderStudentHonors', 'renderGoals', 'saveGoal']) fn(name);
-    for (const table of ['student_goals', 'honors']) {
-        assert.match(app, new RegExp('from\\(["\\']' + table + '["\\']\\)'));
+test('Authentication lifecycle exists', () => {
+    for (const name of ['setRole','login','logout','startSession']) {
+        includes(app, 'function ' + name + '(');
     }
+    includes(app, 'profiles');
+    includes(app, 'sb.auth.signOut()');
+});
+
+test('Attendance supports every defined state and persists with upsert', () => {
+    includes(app, 'function renderAttendance(');
+    includes(app, 'function saveAttendance(');
+    for (const status of ['present','excused','absent','late','early_leave']) {
+        includes(app, 'value="' + status + '"');
+    }
+    includes(app, "from('attendance')");
+    includes(app, 'upsert(');
+});
+
+test('Honors supports period selection and save flow', () => {
+    for (const name of ['renderHonors','openHonorForm','submitHonor']) {
+        includes(app, 'function ' + name + '(');
+    }
+    includes(index, 'id="honorPeriod"');
+    includes(index, 'value="week"');
+    includes(index, 'value="month"');
+    includes(app, "from('honors')");
+});
+
+test('Team tracking ranks by average score', () => {
+    includes(app, 'function renderTeams(');
+    includes(app, 'Number(s.team)===t');
+    includes(app, 'b.avg-a.avg');
+    includes(index, 'id="teamsBody"');
+});
+
+test('Alerts and reports have renderers and data sources', () => {
+    includes(app, 'function renderAlerts(');
+    includes(app, 'function renderReports(');
+    includes(app, 'function printReport(');
+    for (const table of ['attendance','competition_records','honors']) {
+        includes(app, "from('" + table + "')");
+    }
+    includes(index, 'id="reportsBody"');
+    includes(index, 'id="alertsBody"');
+});
+
+test('Class settings has load, edit and save flow', () => {
+    for (const name of ['loadSettings','openClassSettings','saveClassSettings']) {
+        includes(app, 'function ' + name + '(');
+    }
+    for (const id of ['classNameInput','schoolYearInput','teacherNameInput']) {
+        includes(index, 'id="' + id + '"');
+    }
+    includes(app, 'class_settings');
+});
+
+test('Student progress, honors and goals flows exist', () => {
+    for (const name of ['renderStudentAll','renderStudentHonors','renderGoals','saveGoal']) {
+        includes(app, 'function ' + name + '(');
+    }
+    includes(app, "from('student_goals')");
 });
