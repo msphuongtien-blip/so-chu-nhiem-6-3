@@ -1,3 +1,4 @@
+const { test } = require('node:test');
 /**
  * FILE: student-auth-actions-contract.test.js
  *
@@ -21,7 +22,7 @@ test('Student auth exposes provision/open/reset API', () => {
     ]) assert.match(auth, new RegExp(name));
     assert.match(auth, /StudentAuthV6\\s*=\\s*Object\\.freeze/);
     for (const name of ['provision', 'openProvisioning', 'reset']) {
-        assert.match(auth, new RegExp(name + ':'));
+        assert.match(auth, new RegExp(name + '\\s*:'));
     }
 });
 
@@ -45,7 +46,10 @@ test('Student deletion guards every protected dependency', () => {
         'competition_data_issues',
         'competition_weekly_snapshots',
         'honors',
-    ]) assert.match(finalActions, new RegExp('["\\']' + table + '["\\']'));
+    ]) assert.ok(
+        finalActions.includes("'" + table + "'") || finalActions.includes('"' + table + '"'),
+        'Thiếu dependency ' + table + '.',
+    );
     assert.match(finalActions, /getStudentDependencyCounts/);
     assert.match(finalActions, /dependencies\\.length/);
     assert.match(finalActions, /from\\(["']students["']\\)/);
