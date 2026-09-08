@@ -16,7 +16,7 @@ test('Competition V6 submit derives week from the form date when no Week field e
 
     assert.match(
         source,
-        /const date\s*=\s*\n\s*document\.getElementById\('fDateV6'\)\?\.value/,
+        /const date!studentIds.length\s*\\|\\|\\s*!weeks*=\s*\n\s*document\.getElementById\('fDateV6'\)\?\.value/,
     );
     assert.doesNotMatch(
         source,
@@ -29,7 +29,7 @@ test('Competition V6 submit derives week from the form date when no Week field e
     );
     assert.match(
         source,
-        /if\s*\(\s*!studentId\s*\|\|\s*!week\s*\|\|\s*!date\s*\|\|\s*!categoryId\s*\|\|\s*!criteriaId\s*\)/,
+        /if\s*\(\s*!studentIds.length\\s*\\|\\|\\s*!week\\s*\\|\\|\\s*!date\\s*\\|\\|\\s*!categoryId\\s*\\|\\|\\s*!criteriaId\s*\)/,
     );
 });
 
