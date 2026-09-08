@@ -16,20 +16,16 @@ test('Competition V6 submit derives week from the form date when no Week field e
 
     assert.match(
         source,
-        /const date!studentIds.length\s*\\|\\|\\s*!weeks*=\s*\n\s*document\.getElementById\('fDateV6'\)\?\.value/,
+        /const date =\s*document\.getElementById\('fDateV6'\)\?\.value/,
     );
-    assert.doesNotMatch(
-        source,
-        /fWeekV6/,
-        'Submit V6 không được đọc một trường Tuần riêng.',
-    );
+    assert.doesNotMatch(source, /fWeekV6/);
     assert.match(
         source,
         /CompetitionRecordFormV6\?\.getRecordFormWeekFromDateV6\?\.\(date\)/,
     );
     assert.match(
         source,
-        /if\s*\(\s*!studentIds.length\\s*\\|\\|\\s*!week\\s*\\|\\|\\s*!date\\s*\\|\\|\\s*!categoryId\\s*\\|\\|\\s*!criteriaId\s*\)/,
+        /!studentIds\.length[\s\S]*!week[\s\S]*!date[\s\S]*!categoryId[\s\S]*!criteriaId/,
     );
 });
 
