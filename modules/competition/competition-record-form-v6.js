@@ -324,18 +324,7 @@ async function openCompetitionFormV6() {
         `
             <div class="field">
                 <label>Học sinh</label>
-                <select id="fStudentV6">
-                    ${students
-                        .map(
-                            (student) =>
-                                '<option value="' +
-                                escapeRecordFormV6(student.id) +
-                                '">' +
-                                escapeRecordFormV6(student.full_name) +
-                                '</option>',
-                        )
-                        .join('')}
-                </select>
+                <select id="fStudentV6" multiple hidden aria-hidden="true"></select>       </select>
             </div>
 
             <div class="field">
@@ -425,7 +414,7 @@ async function submitCompetitionV6() {
     const note = document.getElementById('fNoteV6')?.value.trim() || '';
     const week = getRecordFormWeekFromDateV6(date);
 
-    if (!studentId || !date || !categoryId || !criteriaId || !week) {
+    if (!studentIds.length || !date || !categoryId || !criteriaId || !week) {
         alert('Vui lòng chọn ít nhất một học sinh, nhóm và tiêu chí.');
         return false;
     }
