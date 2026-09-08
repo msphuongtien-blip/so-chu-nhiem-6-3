@@ -21,6 +21,8 @@ const root = path.resolve(__dirname, '../..');
 const formPath = path.join(root, 'modules/competition/competition-record-form-v6.js');
 const source = fs.readFileSync(formPath, 'utf8');
 
+assert.match(source, /id="fStudentV6" multiple hidden/);
+assert.match(source, /studentIds/);
 assert.match(source, /id="fGroupV6"/);
 assert.match(source, /id="fCriteriaV6"/);
 assert.match(source, /getActiveCompetitionCategoriesV6/);
