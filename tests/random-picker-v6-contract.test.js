@@ -43,7 +43,7 @@ test('Random history persists and can be cleared', () => {
 });
 
 test('Random UI exposes running, spinning and winner states', () => {
-    for (const value of ['randomRunning = true','disabled=true','spinning','winner','Đang chọn','Mời em']) {
+    for (const value of ["randomRunning=true", "$('randomButton').disabled=true", 'spinning','winner','Đang chọn','Mời em']) {
         includes(app, value);
     }
 });
