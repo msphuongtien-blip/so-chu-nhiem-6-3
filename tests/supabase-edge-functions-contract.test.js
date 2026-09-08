@@ -26,7 +26,8 @@ function includes(source, value, message) {
 test('Student provisioning Edge Function requires authenticated teacher access', () => {
     for (const value of [
         'getUser',
-        'is_teacher',
+        'callerProfile',
+        'role',
         'Authorization',
         'Bearer',
         'provision',
