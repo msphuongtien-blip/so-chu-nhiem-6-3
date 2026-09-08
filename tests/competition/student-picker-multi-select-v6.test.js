@@ -24,6 +24,9 @@ const context = vm.createContext({
     clearInterval,
     Date,
 });
+context.window.setInterval = setInterval;
+context.window.clearInterval = clearInterval;
+context.window.setTimeout = setTimeout;
 context.globalThis = context;
 
 vm.runInContext(source, context, {
