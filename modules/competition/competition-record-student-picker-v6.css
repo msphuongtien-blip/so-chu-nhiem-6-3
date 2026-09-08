@@ -99,3 +99,49 @@
 .student-picker-hint-v6 {
     margin-top: 6px;
 }
+
+
+.student-picker-selected-v6 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    min-height: 0;
+}
+
+.student-picker-chip-v6 {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--soft);
+    color: var(--ink);
+    font-size: 13px;
+}
+
+.student-picker-chip-v6 button {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0 2px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.student-picker-chip-v6 button:hover,
+.student-picker-chip-v6 button:focus-visible {
+    color: var(--ink);
+}
+
+.student-picker-option-v6[aria-pressed="true"] {
+    background: var(--soft);
+}
+
+.student-picker-check-v6 {
+    flex: 0 0 18px;
+    font-size: 16px;
+    text-align: center;
+}
