@@ -476,37 +476,7 @@ function loadStudentPickerStylesV6() {
  * Chờ form V6 được load rồi mới thay entry point.
  */
 function bootstrapStudentPickerV6() {
-    const startedAt = Date.now();
-
-    const timer = window.setInterval(() => {
-        if (
-            typeof window.openCompetitionForm ===
-                'function' &&
-            !studentPickerInitializedV6
-        ) {
-            studentPickerOriginalOpenFormV6 =
-                window.openCompetitionForm;
-
-            window.openCompetitionForm =
-                openCompetitionFormWithStudentPickerV6;
-
-            studentPickerInitializedV6 = true;
-            window.clearInterval(timer);
-            loadStudentPickerStylesV6();
-
-            return;
-        }
-
-        if (
-            Date.now() - startedAt >=
-            STUDENT_PICKER_V6_WAIT_MS
-        ) {
-            window.clearInterval(timer);
-            console.warn(
-                '[Competition V6] Không thể khởi tạo Student Picker.',
-            );
-        }
-    }, STUDENT_PICKER_V6_POLL_MS);
+    loadStudentPickerStylesV6();
 }
 
 bootstrapStudentPickerV6();
@@ -520,4 +490,6 @@ window.CompetitionStudentPickerV6 = {
     getSelectedStudentPickerIdsV6,
     getCompetitionRecordSelectedStudentsV6,
     syncStudentPickerSelectionV6,
+    buildStudentPickerMarkupV6,
+    bindStudentPickerEventsV6,
 };
