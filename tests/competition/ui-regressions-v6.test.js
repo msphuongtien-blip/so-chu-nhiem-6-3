@@ -96,3 +96,78 @@ assert.match(
     /6:'Học tập'/,
     'Competition category 6 (Học tập) must remain available.',
 );
+
+
+test('Competition UI keeps the approved four-column ranking contract', () => {
+    assert.match(
+        appSource,
+        /<td><b>\'\+\(i\+1\)\+\'<\\/b><\\/td>/,
+    );
+    assert.doesNotMatch(
+        appSource,
+        /Number\(s\.monthly\)\.toFixed\(0\)/,
+    );
+});
+
+test('Competition form uses shared multi-student picker and bulk service', () => {
+    assert.match(
+        finalFormSource,
+        /buildStudentPickerMarkupV6\(\)/,
+    );
+    assert.match(
+        finalFormSource,
+        /getCompetitionRecordSelectedStudentsV6\(\)/,
+    );
+    assert.match(
+        finalFormSource,
+        /saveCompetitionRecordsV6\(/,
+    );
+    assert.match(
+        finalFormSource,
+        /Đang lưu ghi nhận cho/,
+    );
+});
+
+test('Student picker is reusable and does not replace openCompetitionForm', () => {
+    const pickerSource = fs.readFileSync(
+        path.join(
+            root,
+            'modules/competition/competition-record-student-picker-v6.js',
+        ),
+        'utf8',
+    );
+
+    assert.match(pickerSource, /buildStudentPickerMarkupV6/);
+    assert.match(pickerSource, /bindStudentPickerEventsV6/);
+    assert.doesNotMatch(
+        pickerSource,
+        /window\.openCompetitionForm\s*=\s*openCompetitionFormWithStudentPickerV6/,
+    );
+});
+
+test('Criteria settings is the owner of the criteriaSettings region', () => {
+    const criteriaSource = fs.readFileSync(
+        path.join(
+            root,
+            'modules/competition/competition-criteria-v6.js',
+        ),
+        'utf8',
+    );
+
+    assert.match(
+        appSource,
+        /globalThis\.CompetitionCriteriaSettingsV6\?\.render/,
+    );
+    assert.match(
+        criteriaSource,
+        /await ensureCompetitionCategoriesV6\(\)/,
+    );
+    assert.match(
+        criteriaSource,
+        /String\(row\.category_id \?\? ''\) === selectedCategoryId/,
+    );
+    assert.match(
+        criteriaSource,
+        /String\(row\.group_name \?\? ''\) === selectedCategoryId/,
+    );
+});
