@@ -103,11 +103,11 @@ assert.match(
 
 test('Competition assets use a new cache-busting version after UI fixes', () => {
     assert.ok(
-        indexSource.includes('20260909-competition-fixes-1'),
+        indexSource.includes('20260909-competition-creator-fix-1'),
     );
     assert.ok(
         moduleLoaderSource.includes(
-            "const V6_ASSET_VERSION = '20260909-competition-fixes-1';",
+            "const V6_ASSET_VERSION = '20260909-competition-creator-fix-1';",
         ),
     );
 });
