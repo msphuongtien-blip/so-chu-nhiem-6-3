@@ -284,6 +284,10 @@ async function renderCriteriaSettingsV6() {
         return;
     }
 
+    if (typeof ensureCompetitionCategoriesV6 === 'function') {
+        await ensureCompetitionCategoriesV6();
+    }
+
     normalizeCriteriaSettingsCategoryV6();
 
     box.innerHTML = `
