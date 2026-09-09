@@ -99,11 +99,8 @@ assert.match(
 
 
 test('Competition UI keeps the approved four-column ranking contract', () => {
-    assert.match(appSource, /groupBadge\\(s\\.weekly\\)/);
-    assert.doesNotMatch(
-        appSource,
-        /Number\\(s\\.monthly\\)\\.toFixed\\(0\\)/,
-    );
+    assert.ok(appSource.includes('groupBadge(s.weekly)'));
+    assert.ok(!appSource.includes('Number(s.monthly).toFixed(0)'));
 });
 
 test('Competition form uses shared multi-student picker and bulk service', () => {
