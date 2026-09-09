@@ -438,14 +438,14 @@ async function submitCompetitionV6() {
         !criteriaId ||
         !week
     ) {
-        SNNotification?.error(
+        globalThis.SNNotification?.error(
             'Vui lòng chọn ít nhất một học sinh, nhóm và tiêu chí.',
         );
         return false;
     }
 
     if (!RECORD_FORM_V6_SCORES.includes(points)) {
-        SNNotification?.error(
+        globalThis.SNNotification?.error(
             'Điểm chỉ được chọn từ -5 đến -1 hoặc +1 đến +5.',
         );
         return false;
@@ -463,7 +463,7 @@ async function submitCompetitionV6() {
         .single();
 
     if (error || !selectedCriteria) {
-        SNNotification?.error(
+        globalThis.SNNotification?.error(
             'Không tìm thấy tiêu chí đã chọn.',
         );
         return false;
@@ -476,7 +476,7 @@ async function submitCompetitionV6() {
             String(categoryId);
 
     if (!selectedCriteria.active || !categoryMatches) {
-        SNNotification?.error(
+        globalThis.SNNotification?.error(
             'Tiêu chí không thuộc nhóm đang chọn hoặc đã được tắt.',
         );
         return false;
@@ -485,13 +485,13 @@ async function submitCompetitionV6() {
     const service = globalThis.CompetitionRecordServiceV6;
 
     if (typeof service?.saveCompetitionRecordsV6 !== 'function') {
-        SNNotification?.error(
+        globalThis.SNNotification?.error(
             'Module lưu Ghi nhận chưa sẵn sàng. Vui lòng thử lại.',
         );
         return false;
     }
 
-    const loading = SNNotification?.loading(
+    const loading = globalThis.SNNotification?.loading(
         'Đang lưu ghi nhận cho ' +
             studentIds.length +
             ' học sinh...',
@@ -510,12 +510,12 @@ async function submitCompetitionV6() {
         });
 
         if (!result.ok) {
-            SNNotification?.error(result.message || 'Không thể lưu ghi nhận.');
+            globalThis.SNNotification?.error(result.message || 'Không thể lưu ghi nhận.');
             return false;
         }
 
         closeModal();
-        SNNotification?.success(
+        globalThis.SNNotification?.success(
             'Đã ghi nhận cho ' + studentIds.length + ' học sinh.',
         );
         return true;
@@ -524,7 +524,7 @@ async function submitCompetitionV6() {
             '[Competition V6] Bulk submit failed:',
             submitError,
         );
-        SNNotification?.error(
+        globalThis.SNNotification?.error(
             'Không thể lưu ghi nhận. Vui lòng thử lại.',
         );
         return false;
