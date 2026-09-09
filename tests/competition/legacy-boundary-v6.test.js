@@ -24,6 +24,7 @@ const legacyOpen = function legacyOpen() {};
 const legacyAdd = function legacyAdd() {};
 const legacySubmit = function legacySubmit() {};
 const v6Open = function openCompetitionFormV6() {};
+const composedOpen = function composedOpenCompetitionFormV6() {};
 const v6Add = function addCompetitionThroughV6Boundary() {};
 const v6Submit = function submitCompetitionV6() {};
 
@@ -39,6 +40,8 @@ const context = vm.createContext({
     addCompetition: legacyAdd,
     submitCompetition: legacySubmit,
     openCompetitionFormV6: v6Open,
+    // Simulate the fully composed form installed by date + student-picker.
+    openCompetitionForm: composedOpen,
     addCompetitionThroughV6Boundary: v6Add,
     submitCompetitionV6: v6Submit,
     CompetitionRecordServiceV6: {
@@ -53,7 +56,7 @@ vm.runInContext(source, context, {
 const installed = context.installCompetitionLegacyBoundaryV6();
 
 assert.equal(installed, true);
-assert.equal(context.openCompetitionForm, v6Open);
+assert.equal(context.openCompetitionForm, composedOpen);
 assert.equal(context.addCompetition, context.addCompetitionThroughV6Boundary);
 assert.equal(context.submitCompetition, v6Submit);
 assert.equal(
@@ -61,4 +64,6 @@ assert.equal(
     true,
 );
 
-console.log('PASS: legacy competition entrypoints route to V6');
+assert.match(source, /const recordForm = globalThis\.openCompetitionForm;/);
+
+console.log('PASS: legacy competition entrypoints preserve composed V6 form');
