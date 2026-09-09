@@ -328,7 +328,7 @@ async function openCompetitionFormV6() {
         `
             <div class="field">
                 <label>Học sinh</label>
-                ${typeof globalThis.buildStudentPickerMarkupV6 === 'function' ? globalThis.buildStudentPickerMarkupV6() : '<div class="notice danger">Bộ chọn học sinh chưa sẵn sàng. Vui lòng thử lại.</div>'}
+                ${typeof globalThis.CompetitionStudentPickerV6?.buildStudentPickerMarkupV6 === 'function' ? globalThis.CompetitionStudentPickerV6.buildStudentPickerMarkupV6() : '<div class="notice danger">Bộ chọn học sinh chưa sẵn sàng. Vui lòng thử lại.</div>'}
             </div>
 
             <div class="field">
@@ -392,8 +392,8 @@ async function openCompetitionFormV6() {
 
     refreshRecordFormCriteriaV6(criteria);
 
-    if (typeof bindStudentPickerEventsV6 === 'function') {
-        bindStudentPickerEventsV6();
+    if (typeof globalThis.CompetitionStudentPickerV6?.bindStudentPickerEventsV6 === 'function') {
+        globalThis.CompetitionStudentPickerV6.bindStudentPickerEventsV6();
     }
 
     document
