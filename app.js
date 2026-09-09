@@ -672,17 +672,20 @@ async function rolloverCompetitionWeek() {
     =await sb.rpc('rollover_competition_week'); if(error)console.warn(error.message);
 }
 async function renderCompetitionCriteria() {
-    const box=$('criteriaSettings');if(!box)return;const {
-        data,error
+    if (globalThis.CompetitionCriteriaSettingsV6?.render) {
+        await globalThis.CompetitionCriteriaSettingsV6.render();
+        return;
     }
-    =await sb.from('competition_criteria').select('*').order('sort_order');if(error) {
-        box.innerHTML='<div class="mini">Không tải được tiêu chí.</div>';return
+
+    const box = $('criteriaSettings');
+    if (!box) {
+        return;
     }
-    box.innerHTML='<div class="criteria-grid">'+(data||[]).map(c=> {
-        const signed=Number(c.points)*(c.type==='minus'?-1:1);return '<div class="notice"><div><b>'+esc(c.name)+'</b> <span class="mini">Nhóm '+esc(c.group_name||'5')+' · mặc định '+(signed>0?'+':'')+signed+'</span></div><div class="mini">Thang điểm: -5,-4,-3,-2,-1,+1,+2,+3,+4,+5</div><div class="actions"><button class="btn small" onclick="editCriteria(\''+c.id+'\')">Sửa</button><button class="btn small" onclick="toggleCriteria(\''+c.id+'\','+(c.active?'false':'true')+')">'+(c.active?'Tắt':'Bật')+'</button></div></div>'
-    }
-    ).join('')+'</div><button class="btn" onclick="addCriteria()">+ Thêm tiêu chí</button>'
+
+    box.innerHTML =
+        '<div class="mini">Module Cài đặt tiêu chí chưa sẵn sàng. Vui lòng thử lại.</div>';
 }
+
 function scoreOptions(selected) {
     return [-5,-4,-3,-2,-1,1,2,3,4,5].map(v=>'<option value="'+v+'" '+(Number(selected)===v?'selected':'')+'>'+((v>0?'+':'')+v)+' điểm</option>').join('')
 }
