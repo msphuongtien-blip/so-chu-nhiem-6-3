@@ -1069,3 +1069,62 @@ button {
     gap: 8px;
     margin-top: 10px;
 }
+
+/* Shared notification/toast service */
+.sn-notification-container {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(380px, calc(100vw - 36px));
+    pointer-events: none;
+}
+
+.sn-notification {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card, #fff);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .14);
+    color: var(--ink, #172033);
+    font-size: 14px;
+    line-height: 1.4;
+    pointer-events: auto;
+    animation: snNotificationIn .2s ease-out;
+}
+
+.sn-notification-success { border-left: 4px solid #16a34a; }
+.sn-notification-error { border-left: 4px solid #dc2626; }
+.sn-notification-warning { border-left: 4px solid #d97706; }
+.sn-notification-info { border-left: 4px solid #2563eb; }
+
+.sn-notification.is-leaving {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.sn-notification-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: snNotificationSpin .7s linear infinite;
+    flex: 0 0 auto;
+}
+
+@keyframes snNotificationIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes snNotificationSpin {
+    to { transform: rotate(360deg); }
+}
