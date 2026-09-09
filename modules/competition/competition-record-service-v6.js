@@ -269,21 +269,8 @@ async function saveCompetitionRecordsV6(input) {
  * @returns {Promise<boolean>} true nếu refresh thành công.
  */
 async function refreshCompetitionRecordStateV6() {
-    if (
-        typeof window.loadCompetitionHistoryFromSupabase ===
-        'function'
-    ) {
-        const refreshedRecords =
-            await window.loadCompetitionHistoryFromSupabase();
-
-        if (Array.isArray(globalThis.supabaseCache?.competitionRecords)) {
-            globalThis.supabaseCache.competitionRecords =
-                refreshedRecords || [];
-        }
-    }
-
-    if (typeof window.loadStudentsFromSupabase === 'function') {
-        await window.loadStudentsFromSupabase();
+    if (globalThis.SNCoreRefresh?.coreData) {
+        await globalThis.SNCoreRefresh.coreData();
     }
 
     if (typeof window.renderDashboard === 'function') {
