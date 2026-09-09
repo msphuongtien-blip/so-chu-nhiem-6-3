@@ -27,50 +27,58 @@
  */
 
 async function loadStudentsFromSupabase() {
-    const {
-        data,error
-    }
-    =await sb.from('students').select('*').order('full_name');
-    if(error)throw error;
-    supabaseCache.students=data||[];
-    students=supabaseCache.students.slice().sort((a,b)=>String(a.full_name||'').localeCompare(String(b.full_name||''),'vi', {
-        sensitivity:'base'
-    }
-    ));
-    return students;
+    return SNCoreData.students();
 }
+
 async function loadCompetitionHistoryFromSupabase() {
-    const {
-        data,error
-    }
-    =await sb.from('competition_records').select('*').order('date', {
-        ascending:false
-    }
-    ).order('created_at', {
-        ascending:false
-    }
-    );
-    if(error)throw error;
-    supabaseCache.competitionRecords=data||[];
-    supabaseCache.loadedAt=new Date();
-    return supabaseCache.competitionRecords;
+    return SNCoreData.competitionRecords();
 }
+
 async function refreshSupabaseData() {
+    const loading = SNNotification?.loading('Đang đồng bộ dữ liệu...');
+
     try {
-        await Promise.all([loadStudentsFromSupabase(),loadCompetitionHistoryFromSupabase(),loadSettings()]);
+        await Promise.all([
+            SNCoreRefresh.coreData(),
+            loadSettings(),
+        ]);
+
         await renderDashboard();
         await renderCompetition();
         await renderStudents();
-        if($('supabaseStatus'))$('supabaseStatus').textContent='Đã đọc dữ liệu trực tiếp từ Supabase lúc '+new Date().toLocaleTimeString('vi-VN');
-        if($('supabaseDataStatus'))$('supabaseDataStatus').textContent='Đã đồng bộ từ Supabase lúc '+new Date().toLocaleTimeString('vi-VN')+' · '+students.length+' học sinh · '+supabaseCache.competitionRecords.length+' bản ghi thi đua';
+
+        const timestamp = new Date().toLocaleTimeString('vi-VN');
+
+        if ($('supabaseStatus')) {
+            $('supabaseStatus').textContent =
+                'Đã đọc dữ liệu trực tiếp từ Supabase lúc ' + timestamp;
+        }
+
+        if ($('supabaseDataStatus')) {
+            $('supabaseDataStatus').textContent =
+                'Đã đồng bộ từ Supabase lúc ' +
+                timestamp +
+                ' · ' +
+                students.length +
+                ' học sinh · ' +
+                supabaseCache.competitionRecords.length +
+                ' bản ghi thi đua';
+        }
+
+        SNNotification?.success('Đã cập nhật dữ liệu.');
         return true;
-    }
-    catch(e) {
-        console.error('Supabase refresh failed',e);
-        alert('Không thể đọc dữ liệu từ Supabase: '+(e.message||e));
+    } catch (error) {
+        console.error('Supabase refresh failed', error);
+        SNNotification?.error(
+            'Không thể đọc dữ liệu từ Supabase: ' +
+                (error.message || error),
+        );
         return false;
+    } finally {
+        loading?.close();
     }
 }
+
 function setRole(newRole) {
     // Lưu vai trò mà người dùng đang chọn.
     role = newRole;
@@ -299,37 +307,7 @@ async function renderCompetition(){
   }
 
   try {
-    const [studentsResult, historyResult] = await Promise.all([
-      sb.from('students').select('*').order('full_name', { ascending: true }),
-      sb.from('competition_records')
-        .select('*')
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false }),
-    ]);
-
-    if (requestId !== competitionRenderRequestId) {
-      return;
-    }
-
-    if (studentsResult.error) {
-      throw studentsResult.error;
-    }
-
-    if (historyResult.error) {
-      throw historyResult.error;
-    }
-
-    supabaseCache.students = studentsResult.data || [];
-    supabaseCache.competitionRecords = historyResult.data || [];
-    supabaseCache.loadedAt = new Date();
-
-    students = supabaseCache.students.slice().sort((a,b) =>
-      String(a.full_name || '').localeCompare(
-        String(b.full_name || ''),
-        'vi',
-        { sensitivity: 'base' }
-      )
-    );
+    await SNCoreRefresh.coreData();
   } catch (error) {
     console.error('Thi đua - tải dữ liệu trực tiếp thất bại:', error);
 
@@ -343,6 +321,7 @@ async function renderCompetition(){
         '<div class="mini history-empty">Không thể tải lịch sử thi đua. Vui lòng thử lại.</div>';
     }
 
+    SNNotification?.error('Không thể tải dữ liệu thi đua.');
     return;
   }
 
