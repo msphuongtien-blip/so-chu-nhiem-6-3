@@ -243,7 +243,29 @@ function setupUI() {
 }
 
 
-function showPage(id,btn){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(id)?.classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');const t={dashboard:'Tổng quan',students:'Học sinh & hồ sơ',random:'Gọi tên ngẫu nhiên',competition:'Thi đua – xếp hạng',honors:'Bảng danh dự',teams:'Theo dõi tổ',reports:'Báo cáo',alerts:'Cảnh báo',feedbackTeacher:'Phản hồi học sinh',settings:'Cài đặt',sHome:'Trang chủ',sProfile:'Hồ sơ của em',sProgress:'Hành trình tiến bộ',sHonors:'Thành tích của em',sGoals:'Mục tiêu tuần',sFeedback:'Phản hồi'};$('pageTitle').textContent=t[id]||id;if(role==='teacher'&&id==='reports')renderReports();if(role==='teacher'&&id==='alerts')renderAlerts();}
+async function showPage(id,btn){
+  document.querySelectorAll('.page').forEach((page) => page.classList.remove('active'));
+  $(id)?.classList.add('active');
+  document.querySelectorAll('.nav button').forEach((navButton) => navButton.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const titles={dashboard:'Tổng quan',students:'Học sinh & hồ sơ',random:'Gọi tên ngẫu nhiên',competition:'Thi đua – xếp hạng',honors:'Bảng danh dự',teams:'Theo dõi tổ',reports:'Báo cáo',alerts:'Cảnh báo',settings:'Cài đặt',sHome:'Trang chủ',sProfile:'Hồ sơ của em',sProgress:'Hành trình tiến bộ',sHonors:'Thành tích của em',sGoals:'Mục tiêu tuần'};
+  $('pageTitle').textContent=titles[id]||id;
+  if(role==='teacher'&&id==='competition'){
+    try{
+      if(globalThis.ApplicationModuleLoaderV6?.ready){
+        await globalThis.ApplicationModuleLoaderV6.ready;
+      }
+      if(typeof window.renderCompetition==='function'){
+        await window.renderCompetition();
+      }
+    }catch(error){
+      console.error('[Competition V6] Navigation render failed:',error);
+      globalThis.SNNotification?.error('Không thể tải Thi đua. Vui lòng thử lại.');
+    }
+  }
+  if(role==='teacher'&&id==='reports')renderReports();
+  if(role==='teacher'&&id==='alerts')renderAlerts();
+}
 async function loadSettings(){const {data}=await sb.from('class_settings').select('*').limit(1).maybeSingle();if(data)classSettings=data;$('classNameView').textContent=classSettings.class_name;$('teacherNameView').textContent=classSettings.teacher_name;$('yearTop').textContent=classSettings.school_year;$('loginYear').textContent=classSettings.school_year;$('classNameInput').value=classSettings.class_name;$('schoolYearInput').value=classSettings.school_year;$('teacherNameInput').value=classSettings.teacher_name}
 async function loadAll(){
     await loadSettings();
