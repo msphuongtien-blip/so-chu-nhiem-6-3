@@ -84,3 +84,18 @@ test('Student progress, honors and goals flows exist', () => {
     }
     includes(app, "from('student_goals')");
 });
+
+
+test('Random picker is retained because the visible Quay tên workflow uses its compatibility functions', () => {
+    includes(index, 'id="random"');
+    includes(index, 'onclick="randomStudent()"');
+    includes(app, 'function randomStudent(');
+
+    const randomPicker = fs.readFileSync(
+        path.join(root, 'random-picker-v6-compat.js'),
+        'utf8',
+    );
+
+    includes(randomPicker, 'function getRandomPool(');
+    includes(randomPicker, 'function chooseRandomCandidate(');
+});
