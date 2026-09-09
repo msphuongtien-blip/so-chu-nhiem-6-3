@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
+const { test } = require('node:test');
 /** Regression tests for V6 ranking, student picker, and record form UI. */
 
 const assert = require('node:assert/strict');
