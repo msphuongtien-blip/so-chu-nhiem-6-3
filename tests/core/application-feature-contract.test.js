@@ -36,13 +36,17 @@ test('Authentication lifecycle exists', () => {
 });
 
 test('Honors supports period selection and save flow', () => {
-    for (const name of ['renderHonors','openHonorForm','submitHonor']) {
+    for (const name of ['renderHonors','openHonorForm','editHonor','submitHonor','submitHonorEdit','deleteHonor']) {
         includes(app, 'function ' + name + '(');
     }
     includes(index, 'id="honorPeriod"');
     includes(index, 'value="week"');
     includes(index, 'value="month"');
     includes(app, "from('honors')");
+    includes(index, 'id="honorList"');
+    includes(index, 'Thêm thành tích');
+    includes(app, 'onclick="editHonor(');
+    includes(app, 'onclick="deleteHonor(');
 });
 
 test('Team tracking ranks by average score', () => {
