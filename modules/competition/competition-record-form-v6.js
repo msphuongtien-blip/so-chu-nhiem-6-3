@@ -545,6 +545,7 @@ window.CompetitionRecordFormV6 = {
     getRecordFormCriteriaDefaultScoreV6,
     refreshRecordFormCriteriaV6,
     refreshRecordFormSelectedCriteriaScoreV6,
+    open: openCompetitionFormV6,
 };
 
 
