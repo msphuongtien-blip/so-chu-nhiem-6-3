@@ -324,7 +324,7 @@ async function openCompetitionFormV6() {
         `
             <div class="field">
                 <label>Học sinh</label>
-                <select id="fStudentV6" multiple hidden aria-hidden="true"></select>       </select>
+                <div class="notice danger">Bộ chọn học sinh chưa sẵn sàng. Vui lòng thử lại.</div>
             </div>
 
             <div class="field">
@@ -388,6 +388,10 @@ async function openCompetitionFormV6() {
 
     refreshRecordFormCriteriaV6(criteria);
 
+    if (typeof bindStudentPickerEventsV6 === 'function') {
+        bindStudentPickerEventsV6();
+    }
+
     document
         .getElementById('fGroupV6')
         ?.addEventListener('change', () => {
@@ -406,22 +410,40 @@ async function openCompetitionFormV6() {
 }
 
 async function submitCompetitionV6() {
-    const studentIds = String(document.getElementById('fStudentV6')?.value || '').split(',').filter(Boolean);
-    const studentId = studentIds[0];
+    const studentIds =
+        typeof getCompetitionRecordSelectedStudentsV6 === 'function'
+            ? getCompetitionRecordSelectedStudentsV6()
+            : String(
+                  document.getElementById('fStudentV6')?.value || '',
+              )
+                  .split(',')
+                  .filter(Boolean);
+
     const date = document.getElementById('fDateV6')?.value;
     const categoryId = document.getElementById('fGroupV6')?.value;
     const criteriaId = document.getElementById('fCriteriaV6')?.value;
     const points = Number(document.getElementById('fPointsV6')?.value);
-    const note = document.getElementById('fNoteV6')?.value.trim() || '';
+    const note =
+        document.getElementById('fNoteV6')?.value.trim() || '';
     const week = getRecordFormWeekFromDateV6(date);
 
-    if (!studentIds.length || !date || !categoryId || !criteriaId || !week) {
-        alert('Vui lòng chọn ít nhất một học sinh, nhóm và tiêu chí.');
+    if (
+        !studentIds.length ||
+        !date ||
+        !categoryId ||
+        !criteriaId ||
+        !week
+    ) {
+        SNNotification?.error(
+            'Vui lòng chọn ít nhất một học sinh, nhóm và tiêu chí.',
+        );
         return false;
     }
 
     if (!RECORD_FORM_V6_SCORES.includes(points)) {
-        alert('Điểm chỉ được chọn từ -5 đến -1 hoặc +1 đến +5.');
+        SNNotification?.error(
+            'Điểm chỉ được chọn từ -5 đến -1 hoặc +1 đến +5.',
+        );
         return false;
     }
 
@@ -430,43 +452,81 @@ async function submitCompetitionV6() {
         error,
     } = await recordFormV6Supabase
         .from('competition_criteria')
-        .select('id, name, active, category_id')
+        .select(
+            'id, name, active, category_id, group_name',
+        )
         .eq('id', criteriaId)
         .single();
 
     if (error || !selectedCriteria) {
-        alert('Không tìm thấy tiêu chí đã chọn.');
+        SNNotification?.error(
+            'Không tìm thấy tiêu chí đã chọn.',
+        );
         return false;
     }
 
-    if (
-        !selectedCriteria.active ||
-        String(selectedCriteria.category_id) !== String(categoryId)
-    ) {
-        alert('Tiêu chí không thuộc nhóm đang chọn hoặc đã được tắt.');
+    const categoryMatches =
+        String(selectedCriteria.category_id ?? '') ===
+            String(categoryId) ||
+        String(selectedCriteria.group_name ?? '') ===
+            String(categoryId);
+
+    if (!selectedCriteria.active || !categoryMatches) {
+        SNNotification?.error(
+            'Tiêu chí không thuộc nhóm đang chọn hoặc đã được tắt.',
+        );
         return false;
     }
 
-    const ok = await addCompetition(
-        studentId,
-        points,
-        selectedCriteria.name,
-        note,
-        Number(categoryId),
-        week,
-        date,
+    const service = globalThis.CompetitionRecordServiceV6;
+
+    if (typeof service?.saveCompetitionRecordsV6 !== 'function') {
+        SNNotification?.error(
+            'Module lưu Ghi nhận chưa sẵn sàng. Vui lòng thử lại.',
+        );
+        return false;
+    }
+
+    const loading = SNNotification?.loading(
+        'Đang lưu ghi nhận cho ' +
+            studentIds.length +
+            ' học sinh...',
     );
 
-    if (!ok) {
+    try {
+        const result = await service.saveCompetitionRecordsV6({
+            studentIds,
+            points,
+            criteria: selectedCriteria,
+            note,
+            categoryId: Number(categoryId),
+            week,
+            date,
+            createdBy: currentUser?.id,
+        });
+
+        if (!result.ok) {
+            SNNotification?.error(result.message || 'Không thể lưu ghi nhận.');
+            return false;
+        }
+
+        closeModal();
+        SNNotification?.success(
+            'Đã ghi nhận cho ' + studentIds.length + ' học sinh.',
+        );
+        return true;
+    } catch (submitError) {
+        console.error(
+            '[Competition V6] Bulk submit failed:',
+            submitError,
+        );
+        SNNotification?.error(
+            'Không thể lưu ghi nhận. Vui lòng thử lại.',
+        );
         return false;
+    } finally {
+        loading?.close();
     }
-
-    closeModal();
-
-    await renderStudents();
-    await renderCompetition();
-    await renderDashboard();
-    return true;
 }
 
 window.openCompetitionForm = openCompetitionFormV6;
