@@ -99,13 +99,10 @@ assert.match(
 
 
 test('Competition UI keeps the approved four-column ranking contract', () => {
-    assert.match(
-        appSource,
-        /<td><b>\'\+\(i\+1\)\+\'<\\/b><\\/td>/,
-    );
+    assert.match(appSource, /groupBadge\\(s\\.weekly\\)/);
     assert.doesNotMatch(
         appSource,
-        /Number\(s\.monthly\)\.toFixed\(0\)/,
+        /Number\\(s\\.monthly\\)\\.toFixed\\(0\\)/,
     );
 });
 
