@@ -107,7 +107,27 @@ vm.runInContext(source, context, {
     );
     assert.deepEqual(alerts, [], 'Luồng hợp lệ không được báo lỗi.');
 
-    console.log('PASS: competition record created_by and note regression');
+    
+// Regression: creator resolution must use the authenticated Supabase user.
+const serviceSource = fs.readFileSync(
+    path.join(root, 'modules/competition/competition-record-service-v6.js'),
+    'utf8',
+);
+
+assert.match(
+    serviceSource,
+    /async function getCompetitionRecordCreatorIdV6\(\)/,
+);
+assert.match(
+    serviceSource,
+    /client\.auth\.getUser\(\)/,
+);
+assert.match(
+    serviceSource,
+    /globalThis\.CompetitionRecordServiceV6 = Object\.freeze/,
+);
+
+console.log('PASS: competition record created_by and note regression');
 })().catch((error) => {
     console.error(error);
     process.exitCode = 1;
