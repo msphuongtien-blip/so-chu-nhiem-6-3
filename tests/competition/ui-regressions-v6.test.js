@@ -12,6 +12,7 @@ const indexSource = rawIndexSource.replace(/\s+/g, ' ');
 const autocompleteSource = fs.readFileSync(path.join(root, 'modules/students/student-autocomplete-v6.js'), 'utf8');
 const appSource = fs.readFileSync('app.js', 'utf8');
 const finalFormSource = fs.readFileSync(path.join(root, 'modules/competition/competition-record-form-v6.js'), 'utf8');
+const rankingUiSource = fs.readFileSync(path.join(root, 'modules/competition/competition-ranking-ui-v6.js'), 'utf8');
 const rankingColumnsSource = fs.readFileSync(path.join(root, 'modules/competition/competition-ranking-columns-v6.js'), 'utf8');
 
 const rankingHeaderMatch = rankingColumnsSource.match(
@@ -102,6 +103,18 @@ assert.match(
 test('Competition UI keeps the approved four-column ranking contract', () => {
     assert.ok(appSource.includes('groupBadge(s.weekly)'));
     assert.ok(!appSource.includes('Number(s.monthly).toFixed(0)'));
+});
+
+test('Competition page mounts the multi-student filter even after async module loading', () => {
+    assert.ok(
+        rankingColumnsSource.includes('mountStudentFilter'),
+    );
+    assert.ok(
+        rankingUiSource.includes('bootstrapCompetitionStudentFilterV6'),
+    );
+    assert.ok(
+        rankingUiSource.includes('mountCompetitionStudentFilterV6()'),
+    );
 });
 
 test('Competition form uses shared multi-student picker and bulk service', () => {
