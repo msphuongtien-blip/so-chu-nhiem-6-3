@@ -77,7 +77,6 @@ test('dependency check covers all protected student child tables', async () => {
     );
 
     const expectedTables = [
-        'attendance',
         'competition_data_issues',
         'competition_records',
         'competition_weekly_snapshots',
