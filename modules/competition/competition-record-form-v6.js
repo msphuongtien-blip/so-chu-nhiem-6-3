@@ -262,6 +262,24 @@ function getRecordFormWeekFromDateV6(dateValue) {
 }
 
 async function openCompetitionFormV6() {
+    /*
+     * Ghi nhận can be clicked immediately after navigation. Wait for the
+     * consolidated V6 module set before resolving any shared picker API.
+     */
+    if (globalThis.ApplicationModuleLoaderV6?.ready) {
+        await globalThis.ApplicationModuleLoaderV6.ready;
+    }
+
+    if (
+        typeof globalThis.CompetitionStudentPickerV6
+            ?.buildStudentPickerMarkupV6 !== 'function'
+    ) {
+        globalThis.SNNotification?.error(
+            'Bộ chọn học sinh chưa sẵn sàng. Vui lòng thử lại.',
+        );
+        return false;
+    }
+
     if (typeof ensureCompetitionCategoriesV6 === 'function') {
         await ensureCompetitionCategoriesV6();
     }
