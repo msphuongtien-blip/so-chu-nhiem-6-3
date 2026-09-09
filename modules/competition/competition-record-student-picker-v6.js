@@ -492,4 +492,5 @@ window.CompetitionStudentPickerV6 = {
     syncStudentPickerSelectionV6,
     buildStudentPickerMarkupV6,
     bindStudentPickerEventsV6,
+    clearStudentPickerV6,
 };
