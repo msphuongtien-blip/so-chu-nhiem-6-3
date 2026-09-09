@@ -479,9 +479,7 @@ async function renderCompetition(){
         '<td><b>'+(i+1)+'</b></td>'+
         '<td><b>'+esc(s.full_name)+'</b></td>'+
         '<td><b>'+Number(s.weekly).toFixed(0)+'</b></td>'+
-        '<td>'+Number(s.monthly).toFixed(0)+'</td>'+
         '<td>'+groupBadge(s.weekly)+'</td>'+
-        '<td>'+trendText(s.score_history)+'</td>'+
       '</tr>';
     }).join('');
   }
