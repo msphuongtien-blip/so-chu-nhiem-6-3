@@ -19,7 +19,6 @@
  */
 
 const STUDENT_DEPENDENCY_TABLES = Object.freeze([
-    'attendance',
     'competition_records',
     'competition_data_issues',
     'competition_weekly_snapshots',
