@@ -101,14 +101,17 @@ function normalizeCriteriaSettingsCategoryV6() {
  * Criteria inactive vẫn được tải để GVCN có thể bật lại hoặc xem trạng thái.
  */
 async function loadCriteriaSettingsRowsV6() {
-    const categoryId = Number(criteriaSettingsCategoryIdV6);
-
+    /*
+     * Read the complete criteria set once, then filter in memory.
+     * This keeps the UI compatible with existing rows that use either
+     * category_id or the historical group_name field and avoids losing
+     * criteria when the two fields differ.
+     */
     const { data, error } = await criteriaV6Supabase
         .from('competition_criteria')
         .select(
-            'id, name, points, type, active, sort_order, category_id, group_name, default_score',
+            'id, name, points, type, active, sort_order, category_id, group_name, default_score, created_at',
         )
-        .eq('category_id', categoryId)
         .order('sort_order', {
             ascending: true,
         })
@@ -120,7 +123,14 @@ async function loadCriteriaSettingsRowsV6() {
         throw error;
     }
 
-    criteriaSettingsRowsV6 = data || [];
+    const selectedCategoryId = String(criteriaSettingsCategoryIdV6);
+
+    criteriaSettingsRowsV6 = (data || []).filter((row) => {
+        return (
+            String(row.category_id ?? '') === selectedCategoryId ||
+            String(row.group_name ?? '') === selectedCategoryId
+        );
+    });
 
     return criteriaSettingsRowsV6;
 }
