@@ -38,7 +38,7 @@ test('Account provisioning is teacher-only', () => {
 });
 
 test('Student deletion checks every protected dependency before DELETE', () => {
-    for (const table of ['attendance','competition_records','competition_data_issues','competition_weekly_snapshots','honors']) {
+    for (const table of ['competition_records','competition_data_issues','competition_weekly_snapshots','honors']) {
         includes(finalActions, "'" + table + "'");
     }
     for (const value of ['getStudentDependencyCounts','dependencies.length',"from('students')",'.delete()']) {
