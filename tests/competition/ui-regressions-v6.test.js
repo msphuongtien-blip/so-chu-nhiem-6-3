@@ -143,6 +143,32 @@ test('Expanding ranking refreshes the canonical competition renderer', () => {
     );
 });
 
+test('Competition navigation waits for V6 modules before rendering', () => {
+    assert.match(
+        appSource,
+        /if\(role==='teacher'&&id==='competition'\)[\s\S]*ApplicationModuleLoaderV6\?\.ready[\s\S]*await window\.renderCompetition/,
+    );
+});
+
+test('Competition record form waits for the shared student picker', () => {
+    const formSource = fs.readFileSync(
+        path.join(root, 'modules/competition/competition-record-form-v6.js'),
+        'utf8',
+    );
+    assert.match(
+        formSource,
+        /ApplicationModuleLoaderV6\?\.ready/,
+    );
+    assert.match(
+        formSource,
+        /CompetitionStudentPickerV6\?\.buildStudentPickerMarkupV6/,
+    );
+    assert.match(
+        formSource,
+        /clearStudentPickerV6\?\.\(\)/,
+    );
+});
+
 test('Competition form uses shared multi-student picker and bulk service', () => {
     assert.ok(finalFormSource.includes('buildStudentPickerMarkupV6()'));
     assert.ok(finalFormSource.includes('getCompetitionRecordSelectedStudentsV6()'));
