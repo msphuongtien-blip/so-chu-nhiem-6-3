@@ -98,6 +98,9 @@ const vm = require('node:vm');
             },
         },
         CompetitionRecordServiceV6: {
+            async getCompetitionRecordCreatorIdV6() {
+                return 'teacher-1';
+            },
             async saveCompetitionRecordsV6(input) {
                 assert.equal(input.studentIds.length, 1);
                 assert.equal(input.studentIds[0], 'student-1');
