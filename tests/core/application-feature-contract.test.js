@@ -16,7 +16,7 @@ function includes(source, value, message) {
 }
 
 test('Teacher pages exist', () => {
-    for (const id of ['dashboard','students','random','attendance','competition','honors','teams','reports','alerts','settings']) {
+    for (const id of ['dashboard','students','random','competition','honors','teams','reports','alerts','settings']) {
         includes(index, 'id="' + id + '"');
     }
 });
@@ -33,16 +33,6 @@ test('Authentication lifecycle exists', () => {
     }
     includes(app, 'profiles');
     includes(app, 'sb.auth.signOut()');
-});
-
-test('Attendance supports every defined state and persists with upsert', () => {
-    includes(app, 'function renderAttendance(');
-    includes(app, 'function saveAttendance(');
-    for (const status of ['present','excused','absent','late','early_leave']) {
-        includes(app, 'value="' + status + '"');
-    }
-    includes(app, "from('attendance')");
-    includes(app, 'upsert(');
 });
 
 test('Honors supports period selection and save flow', () => {
@@ -65,10 +55,11 @@ test('Team tracking ranks by average score', () => {
 test('Alerts and reports have renderers and data sources', () => {
     includes(app, 'function renderAlerts(');
     includes(app, 'function renderReports(');
-    includes(app, 'function printReport(');
-    for (const table of ['attendance','competition_records','honors']) {
+    for (const table of ['competition_records','honors']) {
         includes(app, "from('" + table + "')");
     }
+    assert.doesNotMatch(app, /from\(['"]attendance['"]\)/);
+    assert.doesNotMatch(index, /id="attendance"/);
     includes(index, 'id="reportsBody"');
     includes(index, 'id="alertsBody"');
 });
