@@ -99,7 +99,8 @@ const vm = require('node:vm');
         },
         CompetitionRecordServiceV6: {
             async saveCompetitionRecordsV6(input) {
-                assert.deepEqual(input.studentIds, ['student-1']);
+                assert.equal(input.studentIds.length, 1);
+                assert.equal(input.studentIds[0], 'student-1');
                 writerCalls += 1;
                 return { ok: true, data: [] };
             },
