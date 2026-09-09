@@ -311,6 +311,8 @@ async function openCompetitionFormV6() {
         return;
     }
 
+    globalThis.CompetitionStudentPickerV6.clearStudentPickerV6?.();
+
     const firstCategoryId = String(categories[0].id);
 
     const groupOptions = buildRecordGroupOptionsV6(
