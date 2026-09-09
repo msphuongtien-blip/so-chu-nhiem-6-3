@@ -129,3 +129,29 @@ test('Competition V6 uses the canonical Core resolver for all record-week deriva
         'Ngày cuối tuần phải được tính theo UTC date-only.',
     );
 });
+
+
+const appSource = fs.readFileSync(
+    path.join(root, 'app.js'),
+    'utf8',
+);
+const weekResolver = appSource.match(
+    /function compWeekInput\(\)\s*\{[\s\S]*?\n\}/,
+)?.[0] || '';
+
+assert.ok(weekResolver, 'compWeekInput must exist');
+assert.doesNotMatch(
+    weekResolver,
+    /async function/,
+    'compWeekInput must return a concrete week string synchronously',
+);
+assert.match(
+    appSource,
+    /const week=compWeekInput\(\);/,
+);
+assert.match(
+    source,
+    /const selectedWeek\s*=\s*[\s\S]*compWeekInput\(\)/,
+);
+
+console.log('PASS: competition week resolver is synchronous for ranking and record form');
