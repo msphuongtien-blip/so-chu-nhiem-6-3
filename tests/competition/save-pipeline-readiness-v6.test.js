@@ -29,7 +29,6 @@ const vm = require('node:vm');
     };
 
     let writerCalls = 0;
-    let writerReady = false;
 
     const client = {
         from() {
@@ -89,12 +88,21 @@ const vm = require('node:vm');
                 ? '2030-01-07'
                 : '';
         },
-        addCompetition: async () => {
-            if (!writerReady) {
-                return false;
-            }
-            writerCalls += 1;
-            return true;
+        SNNotification: {
+            error(message) {
+                throw new Error(String(message));
+            },
+            success() {},
+            loading() {
+                return { close() {} };
+            },
+        },
+        CompetitionRecordServiceV6: {
+            async saveCompetitionRecordsV6(input) {
+                assert.deepEqual(input.studentIds, ['student-1']);
+                writerCalls += 1;
+                return { ok: true, data: [] };
+            },
         },
     });
 
@@ -102,14 +110,12 @@ const vm = require('node:vm');
         filename: 'modules/competition/competition-record-form-v6.js',
     });
 
-    writerReady = true;
-
-    const ok = await context.submitCompetitionV6();
+        const ok = await context.submitCompetitionV6();
 
     assert.equal(ok, true);
     assert.equal(writerCalls, 1);
 
-    console.log('PASS: competition save uses the current write boundary');
+    console.log('PASS: competition save uses shared bulk service');
 })().catch((error) => {
     console.error(error);
     process.exitCode = 1;
