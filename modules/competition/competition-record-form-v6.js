@@ -328,7 +328,7 @@ async function openCompetitionFormV6() {
         `
             <div class="field">
                 <label>Học sinh</label>
-                <div class="notice danger">Bộ chọn học sinh chưa sẵn sàng. Vui lòng thử lại.</div>
+                ${typeof globalThis.buildStudentPickerMarkupV6 === 'function' ? globalThis.buildStudentPickerMarkupV6() : '<div class="notice danger">Bộ chọn học sinh chưa sẵn sàng. Vui lòng thử lại.</div>'}
             </div>
 
             <div class="field">
