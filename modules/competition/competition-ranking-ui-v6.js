@@ -397,6 +397,37 @@ function mountCompetitionStudentFilterV6() {
     return true;
 }
 
+const COMPETITION_STUDENT_FILTER_BOOT_WAIT_MS_V6 = 15000;
+const COMPETITION_STUDENT_FILTER_BOOT_POLL_MS_V6 = 100;
+
+function bootstrapCompetitionStudentFilterV6() {
+    const startedAt = Date.now();
+
+    const timer = window.setInterval(() => {
+        if (competitionStudentFilterMountedV6) {
+            window.clearInterval(timer);
+            return;
+        }
+
+        if (mountCompetitionStudentFilterV6()) {
+            window.clearInterval(timer);
+            return;
+        }
+
+        if (
+            Date.now() - startedAt >=
+            COMPETITION_STUDENT_FILTER_BOOT_WAIT_MS_V6
+        ) {
+            window.clearInterval(timer);
+            console.warn(
+                '[Competition V6] Student filter bootstrap timed out.',
+            );
+        }
+    }, COMPETITION_STUDENT_FILTER_BOOT_POLL_MS_V6);
+}
+
+bootstrapCompetitionStudentFilterV6();
+
 globalThis.CompetitionRankingUIV6 = Object.freeze({
     MONTHLY_SCORE_LABEL: COMPETITION_RANKING_UI_V6.MONTHLY_SCORE_LABEL,
     removeMonthlyScoreColumn: removeMonthlyScoreColumnV6,
