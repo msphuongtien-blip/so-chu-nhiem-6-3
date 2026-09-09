@@ -107,7 +107,7 @@ test('Competition UI keeps the approved four-column ranking contract', () => {
 
 test('Competition page mounts the multi-student filter even after async module loading', () => {
     assert.ok(
-        rankingColumnsSource.includes('mountStudentFilter'),
+        appSource.includes('CompetitionRankingUIV6?.mountStudentFilter'),
     );
     assert.ok(
         rankingUiSource.includes('bootstrapCompetitionStudentFilterV6'),
