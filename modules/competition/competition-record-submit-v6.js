@@ -43,40 +43,18 @@ function showCompetitionSubmitToastV6(
     message,
     type = 'success',
 ) {
-    const service =
-        globalThis.CompetitionRecordServiceV6;
+    const notification = globalThis.SNNotification;
 
-    if (
-        typeof service?.showCompetitionRecordToastV6 ===
-        'function'
-    ) {
-        service.showCompetitionRecordToastV6(
+    if (!notification) {
+        console.error(
+            '[Competition V6] Shared notification service chưa sẵn sàng.',
             message,
-            type,
         );
         return;
     }
 
-    const toast = document.createElement('div');
-    toast.className =
-        type === 'success'
-            ? 'notice'
-            : 'notice danger';
-    toast.textContent = message;
-
-    Object.assign(toast.style, {
-        position: 'fixed',
-        right: '24px',
-        bottom: '24px',
-        zIndex: '9999',
-        maxWidth: '420px',
-    });
-
-    document.body.appendChild(toast);
-
-    window.setTimeout(() => {
-        toast.remove();
-    }, 3000);
+    const method = notification[type] || notification.info;
+    method(String(message || ''));
 }
 
 /**
