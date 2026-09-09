@@ -518,6 +518,16 @@ async function submitCompetitionV6() {
     );
 
     try {
+        const creatorId =
+            await service.getCompetitionRecordCreatorIdV6?.();
+
+        if (!creatorId) {
+            globalThis.SNNotification?.error(
+                'Không xác định được tài khoản GVCN đang đăng nhập.',
+            );
+            return false;
+        }
+
         const result = await service.saveCompetitionRecordsV6({
             studentIds,
             points,
@@ -526,7 +536,7 @@ async function submitCompetitionV6() {
             categoryId: Number(categoryId),
             week,
             date,
-            createdBy: globalThis.currentUser?.id,
+            createdBy: creatorId,
         });
 
         if (!result.ok) {
