@@ -126,10 +126,7 @@ function getCompetitionRecordSelectedStudentsV6() {
 }
 
 function syncSelectedStudentPickerFieldV6() {
-    const hidden = document.getElementById('fStudentV6');
-    if (hidden) {
-        syncStudentPickerSelectionV6();
-    }
+    syncStudentPickerSelectionV6();
 }
 
 function renderSelectedStudentPickerV6() {
@@ -350,9 +347,7 @@ function bindStudentPickerEventsV6() {
 
     input.addEventListener('input', () => {
 
-        const hiddenStudentId = document.getElementById('fStudentV6');
-
-        if (hiddenStudentId) hiddenStudentId.value = '';
+        syncSelectedStudentPickerFieldV6();
 
         clearButton.classList.toggle(
             'hidden',
@@ -424,6 +419,8 @@ async function openCompetitionFormWithStudentPickerV6() {
     if (!studentSelect) {
         return;
     }
+
+    selectedStudentPickerIdsV6.clear();
 
     const previousStudentIds = String(studentSelect.value || '').split(',').filter(Boolean);
     const parent = studentSelect.parentElement;
