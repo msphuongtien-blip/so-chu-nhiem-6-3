@@ -48,6 +48,38 @@ function getCompetitionRecordServiceClientV6() {
 }
 
 /**
+ * Resolve the authenticated Supabase user used as the record creator.
+ *
+ * This is the single identity entry point for Competition write flows.
+ * Runtime app state is not used as the source of truth for created_by.
+ *
+ * @returns {Promise<string>} Authenticated user id.
+ * @throws {Error} When no authenticated user can be resolved.
+ */
+async function getCompetitionRecordCreatorIdV6() {
+    const client = getCompetitionRecordServiceClientV6();
+
+    if (!client?.auth?.getUser) {
+        throw new Error(
+            'Supabase Authentication chưa sẵn sàng.',
+        );
+    }
+
+    const {
+        data,
+        error,
+    } = await client.auth.getUser();
+
+    if (error || !data?.user?.id) {
+        throw new Error(
+            'Không xác định được tài khoản GVCN đang đăng nhập.',
+        );
+    }
+
+    return String(data.user.id);
+}
+
+/**
  * Kiểm tra score có nằm trong tập điểm hợp lệ hay không.
  *
  * @param {number} score Điểm cần kiểm tra.
@@ -366,6 +398,7 @@ globalThis.CompetitionRecordServiceV6 = Object.freeze({
     COMPETITION_RECORD_SERVICE_V6_SCORES,
     buildCompetitionRecordPayloadV6,
     getCompetitionRecordWeekV6,
+    getCompetitionRecordCreatorIdV6,
     isCompetitionRecordScoreValidV6,
     refreshCompetitionRecordStateV6,
     saveCompetitionRecordV6,
