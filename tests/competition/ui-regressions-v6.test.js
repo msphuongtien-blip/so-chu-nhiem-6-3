@@ -105,22 +105,10 @@ test('Competition UI keeps the approved four-column ranking contract', () => {
 });
 
 test('Competition form uses shared multi-student picker and bulk service', () => {
-    assert.match(
-        finalFormSource,
-        /buildStudentPickerMarkupV6\(\)/,
-    );
-    assert.match(
-        finalFormSource,
-        /getCompetitionRecordSelectedStudentsV6\(\)/,
-    );
-    assert.match(
-        finalFormSource,
-        /saveCompetitionRecordsV6\(/,
-    );
-    assert.match(
-        finalFormSource,
-        /Đang lưu ghi nhận cho/,
-    );
+    assert.ok(finalFormSource.includes('buildStudentPickerMarkupV6()'));
+    assert.ok(finalFormSource.includes('getCompetitionRecordSelectedStudentsV6()'));
+    assert.ok(finalFormSource.includes('saveCompetitionRecordsV6('));
+    assert.ok(finalFormSource.includes('Đang lưu ghi nhận cho'));
 });
 
 test('Student picker is reusable and does not replace openCompetitionForm', () => {
