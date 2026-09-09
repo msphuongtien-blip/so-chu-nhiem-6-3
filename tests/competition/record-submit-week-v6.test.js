@@ -150,7 +150,7 @@ assert.match(
     /const week=compWeekInput\(\);/,
 );
 assert.match(
-    source,
+    read('modules/competition/competition-record-form-v6.js'),
     /const selectedWeek\s*=\s*[\s\S]*compWeekInput\(\)/,
 );
 
