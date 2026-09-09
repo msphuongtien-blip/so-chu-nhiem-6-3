@@ -506,7 +506,7 @@ async function submitCompetitionV6() {
             categoryId: Number(categoryId),
             week,
             date,
-            createdBy: currentUser?.id,
+            createdBy: globalThis.currentUser?.id,
         });
 
         if (!result.ok) {
