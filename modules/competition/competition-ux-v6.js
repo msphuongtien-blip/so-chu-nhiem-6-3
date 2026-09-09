@@ -84,7 +84,7 @@ function bindCompetitionRankingCollapseV6() {
     // Mặc định thu gọn để GVCN nhanh chóng đi tới Lịch sử.
     tableWrap.classList.add('competition-ranking-collapsed-v6');
 
-    toggleButton.addEventListener('click', () => {
+        toggleButton.addEventListener('click', async () => {
         const collapsed = tableWrap.classList.toggle(
             'competition-ranking-collapsed-v6',
         );
@@ -96,6 +96,27 @@ function bindCompetitionRankingCollapseV6() {
             'aria-expanded',
             String(!collapsed),
         );
+
+        if (!collapsed && typeof window.renderCompetition === 'function') {
+            const originalLabel = toggleButton.textContent;
+            toggleButton.disabled = true;
+            toggleButton.textContent = 'Đang tải...';
+
+            try {
+                await window.renderCompetition();
+            } catch (error) {
+                console.error(
+                    '[Competition V6] Không thể refresh ranking khi mở rộng:',
+                    error,
+                );
+                globalThis.SNNotification?.error(
+                    'Không thể tải bảng xếp hạng. Vui lòng thử lại.',
+                );
+            } finally {
+                toggleButton.disabled = false;
+                toggleButton.textContent = originalLabel;
+            }
+        }
     });
 
     competitionRankingCollapseBoundV6 = true;
