@@ -235,7 +235,9 @@ globalThis.addCompetition = addCompetitionThroughV6Boundary;
  * @returns {boolean} true khi các entry point bắt buộc đã được route.
  */
 function installCompetitionLegacyBoundaryV6() {
-    const recordForm = globalThis.openCompetitionFormV6;
+    // Preserve the complete composed entry point installed by the V6
+    // wrappers (date + multi-student picker), rather than bypassing them.
+    const recordForm = globalThis.openCompetitionForm;
     const writeBoundary = globalThis.addCompetitionThroughV6Boundary;
     const submitV6 = globalThis.submitCompetitionV6;
 
