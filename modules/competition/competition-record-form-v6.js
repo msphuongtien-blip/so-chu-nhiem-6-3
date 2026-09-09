@@ -262,6 +262,10 @@ function getRecordFormWeekFromDateV6(dateValue) {
 }
 
 async function openCompetitionFormV6() {
+    if (typeof ensureCompetitionCategoriesV6 === 'function') {
+        await ensureCompetitionCategoriesV6();
+    }
+
     const categories = await waitForRecordFormCategoriesV6();
 
     if (!categories.length) {
