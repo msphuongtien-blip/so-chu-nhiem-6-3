@@ -732,7 +732,56 @@ async function toggleCriteria(id,active) {
     }
     ).eq('id',id);if(error)alert(error.message);else await renderCompetitionCriteria()
 }
-function openCompetitionForm() {
+async function openCompetitionForm() {
+    /*
+     * Stable public entry point:
+     * the page can be interacted with while V6 modules are still loading.
+     * Never fall back to the legacy form; wait for the canonical V6 owner.
+     */
+    const loaderReady = globalThis.ApplicationModuleLoaderV6?.ready;
+
+    if (loaderReady) {
+        try {
+            await loaderReady;
+        } catch (error) {
+            console.error(
+                '[Competition V6] Module loading failed:',
+                error,
+            );
+        }
+    } else {
+        const startedAt = Date.now();
+
+        while (
+            Date.now() - startedAt < 15000 &&
+            typeof globalThis.openCompetitionFormV6 !== 'function' &&
+            typeof globalThis.CompetitionRecordFormV6?.open !== 'function'
+        ) {
+            await new Promise((resolve) => {
+                window.setTimeout(resolve, 100);
+            });
+        }
+    }
+
+    const v6Open =
+        globalThis.CompetitionRecordFormV6?.open ||
+        globalThis.openCompetitionFormV6;
+
+    if (typeof v6Open !== 'function') {
+        globalThis.SNNotification?.error(
+            'Chức năng Ghi nhận chưa sẵn sàng. Vui lòng thử lại.',
+        );
+        return false;
+    }
+
+    return v6Open();
+}
+
+/**
+ * Legacy implementation retained only for compatibility/reference.
+ * It is no longer a user-facing entry point.
+ */
+function openCompetitionFormLegacy() {
     sb.from('competition_criteria').select('*').eq('active',true).order('sort_order').then(( {
         data
     }
