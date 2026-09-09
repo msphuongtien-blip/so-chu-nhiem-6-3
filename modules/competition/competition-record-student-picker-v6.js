@@ -224,7 +224,7 @@ function toggleStudentPickerV6(student) {
     const input = document.getElementById('studentPickerInputV6');
     const hiddenStudentId = document.getElementById('fStudentV6');
 
-    if (!input || !hiddenStudentId || !student) return;
+    if (!input || !student) return;
     const id = String(student.id);
     if (selectedStudentPickerIdsV6.has(id)) selectedStudentPickerIdsV6.delete(id);
     else selectedStudentPickerIdsV6.add(id);
