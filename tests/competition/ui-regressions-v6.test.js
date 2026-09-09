@@ -117,6 +117,20 @@ test('Competition page mounts the multi-student filter even after async module l
     );
 });
 
+test('Expanding ranking refreshes the canonical competition renderer', () => {
+    const uxSource = fs.readFileSync(
+        path.join(root, 'modules/competition/competition-ux-v6.js'),
+        'utf8',
+    );
+
+    assert.ok(
+        uxSource.includes("await window.renderCompetition();"),
+    );
+    assert.ok(
+        uxSource.includes("toggleButton.textContent = 'Đang tải...';"),
+    );
+});
+
 test('Competition form uses shared multi-student picker and bulk service', () => {
     assert.ok(finalFormSource.includes('buildStudentPickerMarkupV6()'));
     assert.ok(finalFormSource.includes('getCompetitionRecordSelectedStudentsV6()'));
