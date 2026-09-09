@@ -783,24 +783,203 @@ async function submitCompetition() {
         closeModal();await renderStudents();await renderCompetition();await renderDashboard();
     }
 }
-async function renderHonors() {
-    const period=$('honorPeriod').value;const {
-        data
+async async function renderHonors() {
+    const period = $('honorPeriod').value;
+    const { data, error } = await sb
+        .from('honors')
+        .select('*,students(full_name,student_code)')
+        .eq('period', period)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Bảng danh dự - tải dữ liệu thất bại:', error);
+        if ($('honorList')) {
+            $('honorList').innerHTML =
+                '<div class="notice danger">Không thể tải thành tích. Vui lòng thử lại.</div>';
+        }
+        return;
     }
-    =await sb.from('honors').select('*,students(full_name,student_code)').eq('period',period).order('created_at', {
-        ascending:false
+
+    $('honorList').innerHTML = (data || []).map((honor) => `
+        <div class="honor">
+            <div class="ico">${esc(honor.icon || '🌟')}</div>
+            <div class="honor-content">
+                <b>${esc(honor.title)}</b>
+                <div>${esc(honor.students?.full_name || '')}</div>
+                <div class="mini">
+                    ${esc(honor.reason || '')} ·
+                    ${new Date(honor.created_at).toLocaleDateString('vi-VN')}
+                </div>
+            </div>
+            <div class="actions honor-actions">
+                <button class="btn small" type="button"
+                    onclick="editHonor('${honor.id}')">Sửa</button>
+                <button class="btn small danger" type="button"
+                    onclick="deleteHonor('${honor.id}')">Xóa</button>
+            </div>
+        </div>
+    `).join('') || '<div class="mini">Chưa có thành tích.</div>';
+}
+
+$('honorPeriod').addEventListener('change', renderHonors);
+
+/**
+ * Mở form tạo thành tích mới.
+ */
+function openHonorForm() {
+    openHonorEditor(null);
+}
+
+/**
+ * Mở form sửa hoặc tạo thành tích.
+ *
+ * @param {object|null} honor Existing honor hoặc null khi tạo mới.
+ */
+function openHonorEditor(honor) {
+    const isEdit = Boolean(honor);
+    const selectedStudent = honor?.student_id || students[0]?.id || '';
+
+    openModal(
+        isEdit ? 'Sửa thành tích' : 'Thêm thành tích',
+        `
+            <div class="field">
+                <label for="hStudent">Học sinh</label>
+                <select id="hStudent">
+                    ${students.map((student) => `
+                        <option value="${student.id}" ${student.id === selectedStudent ? 'selected' : ''}>
+                            ${esc(student.full_name)}
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+            <div class="field">
+                <label for="hTitle">Danh hiệu</label>
+                <select id="hTitle">
+                    <option>🌟 Học sinh xuất sắc</option>
+                    <option>📚 Học tập tiến bộ</option>
+                    <option>🤝 Học sinh tích cực hỗ trợ bạn</option>
+                    <option>🧹 Gương mẫu về nề nếp</option>
+                    <option>💡 Học sinh tích cực phát biểu</option>
+                    <option>❤️ Học sinh có tinh thần trách nhiệm</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="hReason">Lý do</label>
+                <textarea id="hReason" rows="3"></textarea>
+            </div>
+            <button class="btn primary" type="button"
+                onclick="${isEdit ? `submitHonorEdit('${honor.id}')` : 'submitHonor()'}">
+                ${isEdit ? 'Lưu thay đổi' : 'Lưu thành tích'}
+            </button>
+        `,
+    );
+
+    if (honor) {
+        $('hTitle').value = honor.title || '';
+        $('hReason').value = honor.reason || '';
     }
-    );$('honorList').innerHTML=(data||[]).map(x=>'<div class="honor"><div class="ico">'+esc(x.icon||'🌟')+'</div><div><b>'+esc(x.title)+'</b><div>'+esc(x.students?.full_name||'')+'</div><div class="mini">'+esc(x.reason||'')+' · '+new Date(x.created_at).toLocaleDateString('vi-VN')+'</div></div></div>').join('')||'<div class="mini">Chưa có danh hiệu. Hệ thống có thể đề xuất sau khi có dữ liệu.</div>'
 }
-$('honorPeriod').addEventListener('change',renderHonors);function openHonorForm() {
-    openModal('Bảng danh dự','<div class="field"><label>Học sinh</label><select id="hStudent">'+students.map(s=>'<option value="'+s.id+'">'+esc(s.full_name)+'</option>').join('')+'</select></div><div class="field"><label>Danh hiệu</label><select id="hTitle"><option>🌟 Học sinh xuất sắc</option><option>📚 Học tập tiến bộ</option><option>🤝 Học sinh tích cực hỗ trợ bạn</option><option>🧹 Gương mẫu về nề nếp</option><option>💡 Học sinh tích cực phát biểu</option><option>❤️ Học sinh có tinh thần trách nhiệm</option></select></div><div class="field"><label>Lý do</label><textarea id="hReason" rows="3"></textarea></div><button class="btn primary" onclick="submitHonor()">Lưu danh dự</button>')
+
+/**
+ * Lấy một thành tích theo id rồi mở editor.
+ *
+ * @param {string} honorId ID thành tích.
+ */
+async function editHonor(honorId) {
+    const { data, error } = await sb
+        .from('honors')
+        .select('*')
+        .eq('id', honorId)
+        .maybeSingle();
+
+    if (error || !data) {
+        console.error('Bảng danh dự - không tải được thành tích:', error);
+        SNNotification?.error('Không thể mở thành tích để sửa.');
+        return;
+    }
+
+    openHonorEditor(data);
 }
+
+/**
+ * Tạo thành tích mới.
+ */
 async function submitHonor() {
-    const title=$('hTitle').value;const icon=title.split(' ')[0];await sb.from('honors').insert( {
-        student_id:$('hStudent').value,title,icon,reason:$('hReason').value,period:$('honorPeriod').value,created_by:currentUser.id
+    const title = $('hTitle').value;
+    const { error } = await sb.from('honors').insert({
+        student_id: $('hStudent').value,
+        title,
+        icon: title.split(' ')[0],
+        reason: $('hReason').value.trim(),
+        period: $('honorPeriod').value,
+        created_by: currentUser.id,
+    });
+
+    if (error) {
+        console.error('Bảng danh dự - tạo thành tích thất bại:', error);
+        SNNotification?.error('Không thể lưu thành tích.');
+        return;
     }
-    );closeModal();await renderHonors()
+
+    closeModal();
+    await renderHonors();
+    SNNotification?.success('Đã thêm thành tích.');
 }
+
+/**
+ * Cập nhật thành tích đã có.
+ *
+ * @param {string} honorId ID thành tích.
+ */
+async function submitHonorEdit(honorId) {
+    const title = $('hTitle').value;
+    const { error } = await sb
+        .from('honors')
+        .update({
+            student_id: $('hStudent').value,
+            title,
+            icon: title.split(' ')[0],
+            reason: $('hReason').value.trim(),
+            period: $('honorPeriod').value,
+        })
+        .eq('id', honorId);
+
+    if (error) {
+        console.error('Bảng danh dự - sửa thành tích thất bại:', error);
+        SNNotification?.error('Không thể cập nhật thành tích.');
+        return;
+    }
+
+    closeModal();
+    await renderHonors();
+    SNNotification?.success('Đã cập nhật thành tích.');
+}
+
+/**
+ * Xóa thành tích sau khi người dùng xác nhận.
+ *
+ * @param {string} honorId ID thành tích.
+ */
+async function deleteHonor(honorId) {
+    if (!window.confirm('Xóa thành tích này? Thao tác này không thể hoàn tác.')) {
+        return;
+    }
+
+    const { error } = await sb
+        .from('honors')
+        .delete()
+        .eq('id', honorId);
+
+    if (error) {
+        console.error('Bảng danh dự - xóa thành tích thất bại:', error);
+        SNNotification?.error('Không thể xóa thành tích.');
+        return;
+    }
+
+    await renderHonors();
+    SNNotification?.success('Đã xóa thành tích.');
+}
+
 async function renderTeams() {
     const arr=[1,2,3,4].map(t=> {
         const a=students.filter(s=>Number(s.team)===t);return {
