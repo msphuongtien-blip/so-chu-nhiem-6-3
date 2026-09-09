@@ -762,7 +762,7 @@ async function submitCompetition() {
         closeModal();await renderStudents();await renderCompetition();await renderDashboard();
     }
 }
-async async function renderHonors() {
+async function renderHonors() {
     const period = $('honorPeriod').value;
     const { data, error } = await sb
         .from('honors')
