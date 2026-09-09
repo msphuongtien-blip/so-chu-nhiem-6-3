@@ -163,7 +163,7 @@ async function submitCompetitionWithServiceV6() {
     const service =
         globalThis.CompetitionRecordServiceV6;
 
-    if (typeof service?.saveCompetitionRecordV6 !== 'function') {
+    if (typeof service?.saveCompetitionRecordsV6 !== 'function') {
         showCompetitionSubmitToastV6(
             'Module lưu Ghi nhận chưa sẵn sàng. Vui lòng thử lại.',
             'error',
@@ -283,7 +283,7 @@ function bootstrapCompetitionRecordSubmitV6() {
         const serviceReady =
             typeof globalThis
                 .CompetitionRecordServiceV6
-                ?.saveCompetitionRecordV6 ===
+                ?.saveCompetitionRecordsV6 ===
             'function';
 
         if (!formReady || !serviceReady) {
