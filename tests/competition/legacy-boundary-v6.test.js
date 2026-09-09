@@ -67,3 +67,28 @@ assert.equal(
 assert.match(source, /const recordForm = globalThis\.openCompetitionForm;/);
 
 console.log('PASS: legacy competition entrypoints preserve composed V6 form');
+
+
+const appSource = fs.readFileSync(
+    path.join(root, 'app.js'),
+    'utf8',
+);
+assert.match(
+    appSource,
+    /const loaderReady = globalThis\.ApplicationModuleLoaderV6\?\.ready/,
+);
+assert.match(
+    appSource,
+    /globalThis\.CompetitionRecordFormV6\?\.open/,
+);
+
+const formSource = fs.readFileSync(
+    path.join(root, 'modules/competition/competition-record-form-v6.js'),
+    'utf8',
+);
+assert.match(
+    formSource,
+    /open: openCompetitionFormV6/,
+);
+
+console.log('PASS: Ghi nhận has a stable V6 entrypoint while modules load');
