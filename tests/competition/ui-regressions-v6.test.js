@@ -12,6 +12,7 @@ const indexSource = rawIndexSource.replace(/\s+/g, ' ');
 const autocompleteSource = fs.readFileSync(path.join(root, 'modules/students/student-autocomplete-v6.js'), 'utf8');
 const appSource = fs.readFileSync('app.js', 'utf8');
 const finalFormSource = fs.readFileSync(path.join(root, 'modules/competition/competition-record-form-v6.js'), 'utf8');
+const moduleLoaderSource = fs.readFileSync(path.join(root, 'core/module-loader.js'), 'utf8');
 const rankingUiSource = fs.readFileSync(path.join(root, 'modules/competition/competition-ranking-ui-v6.js'), 'utf8');
 const rankingColumnsSource = fs.readFileSync(path.join(root, 'modules/competition/competition-ranking-columns-v6.js'), 'utf8');
 
@@ -99,6 +100,17 @@ assert.match(
     'Competition category 6 (Học tập) must remain available.',
 );
 
+
+test('Competition assets use a new cache-busting version after UI fixes', () => {
+    assert.ok(
+        indexSource.includes('20260909-competition-fixes-1'),
+    );
+    assert.ok(
+        moduleLoaderSource.includes(
+            "const V6_ASSET_VERSION = '20260909-competition-fixes-1';",
+        ),
+    );
+});
 
 test('Competition UI keeps the approved four-column ranking contract', () => {
     assert.ok(appSource.includes('groupBadge(s.weekly)'));
